@@ -15,7 +15,7 @@ public class MoveScene_OnKeyPress : MonoBehaviour
     {
         if(other.CompareTag("Player"))
         {
-            // uiElement.setActive(true);
+            // uiElement.setActive(true) a;
             if(Input.GetKey(KeyCode.W))
             {
                 SceneManager.LoadScene(newLevel);
