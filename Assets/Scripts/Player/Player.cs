@@ -8,7 +8,6 @@ public class Player : MonoBehaviour, IDamageable
 
     private Rigidbody2D rg2d;
     private Collider2D col2d;
-    private Animator anim;
 
     [SerializeField]
     private float _jumpForce = 4.0f;
@@ -41,7 +40,6 @@ public class Player : MonoBehaviour, IDamageable
     {
         rg2d = GetComponent<Rigidbody2D>();
         col2d = GetComponent<Collider2D>();
-        anim = GetComponentInChildren<Animator>();
         _playerAnim = GetComponent<PlayerAnimation>();
 
         Health = 4;
@@ -71,11 +69,11 @@ public class Player : MonoBehaviour, IDamageable
     {
         if (move == 0 && isDead == false)
         {
-            anim.SetBool("Moving", false);
+            _playerAnim.Move(false);
         }
         else
         {
-            anim.SetBool("Moving", true);
+            _playerAnim.Move(true);
         }
         
         if (move > 0)
@@ -99,16 +97,16 @@ public class Player : MonoBehaviour, IDamageable
             isJumping = true;
             jumpTimeCounter = jumpTime;
             rg2d.velocity = Vector2.up * _jumpForce;
-            anim.SetBool("isJumping", true);
+            _playerAnim.Jump(true);
         }
 
         if (isGrounded == true)
         {
-            anim.SetBool("isJumping", false);
+            _playerAnim.Jump(false);
         }
         else
         {
-            anim.SetBool("isJumping", true);
+            _playerAnim.Jump(true);
         }
         
         if (Input.GetKey(KeyCode.Space) && isJumping == true)

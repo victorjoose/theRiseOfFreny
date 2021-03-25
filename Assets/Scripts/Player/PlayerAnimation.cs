@@ -16,17 +16,20 @@ public class PlayerAnimation : MonoBehaviour
         _anim.SetBool("Falling", falling);
     }
     
-    public void Jump()
+    public void Jump(bool jump)
     {
-        _anim.SetTrigger("Jump");
+        _anim.SetBool("isJumping", jump);
     }
     
     public void Landing()
     {
         _anim.SetTrigger("Landing");
     }
-    
-    
+
+    public void Move(bool moving)
+    {
+        _anim.SetBool("Moving", moving);
+    }
 
     public void Melee()
     {
