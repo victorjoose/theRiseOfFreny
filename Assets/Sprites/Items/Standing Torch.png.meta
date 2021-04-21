@@ -1,22 +1,22 @@
 fileFormatVersion: 2
-guid: 1859147f78574234e81592cd7ebd4186
+guid: da1428f437772ab4091ddfc15973f2c7
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1229858627709956937
-    second: Projectile_0
+      213: 3356408537948147003
+    second: Standing Torch_0
   - first:
-      213: 6591756066159149786
-    second: Projectile_1
+      213: 2459891189952295336
+    second: Standing Torch_1
   - first:
-      213: 8551939251423866323
-    second: Projectile_2
+      213: -3182899083312092619
+    second: Standing Torch_2
   - first:
-      213: 8972715148466146729
-    second: Projectile_3
+      213: -4088826912467424549
+    second: Standing Torch_3
   - first:
-      213: -8008892853370628865
-    second: Projectile_4
+      213: 8662546377586612056
+    second: Standing Torch_4
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -106,13 +106,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Projectile_0
+      name: Standing Torch_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 80
-        height: 80
+        width: 100
+        height: 200
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -120,20 +120,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 7bc066b181aaeeee0800000000000000
-      internalID: -1229858627709956937
+      spriteID: b3dcc7148cb549e20800000000000000
+      internalID: 3356408537948147003
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Projectile_1
+      name: Standing Torch_1
       rect:
         serializedVersion: 2
-        x: 80
+        x: 100
         y: 0
-        width: 80
-        height: 80
+        width: 100
+        height: 200
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,20 +141,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ad24171b73f9a7b50800000000000000
-      internalID: 6591756066159149786
+      spriteID: 8a13833110a432220800000000000000
+      internalID: 2459891189952295336
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Projectile_2
+      name: Standing Torch_2
       rect:
         serializedVersion: 2
-        x: 160
+        x: 200
         y: 0
-        width: 80
-        height: 80
+        width: 100
+        height: 200
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -162,20 +162,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3dde6d560779ea670800000000000000
-      internalID: 8551939251423866323
+      spriteID: 53a244fb52214d3d0800000000000000
+      internalID: -3182899083312092619
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Projectile_3
+      name: Standing Torch_3
       rect:
         serializedVersion: 2
-        x: 240
+        x: 300
         y: 0
-        width: 80
-        height: 80
+        width: 100
+        height: 200
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -183,20 +183,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9ad471753ec758c70800000000000000
-      internalID: 8972715148466146729
+      spriteID: bda625e26919147c0800000000000000
+      internalID: -4088826912467424549
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Projectile_4
+      name: Standing Torch_4
       rect:
         serializedVersion: 2
-        x: 320
+        x: 400
         y: 0
-        width: 80
-        height: 80
+        width: 100
+        height: 200
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -204,8 +204,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ff4ddaef162bad090800000000000000
-      internalID: -8008892853370628865
+      spriteID: 8579566c80c873870800000000000000
+      internalID: 8662546377586612056
       vertices: []
       indices: 
       edges: []
