@@ -55,14 +55,14 @@ public class Player : MonoBehaviour, IDamageable
     // Update is called once per frame
     void Update()
     {
-        
+
         if (isDead)
             return;
-        
+
         Movement();
         Jump();
         Attack();
-        
+
     }
 
     void Movement()
