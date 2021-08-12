@@ -7,17 +7,17 @@ public class HexballEffect : MonoBehaviour
 {
     private void Start()
     {
-        Destroy(this.gameObject, 3.0f);
+        Destroy(gameObject, 3.0f);
     }
 
     private void Update()
     {
-        transform.Translate(Vector3.right * 3 * Time.deltaTime);
+        transform.Translate(Vector3.right * (3 * Time.deltaTime));
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.tag == "Player")
+        if (other.CompareTag("Player"))
         {
             IDamageable hit = other.GetComponent<IDamageable>();
 
