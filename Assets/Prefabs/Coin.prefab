@@ -135,6 +135,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coins: 1
+  coinCount: {fileID: 1839722716228608488}
 --- !u!50 &1872309322453764110
 Rigidbody2D:
   serializedVersion: 4

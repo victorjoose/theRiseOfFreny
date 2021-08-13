@@ -14,7 +14,7 @@ public class Coin : MonoBehaviour {
             StartCoroutine(ActiveAndDeactivate());
     }
 
-    IEnumerator ActiveAndDeactivate() {
+    private IEnumerator ActiveAndDeactivate() {
 
         coinCount.SetActive(true);
         
