@@ -362,9 +362,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b395ecc9b04264da0d7dea98329725, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coinPrefab: {fileID: 0}
   health: 2
   speed: 1
-  gems: 0
+  coins: 0
   pointA: {fileID: 2059016476}
   pointB: {fileID: 1352596721}
 --- !u!4 &386137992
@@ -394,6 +395,7 @@ GameObject:
   - component: {fileID: 506069833}
   - component: {fileID: 506069832}
   - component: {fileID: 506069831}
+  - component: {fileID: 506069835}
   - component: {fileID: 506069830}
   m_Layer: 9
   m_Name: Player
@@ -421,7 +423,7 @@ BoxCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 506069829}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Density: 1
   m_Material: {fileID: 0}
   m_IsTrigger: 0
@@ -473,6 +475,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96584dd20e54cc54d9c26b826479c76f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coins: 0
   _jumpForce: 4
   _speed: 3
   feetPos: {fileID: 922850065}
@@ -497,6 +500,22 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!70 &506069835
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 506069829}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: -0.3594978}
+  m_Size: {x: 0.5597607, y: 1.2857308}
+  m_Direction: 0
 --- !u!1 &589110056
 GameObject:
   m_ObjectHideFlags: 0
@@ -9237,9 +9256,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 52b5c081427496d47a9d0f81fc1c0fee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coinPrefab: {fileID: 0}
   health: 2
   speed: 0
-  gems: 0
+  coins: 0
   pointA: {fileID: 0}
   pointB: {fileID: 0}
   hexballEffectPrefab: {fileID: 8130485229399331639, guid: 302bd1357e57762409bde635aedd8c2f,
@@ -11661,9 +11681,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7416f45071d944d46bd4c869919e6bd7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coinPrefab: {fileID: 0}
   health: 3
   speed: 1
-  gems: 0
+  coins: 0
   pointA: {fileID: 1091127745}
   pointB: {fileID: 342403933}
 --- !u!4 &1218248897
@@ -17673,9 +17694,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 908a5ee25b616db42a4bb3795aa2ab4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coinPrefab: {fileID: 0}
   health: 5
   speed: 2
-  gems: 0
+  coins: 0
   pointA: {fileID: 1579408404}
   pointB: {fileID: 826685128}
 --- !u!4 &1864255812
