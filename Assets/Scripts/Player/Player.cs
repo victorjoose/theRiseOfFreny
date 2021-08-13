@@ -119,13 +119,13 @@ public class Player : MonoBehaviour, IDamageable {
     // }
 
     void Attack() {
-        if (Input.GetMouseButtonDown(0) && isGrounded == true) {
+        if (Input.GetMouseButtonDown(0) && isGrounded) {
             if (_resetAttack == false) {
                 _playerAnim.Melee();
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.R) && isGrounded == true) {
+        if (Input.GetKeyDown(KeyCode.R) && isGrounded) {
             _playerAnim.Ranged();
         }
     }
