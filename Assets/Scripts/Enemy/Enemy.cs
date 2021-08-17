@@ -20,7 +20,7 @@ public abstract class Enemy : MonoBehaviour
     protected SpriteRenderer sprite;
     protected bool isDead = false;
 
-    protected bool isHit = false;
+    protected bool isHit;
     protected float distance;
     protected Transform player_t;
     protected Player player;

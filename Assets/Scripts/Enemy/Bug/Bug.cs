@@ -12,7 +12,7 @@ public class Bug : Enemy, IDamageable {
     }
 
     public void Damage() {
-        if (!Convenients.isAlive(isDead, gameObject)) {
+        if (!Convenients.IsAlive(isDead, gameObject)) {
             return;
         }
         

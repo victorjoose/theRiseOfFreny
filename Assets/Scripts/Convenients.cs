@@ -4,7 +4,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 public class Convenients {
-    public static Boolean isAlive(Boolean isDead, GameObject gameObject) {
+    public static Boolean IsAlive(Boolean isDead, GameObject gameObject) {
         if (isDead) {
             Object.Destroy(gameObject, 3f);
             return false;
@@ -37,4 +37,9 @@ public class Convenients {
 
         return null;
     }
+    
+    public static void Flip(bool faceRight, Transform transform) {
+        transform.localScale = faceRight ? new Vector3(1, 1, 1) : new Vector3(-1, 1, 1);
+    }
+    
 }

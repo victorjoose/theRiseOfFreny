@@ -17,7 +17,7 @@ public class Golem : Enemy, IDamageable
 
     public void Damage()
     {
-        if (!Convenients.isAlive(isDead, gameObject)) {
+        if (!Convenients.IsAlive(isDead, gameObject)) {
             return;
         }
         Debug.Log("Golem::Damage()");

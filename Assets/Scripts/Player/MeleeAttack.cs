@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Attack : MonoBehaviour
+public class MeleeAttack : MonoBehaviour
 {
     private bool _canDamage = true;
 
@@ -25,7 +25,7 @@ public class Attack : MonoBehaviour
 
     IEnumerator ResetDamage()
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(1f);
         _canDamage = true;
     }
 }

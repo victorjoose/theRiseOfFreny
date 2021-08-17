@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour, IDamageable {
+
+    public GameObject revolverBulletPrefab;
+    public Transform playerRevolverShootPosition;
+    
     public int coins;
     private Rigidbody2D rg2d;
     private Collider2D col2d;
@@ -28,11 +32,11 @@ public class Player : MonoBehaviour, IDamageable {
 
     // Start is called before the first frame update
     void Start() {
+        Health = 4;
         rg2d = GetComponent<Rigidbody2D>();
         col2d = GetComponent<Collider2D>();
         _playerAnim = GetComponent<PlayerAnimation>();
-
-        Health = 4;
+        playerRevolverShootPosition = GameObject.FindGameObjectWithTag("RevolverShootPosition").GetComponent<Transform>();
     }
 
     private void FixedUpdate() {
@@ -49,6 +53,7 @@ public class Player : MonoBehaviour, IDamageable {
         Movement();
         Jump();
         Attack();
+        RangedAttack();
     }
 
     void Movement() {
@@ -59,9 +64,9 @@ public class Player : MonoBehaviour, IDamageable {
         }
 
         if (move > 0) {
-            Flip(true);
+            Convenients.Flip(true, transform);
         } else if (move < 0) {
-            Flip(false);
+            Convenients.Flip(false, transform);
         }
     }
 
@@ -122,27 +127,25 @@ public class Player : MonoBehaviour, IDamageable {
         if (Input.GetMouseButtonDown(0) && isGrounded) {
             if (_resetAttack == false) {
                 _playerAnim.Melee();
+                StartCoroutine(ResetAttackRoutine());
             }
         }
+    }
 
+    public void RangedAttack() {
         if (Input.GetKeyDown(KeyCode.R) && isGrounded) {
-            _playerAnim.Ranged();
+            if (_resetAttack == false) {
+                _playerAnim.Ranged();
+                Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
+                StartCoroutine(ResetAttackRoutine());
+            }
         }
     }
 
     IEnumerator ResetAttackRoutine() {
         _resetAttack = true;
-        yield return new WaitForSeconds(3f);
+        yield return new WaitForSeconds(1f);
         _resetAttack = false;
-    }
-
-    void Flip(bool faceRight) {
-        if (faceRight == true) {
-            //Best to use transform.localScale if the player has children
-            transform.localScale = new Vector3(1, 1, 1);
-        } else if (faceRight == false) {
-            transform.localScale = new Vector3(-1, 1, 1);
-        }
     }
 
     public void Damage() {

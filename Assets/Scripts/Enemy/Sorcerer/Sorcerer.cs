@@ -17,7 +17,7 @@ public class Sorcerer : Enemy, IDamageable {
     public override void Update() { }
 
     public void Damage() {
-        if (!Convenients.isAlive(isDead, gameObject)) {
+        if (!Convenients.IsAlive(isDead, gameObject)) {
             return;
         }
 
@@ -34,6 +34,6 @@ public class Sorcerer : Enemy, IDamageable {
     }
 
     public void Attack() {
-        // Instantiate(hexballEffectPrefab, SorcererCastPosition.position, Quaternion.identity);
+        Instantiate(hexballEffectPrefab, SorcererCastPosition.position, Quaternion.identity);
     }
 }
