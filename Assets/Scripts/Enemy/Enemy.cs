@@ -4,12 +4,14 @@ using UnityEngine;
 
 public abstract class Enemy : MonoBehaviour
 {
+    public GameObject coinPrefab;
+    
     [SerializeField]
     protected int health;
     [SerializeField]
     protected int speed;
     [SerializeField]
-    protected int gems;
+    protected int coins;
     [SerializeField]
     protected Transform pointA, pointB;
 
@@ -18,7 +20,7 @@ public abstract class Enemy : MonoBehaviour
     protected SpriteRenderer sprite;
     protected bool isDead = false;
 
-    protected bool isHit = false;
+    protected bool isHit;
     protected float distance;
     protected Transform player_t;
     protected Player player;
@@ -36,7 +38,7 @@ public abstract class Enemy : MonoBehaviour
         Init();
     }
 
-        public virtual void Update()
+    public virtual void Update()
     {
         if (anim.GetCurrentAnimatorStateInfo(0).IsName("Idle") && anim.GetBool("InCombat") == false)
         {

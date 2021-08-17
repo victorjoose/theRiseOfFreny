@@ -17,18 +17,18 @@ public class Golem : Enemy, IDamageable
 
     public void Damage()
     {
-        if (isDead == true)
+        if (!Convenients.IsAlive(isDead, gameObject)) {
             return;
+        }
         Debug.Log("Golem::Damage()");
         Health--;
         anim.SetTrigger("Hit");
         isHit = true;
         anim.SetBool("InCombat", true);
 
-        if (Health < 1)
+        if (Convenients.ShouldBeDead(Health))
         {
-            isDead = true;
-            anim.SetTrigger("Death");
+            isDead = Convenients.Dies(anim, gameObject);
         }
     }
 }

@@ -15,7 +15,6 @@ public class SorcererAnimationEvent : MonoBehaviour
 
     public void Fire()
     {
-        Debug.Log("Fire");
         _sorcerer.Attack();
     }
     
