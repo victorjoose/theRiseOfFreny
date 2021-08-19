@@ -8,21 +8,30 @@ public class Merchant : MonoBehaviour {
     public GameObject shopPanel;
     public GameObject interaction;
     public GameObject coinCount;
+    public GameObject hud;
     public int selectedItem;
     public int itemCost;
 
     private Player _player;
+
+    public void Update() {
+        if (Input.GetKey(KeyCode.Escape)) {
+            CloseStore();
+        }
+    }
     
     private void OnTriggerStay2D(Collider2D other) {
         if (other.CompareTag("Player")) {
             interaction.SetActive(true);
             if (Input.GetKey(KeyCode.E)) {
                 _player = other.GetComponent<Player>();
-
+                _player.GetComponent<Player>().enabled = false;
+                
                 if (_player) {
                     UIManager.Instance.UpdateCoins(_player.coins);
                 }
                 
+                hud.SetActive(false);
                 shopPanel.SetActive(true);
                 coinCount.SetActive(true);
                 
@@ -35,6 +44,7 @@ public class Merchant : MonoBehaviour {
             shopPanel.SetActive(false);
             interaction.SetActive(false);
             coinCount.SetActive(false);
+            hud.SetActive(true);
         }
     }
 
@@ -82,12 +92,17 @@ public class Merchant : MonoBehaviour {
                 GameManager.Instance.HasPotion = true;
             }
             
-            
             _player.coins -= itemCost;
             Debug.Log("Bought");
         } else {
             Debug.Log("Didnt buy");
         }
         
+    }
+
+    public void CloseStore() {
+        shopPanel.SetActive(false);
+        hud.SetActive(true);
+        _player.GetComponent<Player>().enabled = true;
     }
 }

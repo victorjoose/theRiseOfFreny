@@ -41,5 +41,13 @@ public class Convenients {
     public static void Flip(bool faceRight, Transform transform) {
         transform.localScale = faceRight ? new Vector3(1, 1, 1) : new Vector3(-1, 1, 1);
     }
+
+    // public static Transform FreezePlayer(bool freeze, Transform transform) {
+    //     if (!freeze)
+    //         return null;
+    //     else {
+    //         return transform.
+    //     }
+    // }
     
 }
