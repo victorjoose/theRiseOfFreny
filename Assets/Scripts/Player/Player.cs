@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityStandardAssets.CrossPlatformInput;
 
 public class Player : MonoBehaviour, IDamageable {
     
@@ -40,7 +41,8 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     private void FixedUpdate() {
-        move = Input.GetAxisRaw("Horizontal");
+        move = CrossPlatformInputManager.GetAxis("Horizontal");
+        // move = Input.GetAxisRaw("Horizontal");
         if (isDead == false)
             rg2d.velocity = new Vector2(move * _speed, rg2d.velocity.y);
     }
@@ -75,7 +77,7 @@ public class Player : MonoBehaviour, IDamageable {
         // RaycastHit2D hitInfo = Physics2D.Raycast(transform.position, Vector2.down, 1.1f, 1 << 8);
         // Debug.DrawRay(transform.position, Vector2.down * 1.1f, Color.blue);
 
-        if (isGrounded == true && Input.GetKey(KeyCode.Space) && isJumping == false) {
+        if (isGrounded == true && (Input.GetKey(KeyCode.Space) || CrossPlatformInputManager.GetButton("B_Button")) && isJumping == false) {
             isJumping = true;
             jumpTimeCounter = jumpTime;
             rg2d.velocity = Vector2.up * _jumpForce;
@@ -88,7 +90,7 @@ public class Player : MonoBehaviour, IDamageable {
             _playerAnim.Jump(true);
         }
 
-        if (Input.GetKey(KeyCode.Space) && isJumping == true) {
+        if ((Input.GetKey(KeyCode.Space) || CrossPlatformInputManager.GetButton("B_Button")) && isJumping == true) {
             if (jumpTimeCounter > 0) {
                 rg2d.velocity = Vector2.up * _jumpForce;
                 jumpTimeCounter -= Time.deltaTime;
@@ -97,7 +99,7 @@ public class Player : MonoBehaviour, IDamageable {
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.Space)) {
+        if (Input.GetKeyDown(KeyCode.Space) || CrossPlatformInputManager.GetButtonDown("B_Button")) {
             isJumping = false;
         }
 
@@ -124,7 +126,7 @@ public class Player : MonoBehaviour, IDamageable {
     // }
 
     void Attack() {
-        if (Input.GetMouseButtonDown(0) && isGrounded) {
+        if ((Input.GetMouseButtonDown(0) || CrossPlatformInputManager.GetButton("A_Button")) && isGrounded) {
             if (_resetAttack == false) {
                 _playerAnim.Melee();
                 StartCoroutine(ResetAttackRoutine());
@@ -133,7 +135,7 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void RangedAttack() {
-        if (Input.GetKeyDown(KeyCode.R) && isGrounded) {
+        if ((Input.GetKeyDown(KeyCode.R) || CrossPlatformInputManager.GetButton("C_Button")) && isGrounded) {
             if (_resetAttack == false) {
                 _playerAnim.Ranged();
                 Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
