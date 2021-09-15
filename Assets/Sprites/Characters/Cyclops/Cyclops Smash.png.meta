@@ -1,0 +1,396 @@
+fileFormatVersion: 2
+guid: dcf37467f319faf488f95391a1b78384
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -1183337864604851787
+    second: Cyclops Smash_0
+  - first:
+      213: -4789035437381512349
+    second: Cyclops Smash_1
+  - first:
+      213: 9152188855376635912
+    second: Cyclops Smash_2
+  - first:
+      213: -914903236011444179
+    second: Cyclops Smash_3
+  - first:
+      213: 3547789798891705496
+    second: Cyclops Smash_4
+  - first:
+      213: -2397952070578649163
+    second: Cyclops Smash_5
+  - first:
+      213: 7606385290340391161
+    second: Cyclops Smash_6
+  - first:
+      213: 6123495163568483
+    second: Cyclops Smash_7
+  - first:
+      213: -8698665542461722439
+    second: Cyclops Smash_8
+  - first:
+      213: -7290302450770478187
+    second: Cyclops Smash_9
+  - first:
+      213: -3303071232569786332
+    second: Cyclops Smash_10
+  - first:
+      213: 420140455706943357
+    second: Cyclops Smash_11
+  externalObjects: {}
+  serializedVersion: 11
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: -1
+    mipBias: -100
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 4096
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 4096
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Cyclops Smash_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2240
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5b165f25b70f39fe0800000000000000
+      internalID: -1183337864604851787
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_1
+      rect:
+        serializedVersion: 2
+        x: 880
+        y: 2240
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3631e12a4ade98db0800000000000000
+      internalID: -4789035437381512349
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_2
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1792
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 808630a064b130f70800000000000000
+      internalID: 9152188855376635912
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_3
+      rect:
+        serializedVersion: 2
+        x: 880
+        y: 1792
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d28beadaa5c9d43f0800000000000000
+      internalID: -914903236011444179
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_4
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1344
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 894d1bc66084c3130800000000000000
+      internalID: 3547789798891705496
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_5
+      rect:
+        serializedVersion: 2
+        x: 880
+        y: 1344
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5b74fb4fb43c8bed0800000000000000
+      internalID: -2397952070578649163
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_6
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 896
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9f8de770f1f4f8960800000000000000
+      internalID: 7606385290340391161
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_7
+      rect:
+        serializedVersion: 2
+        x: 880
+        y: 896
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 36122025941c51000800000000000000
+      internalID: 6123495163568483
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_8
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 448
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9b073a1d6c1284780800000000000000
+      internalID: -8698665542461722439
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_9
+      rect:
+        serializedVersion: 2
+        x: 880
+        y: 448
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 59b7aa4fb84a3da90800000000000000
+      internalID: -7290302450770478187
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_10
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 420cdd2e6322922d0800000000000000
+      internalID: -3303071232569786332
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Cyclops Smash_11
+      rect:
+        serializedVersion: 2
+        x: 880
+        y: 0
+        width: 880
+        height: 448
+      alignment: 9
+      pivot: {x: 0.5295454, y: 0.35714287}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d7fde2ab483a4d500800000000000000
+      internalID: 420140455706943357
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
