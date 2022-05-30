@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 public class Sorcerer : Enemy, IDamageable {
     public GameObject hexballEffectPrefab;
@@ -17,7 +18,7 @@ public class Sorcerer : Enemy, IDamageable {
     public override void Update() { }
 
     public void Damage() {
-        if (!Convenients.IsAlive(isDead, gameObject)) {
+        if (!Util.IsAlive(isDead, gameObject)) {
             return;
         }
 
@@ -27,9 +28,9 @@ public class Sorcerer : Enemy, IDamageable {
         anim.SetTrigger("Hit");
         Debug.Log("Health " + Health);
 
-        if (Convenients.ShouldBeDead(Health)) {
-            isDead = Convenients.Dies(anim, gameObject);
-            Convenients.DropCoin(coins, coinPrefab, transform);
+        if (Util.ShouldBeDead(Health)) {
+            isDead = Util.Dies(anim, gameObject);
+            Util.DropCoin(coins, coinPrefab, transform);
         }
     }
 

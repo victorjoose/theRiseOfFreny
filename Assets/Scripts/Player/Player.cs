@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 public class Player : MonoBehaviour, IDamageable {
     
@@ -64,9 +65,9 @@ public class Player : MonoBehaviour, IDamageable {
         }
 
         if (move > 0) {
-            Convenients.Flip(true, transform);
+            Util.Flip(true, transform);
         } else if (move < 0) {
-            Convenients.Flip(false, transform);
+            Util.Flip(false, transform);
         }
     }
 
@@ -152,7 +153,7 @@ public class Player : MonoBehaviour, IDamageable {
         if (isDead == false) {
             Debug.Log("Player::Damage()");
             Health--;
-            UIManager.Instance.UpdateLives(Health);
+            //UIManager.Instance.UpdateLives(Health);
             _playerAnim.Hit();
 
             if (Health < 1) {
@@ -168,7 +169,7 @@ public class Player : MonoBehaviour, IDamageable {
 
     public void AddCoins(int amount) {
         coins += amount;
-        UIManager.Instance.UpdateCoins(coins);
+        //UIManager.Instance.UpdateCoins(coins);
     }
     
 }

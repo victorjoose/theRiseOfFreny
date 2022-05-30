@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 public class Golem : Enemy, IDamageable
 {
@@ -17,7 +18,7 @@ public class Golem : Enemy, IDamageable
 
     public void Damage()
     {
-        if (!Convenients.IsAlive(isDead, gameObject)) {
+        if (!Util.IsAlive(isDead, gameObject)) {
             return;
         }
         Debug.Log("Golem::Damage()");
@@ -26,9 +27,9 @@ public class Golem : Enemy, IDamageable
         isHit = true;
         anim.SetBool("InCombat", true);
 
-        if (Convenients.ShouldBeDead(Health))
+        if (Util.ShouldBeDead(Health))
         {
-            isDead = Convenients.Dies(anim, gameObject);
+            isDead = Util.Dies(anim, gameObject);
         }
     }
 }

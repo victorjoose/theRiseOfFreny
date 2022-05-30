@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 public class Licker : Enemy, IDamageable {
     public int Health { get; set; }
@@ -11,7 +12,7 @@ public class Licker : Enemy, IDamageable {
     }
 
     public void Damage() {
-        if (!Convenients.IsAlive(isDead, gameObject)) {
+        if (!Util.IsAlive(isDead, gameObject)) {
             return;
         }
         
@@ -21,8 +22,8 @@ public class Licker : Enemy, IDamageable {
         isHit = true;
         anim.SetBool("InCombat", true);
 
-        if (Convenients.ShouldBeDead(Health)) {
-            isDead = Convenients.Dies(anim, gameObject);
+        if (Util.ShouldBeDead(Health)) {
+            isDead = Util.Dies(anim, gameObject);
         }
     }
 }
