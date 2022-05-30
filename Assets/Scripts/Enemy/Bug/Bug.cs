@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 public class Bug : Enemy, IDamageable {
     public int Health { get; set; }
@@ -12,18 +13,18 @@ public class Bug : Enemy, IDamageable {
     }
 
     public void Damage() {
-        if (!Convenients.IsAlive(isDead, gameObject)) {
+        if (!Util.IsAlive(isDead, gameObject)) {
             return;
         }
-        
+
         Debug.Log("Bug::Damage()");
         Health--;
         anim.SetTrigger("Hit");
         isHit = true;
         anim.SetBool("InCombat", true);
 
-        if (Convenients.ShouldBeDead(Health)) {
-            isDead = Convenients.Dies(anim, gameObject);
+        if (Util.ShouldBeDead(Health)) {
+            isDead = Util.Dies(anim, gameObject);
         }
     }
 }
