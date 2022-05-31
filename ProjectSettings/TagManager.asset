@@ -6,6 +6,8 @@ TagManager:
   tags:
   - SorcererCastPosition
   - RevolverShootPosition
+  - Obstacle
+  - Death
   layers:
   - Default
   - TransparentFX
@@ -20,7 +22,7 @@ TagManager:
   - Enemy
   - Sword
   - EnemyAttack
-  - 
+  - Death
   - 
   - 
   - 

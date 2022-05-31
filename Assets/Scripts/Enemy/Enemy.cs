@@ -45,7 +45,10 @@ public abstract class Enemy : MonoBehaviour
             return;
         }
 
-        distance = Vector3.Distance(transform.localPosition, player_t.transform.localPosition);
+        if (player_t) {
+            distance = Vector3.Distance(transform.localPosition, player_t.transform.localPosition);
+        }
+        
         if (isDead == false){
             Movement();
         }
@@ -85,19 +88,19 @@ public abstract class Enemy : MonoBehaviour
             anim.SetBool("InCombat", false);
         }
 
-        Vector3 direction = player_t.transform.localPosition - transform.localPosition;
+        if (player_t) {
+            Vector3 direction = player_t.transform.localPosition - transform.localPosition;
 
-        if(direction.x > 0 && anim.GetBool("InCombat") == true)
-        {
-            transform.localScale = new Vector3(-1, 1, 1);
-            currentTarget = pointA.position;
-        } 
-        else if (direction.x < 0 && anim.GetBool("InCombat") == true)
-        {
-            transform.localScale = new Vector3(1, 1, 1);;
-            currentTarget = pointB.position;
+            if (direction.x > 0 && anim.GetBool("InCombat") == true) {
+                transform.localScale = new Vector3(-1, 1, 1);
+                currentTarget = pointA.position;
+            }
+            else if (direction.x < 0 && anim.GetBool("InCombat") == true) {
+                transform.localScale = new Vector3(1, 1, 1);
+                ;
+                currentTarget = pointB.position;
+            }
         }
     }
-
-
+    
 }

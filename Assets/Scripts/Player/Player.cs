@@ -12,15 +12,16 @@ public class Player : MonoBehaviour, IDamageable {
     public int coins;
     private Rigidbody2D rg2d;
     private Collider2D col2d;
-    [SerializeField] private float _jumpForce = 4.0f;
 
     private bool _resetAttack = false;
-    // [SerializeField]
-    // private bool _grounded = false;
 
     [SerializeField] private float _speed = 3.0f;
     private float move;
     private PlayerAnimation _playerAnim;
+    
+    [SerializeField] private float jumpForce = 4.0f;
+    [SerializeField] public float fallMultiplier = 4.0f;
+    [SerializeField] public float lowJumpMultiplier = 3.0f;
     private bool isGrounded;
     public Transform feetPos;
     public float checkRadius;
@@ -28,7 +29,9 @@ public class Player : MonoBehaviour, IDamageable {
     private float jumpTimeCounter;
     public float jumpTime;
     public bool isJumping;
+    
     private bool isDead = false;
+    public GameObject gameOver;
     public int Health { get; set; }
 
     // Start is called before the first frame update
@@ -48,8 +51,9 @@ public class Player : MonoBehaviour, IDamageable {
 
     // Update is called once per frame
     void Update() {
-        if (isDead)
-            return;
+        if (isDead) {
+            gameOver.SetActive(true);
+        }
 
         Movement();
         Jump();
@@ -73,56 +77,23 @@ public class Player : MonoBehaviour, IDamageable {
 
     void Jump() {
         isGrounded = Physics2D.OverlapCircle(feetPos.position, checkRadius, whatIsGround);
-        // RaycastHit2D hitInfo = Physics2D.Raycast(transform.position, Vector2.down, 1.1f, 1 << 8);
-        // Debug.DrawRay(transform.position, Vector2.down * 1.1f, Color.blue);
 
-        if (isGrounded == true && Input.GetKey(KeyCode.Space) && isJumping == false) {
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isJumping) {
             isJumping = true;
             jumpTimeCounter = jumpTime;
-            rg2d.velocity = Vector2.up * _jumpForce;
+            rg2d.velocity = Vector2.up * jumpForce;
             _playerAnim.Jump(true);
         }
-
-        if (isGrounded == true) {
-            _playerAnim.Jump(false);
-        } else {
-            _playerAnim.Jump(true);
+        
+        if (rg2d.velocity.y < 0) {
+            rg2d.velocity += Vector2.up * (Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime);
+        } else if (rg2d.velocity.y > 0 && !Input.GetKey(KeyCode.Space)) {
+            rg2d.velocity += Vector2.up * (Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime);
         }
 
-        if (Input.GetKey(KeyCode.Space) && isJumping == true) {
-            if (jumpTimeCounter > 0) {
-                rg2d.velocity = Vector2.up * _jumpForce;
-                jumpTimeCounter -= Time.deltaTime;
-            } else {
-                isJumping = false;
-            }
-        }
-
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            isJumping = false;
-        }
-
-        // if (hitInfo.collider)
-        // {
-        //     anim.SetBool("AboutToHitGround", true);
-        //     _playerAnim.Landing();
-        // }
+        _playerAnim.Jump(isGrounded != true);
+        isJumping = !isGrounded;
     }
-
-    // bool IsGrounded()
-    // {
-    //     RaycastHit2D hitInfo = Physics2D.Raycast(transform.position, Vector2.down, 1.2f, 1 << 8);
-    //     Debug.DrawRay(transform.position, Vector2.down * 1.1f, Color.blue);
-    //     if (hitInfo.collider != null)
-    //     {
-    //         if (_resetJump == false)
-    //         {
-    //             _playerAnim.Jump(false);
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
 
     void Attack() {
         if (Input.GetMouseButtonDown(0) && isGrounded) {
