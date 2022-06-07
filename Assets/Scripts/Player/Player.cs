@@ -27,7 +27,6 @@ public class Player : MonoBehaviour, IDamageable {
     public float checkRadius;
     public LayerMask whatIsGround;
     private float jumpTimeCounter;
-    public float jumpTime;
     public bool isJumping;
     
     private bool isDead = false;
@@ -80,7 +79,6 @@ public class Player : MonoBehaviour, IDamageable {
 
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isJumping) {
             isJumping = true;
-            jumpTimeCounter = jumpTime;
             rg2d.velocity = Vector2.up * jumpForce;
             _playerAnim.Jump(true);
         }
@@ -105,13 +103,17 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void RangedAttack() {
-        if (Input.GetKeyDown(KeyCode.R) && isGrounded) {
-            if (_resetAttack == false) {
-                _playerAnim.Ranged();
-                Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
-                StartCoroutine(ResetAttackRoutine());
-            }
+        if (!Input.GetKeyDown(KeyCode.R) || !isGrounded) {
+            return;
         }
+
+        if (_resetAttack != false) {
+            return;
+        }
+        
+        _playerAnim.Ranged();
+        Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
+        StartCoroutine(ResetAttackRoutine());
     }
 
     IEnumerator ResetAttackRoutine() {
@@ -121,21 +123,22 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void Damage() {
-        if (isDead == false) {
-            Debug.Log("Player::Damage()");
-            Health--;
-            UIManager.Instance.UpdateLives(Health);
-            _playerAnim.Hit();
+        if (isDead) return;
+        Debug.Log("Player::Damage()");
+        Health--;
+        UIManager.Instance.UpdateLives(Health);
+        _playerAnim.Hit();
 
-            if (Health < 1) {
-                _playerAnim.Death();
-                isDead = true;
-
-                //Temporary solution for being able to move after death
-                Destroy(rg2d);
-                Destroy(col2d);
-            }
+        if (Health >= 1) {
+            return;
         }
+        
+        _playerAnim.Death();
+        isDead = true;
+
+        //Temporary solution for being able to move after death
+        Destroy(rg2d);
+        Destroy(col2d);
     }
 
     public void AddCoins(int amount) {
