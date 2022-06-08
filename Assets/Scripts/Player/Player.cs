@@ -103,15 +103,19 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void RangedAttack() {
-        if (!Input.GetKeyDown(KeyCode.R) || !isGrounded) {
+        if (!Input.GetKeyDown(KeyCode.R)) {
             return;
         }
 
         if (_resetAttack != false) {
             return;
         }
-        
-        _playerAnim.Ranged();
+
+        if (!isGrounded) {
+            _playerAnim.RangedJump();
+        } else {
+            _playerAnim.Ranged();
+        }
         Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
         StartCoroutine(ResetAttackRoutine());
     }
