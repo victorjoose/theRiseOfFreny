@@ -37,6 +37,11 @@ public class UIManager : MonoBehaviour {
     }
 
     public void UpdateLives(int health) {
+        if (health == 0) {
+            foreach (var healthBar in healthBars) {
+                healthBar.enabled = false;
+            }
+        }
         for (int i = 0; i <= health; i++) {
             if (i == health) {
                 healthBars[i].enabled = false;

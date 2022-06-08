@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
 {
-    private Animator _anim;
+    public static Animator _anim;
 
     void Start()
     {
@@ -31,14 +31,17 @@ public class PlayerAnimation : MonoBehaviour
         _anim.SetBool("Moving", moving);
     }
 
-    public void Melee()
+    public void  Melee()
     {
         _anim.SetTrigger("Melee");
     }
 
-    public void Ranged()
-    {
+    public void Ranged() {
         _anim.SetTrigger("Ranged");
+    }
+    
+    public void RangedJump() {
+        _anim.SetTrigger("RangedJump");
     }
 
     public void Hit()
