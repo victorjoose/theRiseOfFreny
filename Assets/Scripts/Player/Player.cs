@@ -32,10 +32,12 @@ public class Player : MonoBehaviour, IDamageable {
     private bool isDead = false;
     public GameObject gameOver;
     public int Health { get; set; }
+    public int Energy { get; set; }
 
     // Start is called before the first frame update
     void Start() {
         Health = 4;
+        Energy = 100;
         rg2d = GetComponent<Rigidbody2D>();
         col2d = GetComponent<Collider2D>();
         _playerAnim = GetComponent<PlayerAnimation>();
@@ -44,8 +46,9 @@ public class Player : MonoBehaviour, IDamageable {
 
     private void FixedUpdate() {
         move = Input.GetAxisRaw("Horizontal");
-        if (isDead == false)
+        if (isDead == false){
             rg2d.velocity = new Vector2(move * _speed, rg2d.velocity.y);
+        }
     }
 
     // Update is called once per frame
