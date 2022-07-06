@@ -6,16 +6,13 @@ public class MeleeAttack : MonoBehaviour
 {
     private bool _canDamage = true;
 
-    private void OnTriggerEnter2D(Collider2D other)
-    {
+    private void OnTriggerEnter2D(Collider2D other) {
         Debug.Log("Hit: " + other.name);
 
         IDamageable hit = other.GetComponent<IDamageable>();
 
-        if (hit != null)
-        {
-            if (_canDamage == true)
-            {
+        if (hit != null) {
+            if (_canDamage) {
                 hit.Damage();
                 _canDamage = false;
                 StartCoroutine(ResetDamage());
@@ -23,8 +20,7 @@ public class MeleeAttack : MonoBehaviour
         }
     }
 
-    IEnumerator ResetDamage()
-    {
+    IEnumerator ResetDamage() {
         yield return new WaitForSeconds(1f);
         _canDamage = true;
     }

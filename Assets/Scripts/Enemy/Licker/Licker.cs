@@ -21,7 +21,7 @@ public class Licker : Enemy, IDamageable {
         anim.SetTrigger("Hit");
         isHit = true;
         anim.SetBool("InCombat", true);
-
+        
         if (Util.ShouldBeDead(Health)) {
             isDead = Util.Dies(anim, gameObject);
         }
