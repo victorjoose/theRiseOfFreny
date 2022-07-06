@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Dash : MonoBehaviour {
     private Rigidbody2D rb;
+    private Player pl;
     public float dashSpeed;
     private float dashTime;
     public float startDashTime;
@@ -11,17 +12,19 @@ public class Dash : MonoBehaviour {
 
     void Start() {
         rb = GetComponent<Rigidbody2D>();
+        pl = GetComponent<Player>();
         dashTime = startDashTime;
     }
-
-    // Update is called once per frame
+    
     void Update() {
         if (direction == 0) {
-            if (Input.GetKeyDown(KeyCode.V)) {
-                direction = 1;
-            }
-            else if (Input.GetKeyDown(KeyCode.C)) {
-                direction = 2;
+            if (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.C)) {
+                if (pl.transform.localScale.x > 0) {
+                    direction = 1;
+                }
+                else {
+                    direction = 2;
+                }    
             }
         }
         else {

@@ -21,6 +21,7 @@ public class UIManager : MonoBehaviour {
     public Image selectionImg;
     public Text coinCountHUD;
     public Image[] healthBars;
+    private bool losingHealth;
 
     private void Awake() {
         _instance = this;
@@ -36,16 +37,23 @@ public class UIManager : MonoBehaviour {
         selectionImg.rectTransform.anchoredPosition = new Vector2(xPos, yPos);
     }
 
-    public void UpdateLives(int health) {
+    public void UpdateLives(int health, bool losingHealth) {
         if (health == 0) {
             foreach (var healthBar in healthBars) {
                 healthBar.enabled = false;
             }
         }
-        for (int i = 0; i <= health; i++) {
-            if (i == health) {
-                healthBars[i].enabled = false;
-            } 
+
+        if (losingHealth) {
+            for (int i = 0; i <= health; i++) {
+                if (i == health) {
+                    healthBars[i].enabled = false;
+                } 
+            }    
+        } else {
+            for (int i = 0; i < health; i++) {
+                healthBars[i].enabled = true;
+            }  
         }
     }
 }

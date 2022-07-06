@@ -10,7 +10,7 @@ namespace Environment {
         private void OnTriggerEnter2D(Collider2D other) {
             Destroy(other.gameObject);
             if (other.CompareTag("Player")) {
-                UIManager.Instance.UpdateLives(0);
+                UIManager.Instance.UpdateLives(0, true);
                 gameOver.SetActive(true);
             }
         }

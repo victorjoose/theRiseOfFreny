@@ -31,6 +31,7 @@ public class Player : MonoBehaviour, IDamageable {
     
     private bool isDead = false;
     public GameObject gameOver;
+    public int MaxHealth = 4;
     public int Health { get; set; }
     public int Energy { get; set; }
 
@@ -125,7 +126,7 @@ public class Player : MonoBehaviour, IDamageable {
 
     IEnumerator ResetAttackRoutine() {
         _resetAttack = true;
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(1.5f);
         _resetAttack = false;
     }
 
@@ -133,7 +134,7 @@ public class Player : MonoBehaviour, IDamageable {
         if (isDead) return;
         Debug.Log("Player::Damage()");
         Health--;
-        UIManager.Instance.UpdateLives(Health);
+        UIManager.Instance.UpdateLives(Health, true);
         _playerAnim.Hit();
 
         if (Health >= 1) {
@@ -152,5 +153,14 @@ public class Player : MonoBehaviour, IDamageable {
         coins += amount;
         UIManager.Instance.UpdateCoins(coins);
     }
-    
+
+    public void PickUpItem(HealthPotion healthPotion) {
+        if (Health == MaxHealth) {
+            return;
+        }
+        Health++;
+        UIManager.Instance.UpdateLives(Health, false);
+        Destroy(healthPotion.gameObject);
+        
+    }
 }
