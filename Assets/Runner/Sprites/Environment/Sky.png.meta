@@ -171,7 +171,7 @@ TextureImporter:
       213: 3638340140742858999
     second: Sky_55
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -188,9 +188,12 @@ TextureImporter:
     externalNormalMap: 0
     heightScale: 0.25
     normalMapFilter: 0
+    flipGreenChannel: 0
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -199,9 +202,9 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: -1
-    aniso: -1
-    mipBias: -100
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -222,10 +225,15 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
   applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -237,6 +245,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -249,6 +258,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -261,6 +271,33 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
@@ -1452,9 +1489,65 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-  spritePackingTag: 
+    nameFileIdTable:
+      Sky_0: 2410671940745902572
+      Sky_1: -5034697430855179653
+      Sky_10: 7721213272108688778
+      Sky_11: -8130776206791237211
+      Sky_12: 8187388571030521137
+      Sky_13: -1769328443631771431
+      Sky_14: -5213211861093524542
+      Sky_15: 570937814000128433
+      Sky_16: 6122409206075928000
+      Sky_17: -3694822798212541651
+      Sky_18: -8653762976590664932
+      Sky_19: 7518671637283277190
+      Sky_2: -6075385143875775188
+      Sky_20: 7632937261858183746
+      Sky_21: -1138192431480094785
+      Sky_22: 7482816999835491174
+      Sky_23: -4184833242692243799
+      Sky_24: 7808414281539244805
+      Sky_25: -2600965210999029836
+      Sky_26: -3135356327089882199
+      Sky_27: -3297695050227447581
+      Sky_28: 1345183312994142487
+      Sky_29: 4373502386279829834
+      Sky_3: 7596160764380411159
+      Sky_30: 3671387545930317614
+      Sky_31: -4783310921189222968
+      Sky_32: 4887142916891281084
+      Sky_33: -2491190802983659665
+      Sky_34: -9149992233749541847
+      Sky_35: 7488151004477234879
+      Sky_36: 2702668942359503158
+      Sky_37: -3780452412604562391
+      Sky_38: -4780521869735556760
+      Sky_39: 1711557147171803828
+      Sky_4: -7551417194501898685
+      Sky_40: -671177983681469343
+      Sky_41: -7788057785460355754
+      Sky_42: 6306317093719193584
+      Sky_43: 973735619105647327
+      Sky_44: -5698758754647779145
+      Sky_45: -1029812647123337942
+      Sky_46: 3873984407080062734
+      Sky_47: 2004117297576054456
+      Sky_48: -6956654612311343641
+      Sky_49: 2736473947898321530
+      Sky_5: 827277797987302843
+      Sky_50: -5986474153586913385
+      Sky_51: 9010380617006067397
+      Sky_52: 2753145180875801355
+      Sky_53: -3918276441931901774
+      Sky_54: 8008574293675611149
+      Sky_55: 3638340140742858999
+      Sky_6: -3797368470069866874
+      Sky_7: -8230503452430015897
+      Sky_8: -1692089440758696756
+      Sky_9: 8901821185649789169
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  pSDShowRemoveMatteOption: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 

@@ -435,7 +435,7 @@ TextureImporter:
       213: -6576200959350331639
     second: Brick Details_143
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -452,10 +452,12 @@ TextureImporter:
     externalNormalMap: 0
     heightScale: 0.25
     normalMapFilter: 0
+    flipGreenChannel: 0
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
+  ignoreMipmapLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -465,8 +467,8 @@ TextureImporter:
   textureSettings:
     serializedVersion: 2
     filterMode: 0
-    aniso: -1
-    mipBias: -100
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -494,6 +496,8 @@ TextureImporter:
   textureFormatSet: 0
   ignorePngGamma: 0
   applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -505,6 +509,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -517,6 +522,33 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
@@ -3556,9 +3588,153 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-  spritePackingTag: 
+    nameFileIdTable:
+      Brick Details_0: -3678592362072317603
+      Brick Details_1: 7308567766974382995
+      Brick Details_10: 735175174364378565
+      Brick Details_100: 5949102057222070970
+      Brick Details_101: 3016241277911178902
+      Brick Details_102: -1061313336599493448
+      Brick Details_103: -2418056655005491066
+      Brick Details_104: 7827269574750327477
+      Brick Details_105: -2740586717718693322
+      Brick Details_106: -3698538506513584610
+      Brick Details_107: -1017481764413812476
+      Brick Details_108: 8703942808600239655
+      Brick Details_109: -1998849855177717493
+      Brick Details_11: 7668141903380906447
+      Brick Details_110: 6348297914841852990
+      Brick Details_111: 8011535269641717863
+      Brick Details_112: 9107866968287637094
+      Brick Details_113: 8114848896638917775
+      Brick Details_114: 1359303936665947812
+      Brick Details_115: 3976202393514154506
+      Brick Details_116: -2916034884569710598
+      Brick Details_117: 1251086955365134828
+      Brick Details_118: 1065699700664978310
+      Brick Details_119: 1933144156270129429
+      Brick Details_12: 9213554316694419528
+      Brick Details_120: -2549915410916575174
+      Brick Details_121: -5193618811602495546
+      Brick Details_122: 7426737770206192831
+      Brick Details_123: -5318835185548219464
+      Brick Details_124: -4278970884906161448
+      Brick Details_125: 4947043172992598512
+      Brick Details_126: -8545146543373739008
+      Brick Details_127: -5576593615442148533
+      Brick Details_128: 4766621755729220020
+      Brick Details_129: -6506491148216188553
+      Brick Details_13: -2377185254125535217
+      Brick Details_130: 6139704283678046771
+      Brick Details_131: 3689792263947938035
+      Brick Details_132: 6200645575354851522
+      Brick Details_133: -7441882568500216431
+      Brick Details_134: 6606864236320148796
+      Brick Details_135: 4442981393977959603
+      Brick Details_136: 392847475369654984
+      Brick Details_137: -8827386341632172519
+      Brick Details_138: 889627566506199856
+      Brick Details_139: -679874406671981968
+      Brick Details_14: -2340419090533547421
+      Brick Details_140: -8457974084355812044
+      Brick Details_141: 5022792829424634997
+      Brick Details_142: 8182053281708671939
+      Brick Details_143: -6576200959350331639
+      Brick Details_15: -7404562401817921685
+      Brick Details_16: 6536737415242676087
+      Brick Details_17: 6222690594353639516
+      Brick Details_18: 3099225629528983148
+      Brick Details_19: 8431266755726192104
+      Brick Details_2: 166071656724542989
+      Brick Details_20: -8376910503966032369
+      Brick Details_21: -2658014956670363937
+      Brick Details_22: -8511443491541425437
+      Brick Details_23: 391643576035059982
+      Brick Details_24: -4401796665826162046
+      Brick Details_25: 5327145570266821843
+      Brick Details_26: 2124214866295171706
+      Brick Details_27: 1492166012595730478
+      Brick Details_28: 9152530993110327462
+      Brick Details_29: 314761130186898059
+      Brick Details_3: 1898137932805666063
+      Brick Details_30: 6563678074695387809
+      Brick Details_31: -5819382133812471202
+      Brick Details_32: 899434760759350606
+      Brick Details_33: 3265483132909070781
+      Brick Details_34: -3504829694602059645
+      Brick Details_35: 3826316265538168483
+      Brick Details_36: -6110378481904573002
+      Brick Details_37: -553188223634094502
+      Brick Details_38: 5624594056022972489
+      Brick Details_39: 1751449670550354351
+      Brick Details_4: -4380119991378948755
+      Brick Details_40: 9143234244521687403
+      Brick Details_41: 4075118259026845347
+      Brick Details_42: 2235104969008363207
+      Brick Details_43: -5154724458016595160
+      Brick Details_44: 4989861890466563333
+      Brick Details_45: 7200640854867045587
+      Brick Details_46: 8944381582900117334
+      Brick Details_47: 5515890380185928589
+      Brick Details_48: 7722673514710003311
+      Brick Details_49: -4636559268801452007
+      Brick Details_5: 496016202696679536
+      Brick Details_50: 7516048100374563711
+      Brick Details_51: 3551937306515562194
+      Brick Details_52: -8698649164421326255
+      Brick Details_53: -4029718050548155290
+      Brick Details_54: -3242060379858783662
+      Brick Details_55: 8884904353159783771
+      Brick Details_56: 1678582632274624714
+      Brick Details_57: -5702949768708404864
+      Brick Details_58: -8855748699726342235
+      Brick Details_59: 2517649763073588212
+      Brick Details_6: 5741774163405372007
+      Brick Details_60: -7058139787136885207
+      Brick Details_61: 3280008376960412612
+      Brick Details_62: 3161535480431975659
+      Brick Details_63: 4277008961951087358
+      Brick Details_64: -1718763635947730639
+      Brick Details_65: 2931834091589540225
+      Brick Details_66: 7512209929846307566
+      Brick Details_67: 4322059962198514715
+      Brick Details_68: -4569362166133806551
+      Brick Details_69: -4448490976299630851
+      Brick Details_7: -4207297435959616939
+      Brick Details_70: -3269681197089945928
+      Brick Details_71: 7907711062945297401
+      Brick Details_72: -73800157606084409
+      Brick Details_73: -2155774497800199831
+      Brick Details_74: 8169206081021985060
+      Brick Details_75: 336687638865041093
+      Brick Details_76: -563402907421380650
+      Brick Details_77: -8376574238738396403
+      Brick Details_78: -4216219615680397575
+      Brick Details_79: -2975324722769545026
+      Brick Details_8: 7103580561411770562
+      Brick Details_80: -2096618476442181398
+      Brick Details_81: -6439976363625078566
+      Brick Details_82: -9177794924200862499
+      Brick Details_83: 4961024248669812588
+      Brick Details_84: 5934615152457578698
+      Brick Details_85: -6151587048633677604
+      Brick Details_86: 4565505382714910064
+      Brick Details_87: 9037965253816900031
+      Brick Details_88: 8344709829623953279
+      Brick Details_89: -7082180734120771761
+      Brick Details_9: -2103340454003615509
+      Brick Details_90: -3018743074366166157
+      Brick Details_91: -975013958429091769
+      Brick Details_92: -1559702151759737732
+      Brick Details_93: 8660448115401807474
+      Brick Details_94: -7118885171560872199
+      Brick Details_95: -3911339451721838738
+      Brick Details_96: 4878144304028330704
+      Brick Details_97: 6543730354263221641
+      Brick Details_98: 6316975975610154471
+      Brick Details_99: 1773983343592605839
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  pSDShowRemoveMatteOption: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
