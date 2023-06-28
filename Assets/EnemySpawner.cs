@@ -24,9 +24,7 @@ public class EnemySpawner : MonoBehaviour
         GameObject enemyToSpawn = enemyPrefab;
 
         Enemy enemy = enemyToSpawn.GetComponent<Enemy>();
-        if (enemy.needsPatrol) {
-            AssignPatrol(enemy);
-        }
+        AssignPatrol(enemy);
 
         Vector2 spawnPos = new Vector2(Random.Range(transform.position.x - x1SpawnOffset, transform.position.x + x2SpawnOffset), transform.position.y);
         Instantiate(enemyToSpawn, spawnPos, Quaternion.identity);
