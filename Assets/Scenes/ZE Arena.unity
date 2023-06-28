@@ -9597,6 +9597,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_TagString
+      value: Spawner
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -10336,7 +10341,7 @@ PrefabInstance:
     - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: m_TagString
-      value: Licker
+      value: Spawner
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -13196,7 +13201,7 @@ PrefabInstance:
     - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: m_TagString
-      value: Golem
+      value: Spawner
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -23104,7 +23109,7 @@ PrefabInstance:
     - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: m_TagString
-      value: Golem
+      value: Spawner
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
