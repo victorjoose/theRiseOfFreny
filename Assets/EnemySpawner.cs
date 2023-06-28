@@ -20,8 +20,11 @@ public class EnemySpawner : MonoBehaviour
 
    private IEnumerator Spawner () {
     WaitForSeconds wait = new WaitForSeconds(spawnRate);
+    while (canSpawn) {
+        if (countEnemies >= maxEnemies) {
+            yield return wait;
+        } else {
 
-    while (canSpawn && countEnemies < maxEnemies ) {
         yield return wait;
         GameObject enemyToSpawn = enemyPrefab;
 
@@ -31,6 +34,7 @@ public class EnemySpawner : MonoBehaviour
         Vector2 spawnPos = new Vector2(UnityEngine.Random.Range(transform.position.x - x1SpawnOffset, transform.position.x + x2SpawnOffset), transform.position.y);
         Instantiate(enemyToSpawn, spawnPos, Quaternion.identity);
         countEnemies++;
+        }
     }
    }
 
