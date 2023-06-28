@@ -6,7 +6,7 @@ using Utility;
 public class Golem : Enemy, IDamageable
 {
     public int Health { get; set; }
-
+    public bool needsPatrol = true;
     //Use for initialize
     public override void Init()
     {

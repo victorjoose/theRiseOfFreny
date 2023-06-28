@@ -5,6 +5,7 @@ using Utility;
 
 public class Licker : Enemy, IDamageable {
     public int Health { get; set; }
+    public bool needsPatrol = true;
 
     public override void Init() {
         base.Init();

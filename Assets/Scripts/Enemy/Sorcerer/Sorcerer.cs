@@ -7,6 +7,7 @@ public class Sorcerer : Enemy, IDamageable {
     public GameObject hexballEffectPrefab;
     private Transform SorcererCastPosition;
     public int Health { get; set; }
+    public bool needsPatrol = false;
 
     void Start() {
         base.Init();

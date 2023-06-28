@@ -5,6 +5,7 @@ using Utility;
 
 public class Bug : Enemy, IDamageable {
     public int Health { get; set; }
+    public bool needsPatrol = true;
 
     //Use for initialize
     public override void Init() {

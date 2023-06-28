@@ -13,9 +13,9 @@ public abstract class Enemy : MonoBehaviour
     [SerializeField]
     protected int coins;
     [SerializeField]
-    protected Transform pointA, pointB;
+    public Transform pointA, pointB;
 
-    protected Vector3 currentTarget;
+    public Vector3 currentTarget;
     protected Animator anim;
     protected SpriteRenderer sprite;
     protected bool isDead = false;
