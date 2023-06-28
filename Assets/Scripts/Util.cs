@@ -27,6 +27,9 @@ namespace Utility {
 
         public static Boolean Dies(Animator anim, GameObject gameObject) {
             anim.SetTrigger("Death");
+            Enemy enemy = gameObject.GetComponent<Enemy>();
+            updateSpawnerCountEnemies(enemy, false)
+            Debug.Log("UUID" + enemy.spawnerUuid);
             Object.Destroy(gameObject, 3f);
             return true;
         }
@@ -44,6 +47,23 @@ namespace Utility {
 
         public static void Flip(bool faceRight, Transform transform) {
             transform.localScale = faceRight ? new Vector3(1, 1, 1) : new Vector3(-1, 1, 1);
+        }
+
+        public static void updateSpawnerCountEnemies(Enemy enemy, bool add) {
+            GameObject[] spawners = GameObject.FindGameObjectsWithTag("spawner");
+            if (!add) {
+                foreach (GameObject spawner in spawners){
+                    if (spawner.uuid == enemy.spawnerUuid) {
+                        spawner.countEnemies--;
+                    }
+                }
+            } else {
+               foreach (GameObject spawner in spawners){
+                    if (spawner.uuid == enemy.spawnerUuid) {
+                        spawner.countEnemies++;
+                    }
+                } 
+            }
         }
 
         // public static Transform FreezePlayer(bool freeze, Transform transform) {
