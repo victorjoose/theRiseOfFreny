@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4379816701346619240}
   m_Layer: 0
   m_Name: Spawner
-  m_TagString: Sorcerer
+  m_TagString: Spawner
   m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -48,3 +48,7 @@ MonoBehaviour:
   spawnRate: 6
   canSpawn: 1
   maxEnemies: 1
+  x1SpawnOffset: 0
+  x2SpawnOffset: 0
+  countEnemies: 0
+  uuid: 
