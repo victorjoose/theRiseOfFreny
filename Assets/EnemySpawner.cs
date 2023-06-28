@@ -9,7 +9,7 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private int maxEnemies = 1;
     [SerializeField] private float x1SpawnOffset = 0f;
     [SerializeField] private float x2SpawnOffset = 0f;
-    [SerializeField] int countEnemies = 0;
+    [SerializeField] public int countEnemies = 0;
     public string uuid;
     // Start is called before the first frame update
     void Start()

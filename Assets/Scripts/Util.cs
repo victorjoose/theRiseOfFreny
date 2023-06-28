@@ -28,7 +28,7 @@ namespace Utility {
         public static Boolean Dies(Animator anim, GameObject gameObject) {
             anim.SetTrigger("Death");
             Enemy enemy = gameObject.GetComponent<Enemy>();
-            updateSpawnerCountEnemies(enemy, false)
+            updateSpawnerCountEnemies(enemy, false);
             Debug.Log("UUID" + enemy.spawnerUuid);
             Object.Destroy(gameObject, 3f);
             return true;
@@ -50,15 +50,17 @@ namespace Utility {
         }
 
         public static void updateSpawnerCountEnemies(Enemy enemy, bool add) {
-            GameObject[] spawners = GameObject.FindGameObjectsWithTag("spawner");
+            GameObject[] spawners = GameObject.FindGameObjectsWithTag("Spawner");
             if (!add) {
-                foreach (GameObject spawner in spawners){
+                foreach (GameObject spawnerObj in spawners){
+                    EnemySpawner spawner = spawnerObj.GetComponent<EnemySpawner>();
                     if (spawner.uuid == enemy.spawnerUuid) {
                         spawner.countEnemies--;
                     }
                 }
             } else {
-               foreach (GameObject spawner in spawners){
+               foreach (GameObject spawnerObj in spawners){
+                EnemySpawner spawner = spawnerObj.GetComponent<EnemySpawner>();
                     if (spawner.uuid == enemy.spawnerUuid) {
                         spawner.countEnemies++;
                     }
