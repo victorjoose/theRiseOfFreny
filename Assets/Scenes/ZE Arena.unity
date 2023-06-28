@@ -9595,7 +9595,7 @@ PrefabInstance:
     - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -10234,6 +10234,115 @@ MonoBehaviour:
   - {x: 0.5, y: -0.5, z: 0}
   - {x: 0.5, y: 0.5, z: 0}
   - {x: -0.5, y: 0.5, z: 0}
+--- !u!1001 &1017581085
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: spawnRate
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: maxEnemies
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: enemyPrefab
+      value: 
+      objectReference: {fileID: 332949994701094415, guid: c46c49e424834b74baa7cd1d50995add,
+        type: 3}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: x1SpawnOffset
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: x2SpawnOffset
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 29.964737
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 9.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_Name
+      value: LickerSpawner
+      objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_TagString
+      value: Licker
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 4090a9dd686bf2840bb016e446e7ae8c, type: 3}
 --- !u!1001 &1030936542
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12995,8 +13104,13 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
+      propertyPath: spawnRate
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
       propertyPath: maxEnemies
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
@@ -13017,7 +13131,7 @@ PrefabInstance:
     - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: m_RootOrder
-      value: 11
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
@@ -13027,7 +13141,7 @@ PrefabInstance:
     - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 9.38
+      value: 9.01
       objectReference: {fileID: 0}
     - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
@@ -13073,6 +13187,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: GolemSpawner
+      objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_TagString
+      value: Golem
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -22883,6 +23007,110 @@ CompositeCollider2D:
   m_OffsetDistance: 0.00005
   m_UseDelaunayMesh: 0
   m_CompositeGameObject: {fileID: 1734908409}
+--- !u!1001 &1803410606
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: spawnRate
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: maxEnemies
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: enemyPrefab
+      value: 
+      objectReference: {fileID: 6496106852740584793, guid: 49496e0f74af48345867a62b81c12758,
+        type: 3}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: x1SpawnOffset
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: x2SpawnOffset
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 22.99
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 15.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_Name
+      value: GolemSpawner (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7722638760298632587, guid: 4090a9dd686bf2840bb016e446e7ae8c,
+        type: 3}
+      propertyPath: m_TagString
+      value: Golem
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 4090a9dd686bf2840bb016e446e7ae8c, type: 3}
 --- !u!1001 &1804916820
 PrefabInstance:
   m_ObjectHideFlags: 0
