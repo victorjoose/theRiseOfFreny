@@ -24,6 +24,7 @@ public abstract class Enemy : MonoBehaviour
     protected float distance;
     protected Transform player_t;
     protected Player player;
+    public string spawnerUuid;
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
