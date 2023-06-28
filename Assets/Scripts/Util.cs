@@ -29,7 +29,6 @@ namespace Utility {
             anim.SetTrigger("Death");
             Enemy enemy = gameObject.GetComponent<Enemy>();
             updateSpawnerCountEnemies(enemy, false);
-            Debug.Log("UUID" + enemy.spawnerUuid);
             Object.Destroy(gameObject, 3f);
             return true;
         }
