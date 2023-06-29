@@ -219,6 +219,9 @@ MonoBehaviour:
   coins: 1
   pointA: {fileID: 0}
   pointB: {fileID: 0}
+  scoreToAdd: 350
+  currentTarget: {x: 0, y: 0, z: 0}
+  spawnerUuid: 
   hexballEffectPrefab: {fileID: 8130485229399331639, guid: 302bd1357e57762409bde635aedd8c2f,
     type: 3}
 --- !u!1 &5551851121951494547
