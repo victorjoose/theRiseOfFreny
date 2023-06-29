@@ -20,6 +20,7 @@ public class UIManager : MonoBehaviour {
     public Text coinCountShop;
     public Image selectionImg;
     public Text coinCountHUD;
+    public Text scoreCountHUD;
     public Image[] healthBars;
     private bool losingHealth;
 
@@ -31,6 +32,14 @@ public class UIManager : MonoBehaviour {
     public void UpdateCoins(int coinCount) {
         coinCountHUD.text = coinCount.ToString();
         coinCountShop.text = coinCount.ToString();
+    }
+
+    public void UpdateScore(int newScore, bool add) {
+        if (add) {
+            scoreCountHUD.text = (int.Parse(scoreCountHUD.text) + newScore).ToString();
+        } else {
+            scoreCountHUD.text = (int.Parse(scoreCountHUD.text) - newScore).ToString();
+        }
     }
 
     public void UpdateShopSelection(int xPos, int yPos) {

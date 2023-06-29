@@ -14,6 +14,8 @@ public abstract class Enemy : MonoBehaviour
     protected int coins;
     [SerializeField]
     public Transform pointA, pointB;
+    [SerializeField]
+    public int scoreToAdd;
 
     public Vector3 currentTarget;
     protected Animator anim;

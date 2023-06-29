@@ -53,7 +53,9 @@ MonoBehaviour:
   coins: 0
   pointA: {fileID: 0}
   pointB: {fileID: 0}
+  scoreToAdd: 500
   currentTarget: {x: 25.964737, y: 9.2, z: 0}
+  spawnerUuid: 
 --- !u!61 &619916628549707728
 BoxCollider2D:
   m_ObjectHideFlags: 0

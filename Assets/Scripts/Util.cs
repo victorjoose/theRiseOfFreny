@@ -29,6 +29,7 @@ namespace Utility {
             anim.SetTrigger("Death");
             Enemy enemy = gameObject.GetComponent<Enemy>();
             updateSpawnerCountEnemies(enemy, false);
+            UIManager.Instance.UpdateScore(enemy.scoreToAdd, true);
             Object.Destroy(gameObject, 3f);
             return true;
         }
