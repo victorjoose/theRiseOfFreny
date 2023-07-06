@@ -12,6 +12,7 @@ public class ComboManager : MonoBehaviour
     private Text comboText;
     private float combo = 1.0f;
     private Color originalColor;
+    private Coroutine mainCoroutine;
 
     // Start is called before the first frame update
     void Start()
@@ -48,11 +49,11 @@ public class ComboManager : MonoBehaviour
 
 
     public void RestartBlinkingRoutine() {
-        if (timeRemaining > 0) {
-            StopCoroutine(BlinkText());
+        if (mainCoroutine != null) {
+            StopCoroutine(mainCoroutine);
         }
         timeRemaining = totalTime;
-        StartCoroutine(BlinkText());
+        mainCoroutine = StartCoroutine(BlinkText());
     }
 
     public void HandleComboManager() {
