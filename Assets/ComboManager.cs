@@ -7,23 +7,25 @@ using UnityEngine.UI;
 public class ComboManager : MonoBehaviour
 {
 
-    public float totalTime = 60f;
+    public float totalTime = 10f;
     private float timeRemaining;
     private Text comboText;
     private float combo = 1.0f;
     private Color originalColor;
+    private float blinkInterval = 0.5f;
+
     // Start is called before the first frame update
     void Start()
     {
         timeRemaining = totalTime;
         comboText = GetComponent<Text>();
         originalColor = comboText.color;
+        StartCoroutine(BlinkText());
     }
 
     // Update is called once per frame
     void Update()
     {
-        StartCoroutine(BlinkText());
         timeRemaining -= Time.deltaTime;
 
         if (timeRemaining <= 0) {
@@ -35,20 +37,22 @@ public class ComboManager : MonoBehaviour
 
 
     IEnumerator BlinkText() {
-        while (timeRemaining > 0)
-        {
-            // Calculate the alpha value based on the remaining time
-            float alpha = Mathf.Lerp(0.2f, 1f, timeRemaining / totalTime);
+    while (timeRemaining > 0)
+    {
+        comboText.enabled = !comboText.enabled;
 
-            // Apply the modified color to the text component
-            comboText.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
+        // Wait for the specified blink interval
+        // yield return new WaitForSeconds(blinkInterval);
 
-            // Adjust the blinking speed based on the remaining time
-            float blinkSpeed = Mathf.Lerp(0.5f, 0.1f, timeRemaining / totalTime);
+        // Adjust the blinking speed based on the remaining time
+        float blinkSpeed = Mathf.Lerp(.1f, 1.1f, timeRemaining / totalTime);
 
-            yield return new WaitForSeconds(blinkSpeed);
-        }
+        yield return new WaitForSeconds(blinkSpeed);
     }
+
+    comboText.enabled = true; // Ensure the text is visible when the countdown ends
+    }
+
 
 
     public float GetCombo() {
