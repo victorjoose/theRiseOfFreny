@@ -7,12 +7,11 @@ using UnityEngine.UI;
 public class ComboManager : MonoBehaviour
 {
 
-    public float totalTime = 10f;
+    public float totalTime;
     private float timeRemaining;
     private Text comboText;
     private float combo = 1.0f;
     private Color originalColor;
-    private float blinkInterval = 0.5f;
 
     // Start is called before the first frame update
     void Start()
@@ -31,7 +30,7 @@ public class ComboManager : MonoBehaviour
         if (timeRemaining <= 0) {
             combo = 1.0f;
         } else {
-            comboText.text = combo.ToString("0.0", CultureInfo.InvariantCulture);
+            comboText.text = combo.ToString("0.0", CultureInfo.InvariantCulture) + "x";
         }
     }
 
@@ -41,11 +40,8 @@ public class ComboManager : MonoBehaviour
     {
         comboText.enabled = !comboText.enabled;
 
-        // Wait for the specified blink interval
-        // yield return new WaitForSeconds(blinkInterval);
-
         // Adjust the blinking speed based on the remaining time
-        float blinkSpeed = Mathf.Lerp(.1f, 1.1f, timeRemaining / totalTime);
+        float blinkSpeed = Mathf.Lerp(.01f, 0.8f, timeRemaining / totalTime);
 
         yield return new WaitForSeconds(blinkSpeed);
     }
