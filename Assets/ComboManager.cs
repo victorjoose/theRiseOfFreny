@@ -10,7 +10,7 @@ public class ComboManager : MonoBehaviour
     public float totalTime;
     private float timeRemaining;
     private Text comboText;
-    private float combo = 3.0f;
+    private float combo = 1.0f;
     private Color originalColor;
 
     // Start is called before the first frame update
@@ -19,13 +19,14 @@ public class ComboManager : MonoBehaviour
         timeRemaining = totalTime;
         comboText = GetComponent<Text>();
         originalColor = comboText.color;
-        StartBlinkingRoutine();
+        // RestartBlinkingRoutine();
         UpdateComboText();
     }
 
     // Update is called once per frame
     void Update()
     {
+        UpdateComboText();
         timeRemaining -= Time.deltaTime;
     }
 
@@ -46,10 +47,18 @@ public class ComboManager : MonoBehaviour
     }
 
 
-    public void StartBlinkingRoutine() {
+    public void RestartBlinkingRoutine() {
+        if (timeRemaining > 0) {
+            StopCoroutine(BlinkText());
+        }
+        timeRemaining = totalTime;
         StartCoroutine(BlinkText());
     }
 
+    public void HandleComboManager() {
+        SetCombo(combo += 0.1f);
+        RestartBlinkingRoutine();
+    }
     public void UpdateComboText() {
         if (timeRemaining <= 0) {
             combo = 1.0f;   

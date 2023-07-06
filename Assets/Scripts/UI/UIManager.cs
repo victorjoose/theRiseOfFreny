@@ -65,4 +65,9 @@ public class UIManager : MonoBehaviour {
             }  
         }
     }
+
+    public void HandleComboManager() {
+        ComboManager comboManager = FindObjectOfType<ComboManager>();
+        comboManager.HandleComboManager();
+    }
 }
