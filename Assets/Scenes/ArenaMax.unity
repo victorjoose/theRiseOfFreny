@@ -11445,7 +11445,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 0.8
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 1.15
@@ -11470,7 +11470,7 @@ MonoBehaviour:
     type: 3}
   playerRevolverShootPosition: {fileID: 1582903084}
   coins: 0
-  _speed: 3
+  _speed: 4
   jumpForce: 7.1
   fallMultiplier: 2
   lowJumpMultiplier: 5
@@ -11481,6 +11481,7 @@ MonoBehaviour:
     m_Bits: 256
   isJumping: 0
   gameOver: {fileID: 999520620}
+  MaxHealth: 4
 --- !u!4 &1285599582
 Transform:
   m_ObjectHideFlags: 0
