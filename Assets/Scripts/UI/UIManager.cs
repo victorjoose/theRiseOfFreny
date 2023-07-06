@@ -34,7 +34,7 @@ public class UIManager : MonoBehaviour {
         coinCountShop.text = coinCount.ToString();
     }
 
-    public void UpdateScore(int newScore, bool add) {
+    public void UpdateScore(float newScore, bool add) {
         if (add) {
             scoreCountHUD.text = (int.Parse(scoreCountHUD.text) + newScore).ToString();
         } else {
@@ -64,5 +64,11 @@ public class UIManager : MonoBehaviour {
                 healthBars[i].enabled = true;
             }  
         }
+    }
+
+    public void HandleComboManager(Enemy enemy) {
+        ComboManager comboManager = FindObjectOfType<ComboManager>();
+        UpdateScore(enemy.scoreToAdd * comboManager.GetCombo(), true); // todo -> each enemy = combo multiplier
+        comboManager.HandleComboManager();
     }
 }
