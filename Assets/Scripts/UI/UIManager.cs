@@ -68,7 +68,7 @@ public class UIManager : MonoBehaviour {
 
     public void HandleComboManager(Enemy enemy) {
         ComboManager comboManager = FindObjectOfType<ComboManager>();
-        UpdateScore(enemy.scoreToAdd * comboManager.GetCombo(), true);
+        UpdateScore(enemy.scoreToAdd * comboManager.GetCombo(), true); // todo -> each enemy = combo multiplier
         comboManager.HandleComboManager();
     }
 }
