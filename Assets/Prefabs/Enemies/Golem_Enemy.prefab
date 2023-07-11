@@ -172,8 +172,10 @@ MonoBehaviour:
   pointA: {fileID: 0}
   pointB: {fileID: 0}
   scoreToAdd: 200
-  currentTarget: {x: 0, y: 0, z: 0}
-  spawnerUuid: 
+  currentTarget: {x: 20.758165, y: 9.01, z: 0}
+  spawnerUuid: 471ab0aa-8159-4c5b-ad87-15a7497f04f2
+  radius: 10
+  attackDistance: 5
 --- !u!61 &3905875800013260842
 BoxCollider2D:
   m_ObjectHideFlags: 0

@@ -27,6 +27,9 @@ public abstract class Enemy : MonoBehaviour
     protected Transform player_t;
     protected Player player;
     public string spawnerUuid;
+    public float radius;
+    public float attackDistance;
+    private bool isPlayerInRange = false;
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
@@ -46,6 +49,21 @@ public abstract class Enemy : MonoBehaviour
 
         if (player_t) {
             distance = Vector2.Distance(transform.localPosition, player_t.transform.localPosition);
+
+            if (distance <= radius) {
+                if (!isPlayerInRange) {
+                    // enters the radius
+                    Debug.Log("in range");
+                    isPlayerInRange = true;
+                    AttackMode();
+                }
+            } else {
+                if (isPlayerInRange) {
+                    Debug.Log("out of range");
+                    isPlayerInRange = false;
+                    ResetAttackMode();
+                }
+            }
         }
         
         if (isDead == false){
@@ -96,4 +114,25 @@ public abstract class Enemy : MonoBehaviour
         transform.position = Vector2.MoveTowards(transform.position, currentTarget, speed * Time.deltaTime);
     }
     
+
+    private void AttackMode()
+    {
+        // Code to trigger the enemy's attacking behavior
+        if (distance <= attackDistance)
+        {
+            // Enemy is close enough to attack the player
+            Debug.Log("Attacking the player!");
+        }
+        else
+        {
+            // Enemy is within the radius but not close enough to attack yet
+            Debug.Log("Approaching the player!");
+        }
+    }
+
+    private void ResetAttackMode()
+    {
+        // Code to reset the enemy's attacking behavior
+        Debug.Log("Exiting attack mode!");
+    }
 }
