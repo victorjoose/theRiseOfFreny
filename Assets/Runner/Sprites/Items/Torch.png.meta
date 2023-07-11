@@ -42,7 +42,7 @@ TextureImporter:
       213: 6731476812257139367
     second: Torch_4
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -59,9 +59,12 @@ TextureImporter:
     externalNormalMap: 0
     heightScale: 0.25
     normalMapFilter: 0
+    flipGreenChannel: 0
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -70,9 +73,9 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: -1
-    aniso: -1
-    mipBias: -100
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -93,10 +96,15 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
   applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -108,6 +116,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -120,6 +129,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -132,6 +142,33 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
@@ -153,7 +190,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 8ad5c379112b72b20800000000000000
-      internalID: 3109649856344120744
+      internalID: -8553596595128423742
       vertices: []
       indices: 
       edges: []
@@ -174,7 +211,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: eb4c341a674d1a2c0800000000000000
-      internalID: -4422019753124313922
+      internalID: 330400763883709057
       vertices: []
       indices: 
       edges: []
@@ -195,7 +232,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: e6b15de1ae9d0b950800000000000000
-      internalID: 6462905064839519086
+      internalID: 6950709768184568528
       vertices: []
       indices: 
       edges: []
@@ -216,7 +253,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 24074105fbe945a00800000000000000
-      internalID: 744394382942433346
+      internalID: 837017221450738011
       vertices: []
       indices: 
       edges: []
@@ -237,7 +274,7 @@ TextureImporter:
       tessellationDetail: 0
       bones: []
       spriteID: 7aa9d50fe720b6d50800000000000000
-      internalID: 6731476812257139367
+      internalID: 9103131428984308761
       vertices: []
       indices: 
       edges: []
@@ -252,9 +289,14 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-  spritePackingTag: 
+    nameFileIdTable:
+      Torch_0: -8553596595128423742
+      Torch_1: 330400763883709057
+      Torch_2: 6950709768184568528
+      Torch_3: 837017221450738011
+      Torch_4: 9103131428984308761
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  pSDShowRemoveMatteOption: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 

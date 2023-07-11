@@ -8,6 +8,13 @@ TagManager:
   - RevolverShootPosition
   - Obstacle
   - Death
+  - Enemy
+  - Sorcerer
+  - Bat
+  - Bug
+  - Golem
+  - Licker
+  - Spawner
   layers:
   - Default
   - TransparentFX

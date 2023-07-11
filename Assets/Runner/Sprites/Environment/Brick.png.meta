@@ -159,7 +159,7 @@ TextureImporter:
       213: -3597827416868579230
     second: Brick_51
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -176,9 +176,12 @@ TextureImporter:
     externalNormalMap: 0
     heightScale: 0.25
     normalMapFilter: 0
+    flipGreenChannel: 0
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -187,9 +190,9 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: -1
-    aniso: -1
-    mipBias: -100
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -210,10 +213,15 @@ TextureImporter:
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
   maxTextureSizeSet: 0
   compressionQualitySet: 0
   textureFormatSet: 0
+  ignorePngGamma: 0
   applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -225,6 +233,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -237,6 +246,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -249,6 +259,33 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
@@ -1356,9 +1393,61 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-  spritePackingTag: 
+    nameFileIdTable:
+      Brick_0: 8222420645925065664
+      Brick_1: 1180218034697511613
+      Brick_10: -6860595462371394332
+      Brick_11: -5591235314580680944
+      Brick_12: 3711770960237754144
+      Brick_13: -4055467666734505748
+      Brick_14: -7022125060399405652
+      Brick_15: 3130251694247050053
+      Brick_16: -309671384196589503
+      Brick_17: 161135081617245664
+      Brick_18: 1464968176121629196
+      Brick_19: 7383390045121525407
+      Brick_2: -2757276833463146388
+      Brick_20: -4491823027979920650
+      Brick_21: -1533042506034398607
+      Brick_22: -7571008977004446396
+      Brick_23: -4266509921616288098
+      Brick_24: -8321878237940075872
+      Brick_25: -6359536944156097122
+      Brick_26: 233107299661388488
+      Brick_27: -6448054184376802884
+      Brick_28: 1979154265000475460
+      Brick_29: 1574836731089477266
+      Brick_3: -344574849121793817
+      Brick_30: 8672938079327485939
+      Brick_31: 3058777114036104016
+      Brick_32: 3923406928091423784
+      Brick_33: 5347225250109458531
+      Brick_34: 8246411898293730375
+      Brick_35: 8595927503222279644
+      Brick_36: -2774792746286320401
+      Brick_37: 5074715510005152218
+      Brick_38: -3506533342226087
+      Brick_39: 4383161871437969279
+      Brick_4: -4447384419574149068
+      Brick_40: 872873505278446791
+      Brick_41: 8112030135757198654
+      Brick_42: 4939234363207359234
+      Brick_43: 8350166739300424188
+      Brick_44: 5418170083548791411
+      Brick_45: -1626864823864121373
+      Brick_46: 7501124924156208223
+      Brick_47: -6692321427310320972
+      Brick_48: 4077981838457483007
+      Brick_49: -2189774696552731544
+      Brick_5: 5250404372118099169
+      Brick_50: -2738520729422389524
+      Brick_51: -3597827416868579230
+      Brick_6: 819581807205930985
+      Brick_7: -1163464561800054771
+      Brick_8: 8120797449598385850
+      Brick_9: -1715124594871698092
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  pSDShowRemoveMatteOption: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 

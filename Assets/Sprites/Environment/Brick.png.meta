@@ -594,7 +594,7 @@ TextureImporter:
       213: -789404454300464635
     second: Brick_196
   externalObjects: {}
-  serializedVersion: 11
+  serializedVersion: 12
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
@@ -611,10 +611,12 @@ TextureImporter:
     externalNormalMap: 0
     heightScale: 0.25
     normalMapFilter: 0
+    flipGreenChannel: 0
   isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
+  ignoreMipmapLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -624,8 +626,8 @@ TextureImporter:
   textureSettings:
     serializedVersion: 2
     filterMode: 0
-    aniso: -1
-    mipBias: -100
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -653,6 +655,8 @@ TextureImporter:
   textureFormatSet: 0
   ignorePngGamma: 0
   applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 1
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -664,6 +668,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -676,6 +681,7 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
@@ -688,6 +694,33 @@ TextureImporter:
     crunchedCompression: 0
     allowsAlphaSplitting: 0
     overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
@@ -4840,9 +4873,206 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-  spritePackingTag: 
+    nameFileIdTable:
+      Brick_0: 8222420645925065664
+      Brick_1: 1180218034697511613
+      Brick_10: -6860595462371394332
+      Brick_100: 8326650122442137721
+      Brick_101: -5223510778453509721
+      Brick_102: -441839478854927251
+      Brick_103: 1878594743353747397
+      Brick_104: 4747817839253168695
+      Brick_105: 6456109836202998408
+      Brick_106: -5069108371828234634
+      Brick_107: 6149895256096825485
+      Brick_108: 3021470845525916678
+      Brick_109: -6518404247269636938
+      Brick_11: -5591235314580680944
+      Brick_110: 6997151685333568078
+      Brick_111: 70053997185337866
+      Brick_112: -325054284087997695
+      Brick_113: 7032846736602517503
+      Brick_114: -3155443302561380344
+      Brick_115: -8986119347664400643
+      Brick_116: -1224731241189529039
+      Brick_117: -9202029277954909727
+      Brick_118: -6928875568727486082
+      Brick_119: 1257043685906616998
+      Brick_12: 3711770960237754144
+      Brick_120: 3462674055154235135
+      Brick_121: 2235083899958927325
+      Brick_122: -1098559347872869514
+      Brick_123: -6261060385841399535
+      Brick_124: 674929277596572090
+      Brick_125: -8278652786482603786
+      Brick_126: 3370573150569071990
+      Brick_127: -1434435200735006172
+      Brick_128: -1924204090885417193
+      Brick_129: -7965252458259824418
+      Brick_13: -4055467666734505748
+      Brick_130: 1946479338976068922
+      Brick_131: -7715579058515285595
+      Brick_132: -247731298304902943
+      Brick_133: -7632880455970111742
+      Brick_134: -4553293329543132978
+      Brick_135: 3593255279512766822
+      Brick_136: -7006809669993235715
+      Brick_137: -2116473055069968214
+      Brick_138: 3977674269739571598
+      Brick_139: -6708237631403083204
+      Brick_14: -7022125060399405652
+      Brick_140: 7839431891370646223
+      Brick_141: -4839763803033904372
+      Brick_142: 2859387714299698766
+      Brick_143: -7789900308579433083
+      Brick_144: 3755528482459279075
+      Brick_145: -4895386796766010089
+      Brick_146: 1606215603766731846
+      Brick_147: 6509573956252461507
+      Brick_148: -8291530780492675118
+      Brick_149: -9178579181722712700
+      Brick_15: 3130251694247050053
+      Brick_150: 39486911001893398
+      Brick_151: 1142078932210126376
+      Brick_152: -8619455816754424958
+      Brick_153: -2373788954778413871
+      Brick_154: 6013742278226592872
+      Brick_155: -5500696073940256156
+      Brick_156: 1645992459502598477
+      Brick_157: 6321738143299975431
+      Brick_158: -7204296998016315719
+      Brick_159: 6891463661302167519
+      Brick_16: -309671384196589503
+      Brick_160: -1617520502087194654
+      Brick_161: -947042172576225222
+      Brick_162: -179183712514564398
+      Brick_163: -946413601639047599
+      Brick_164: -4823469368536872983
+      Brick_165: -4589280082915904411
+      Brick_166: 4599829437024512899
+      Brick_167: 3548495462507939818
+      Brick_168: 7612312021194420814
+      Brick_169: -4068879151687908332
+      Brick_17: 161135081617245664
+      Brick_170: -5025611654044382051
+      Brick_171: -8202111441773249439
+      Brick_172: -5371382835352450624
+      Brick_173: 4755677349053047265
+      Brick_174: -3793776293892266751
+      Brick_175: 1362605247481448587
+      Brick_176: -4566701258786563984
+      Brick_177: -2083686492134004150
+      Brick_178: -7551648145412065854
+      Brick_179: -799384180141145772
+      Brick_18: 1464968176121629196
+      Brick_180: -6414657599326041397
+      Brick_181: 3900115368786187239
+      Brick_182: 8916999069560266007
+      Brick_183: -3929057629124231391
+      Brick_184: -4721236444810404289
+      Brick_185: 5559721844679945020
+      Brick_186: 8827993314737088711
+      Brick_187: 5148925247401363568
+      Brick_188: 3198591094399698006
+      Brick_189: -3322853113007121952
+      Brick_19: 7383390045121525407
+      Brick_190: -91239812134891434
+      Brick_191: 949252333321204687
+      Brick_192: -3008835653371686686
+      Brick_193: -5086325468116742534
+      Brick_194: -4522819477968923158
+      Brick_195: 7143581950542029252
+      Brick_196: -789404454300464635
+      Brick_2: -2757276833463146388
+      Brick_20: -4491823027979920650
+      Brick_21: -1533042506034398607
+      Brick_22: -7571008977004446396
+      Brick_23: -4266509921616288098
+      Brick_24: -8321878237940075872
+      Brick_25: -6359536944156097122
+      Brick_26: 233107299661388488
+      Brick_27: -6448054184376802884
+      Brick_28: 1979154265000475460
+      Brick_29: 1574836731089477266
+      Brick_3: -344574849121793817
+      Brick_30: 8672938079327485939
+      Brick_31: 3058777114036104016
+      Brick_32: 3923406928091423784
+      Brick_33: 5347225250109458531
+      Brick_34: 8246411898293730375
+      Brick_35: 8595927503222279644
+      Brick_36: -2774792746286320401
+      Brick_37: 5074715510005152218
+      Brick_38: -3506533342226087
+      Brick_39: 4383161871437969279
+      Brick_4: -4447384419574149068
+      Brick_40: 872873505278446791
+      Brick_41: 8112030135757198654
+      Brick_42: 4939234363207359234
+      Brick_43: 8350166739300424188
+      Brick_44: 5418170083548791411
+      Brick_45: -1626864823864121373
+      Brick_46: 7501124924156208223
+      Brick_47: -6692321427310320972
+      Brick_48: 4077981838457483007
+      Brick_49: -2189774696552731544
+      Brick_5: 5250404372118099169
+      Brick_50: -2738520729422389524
+      Brick_51: -3597827416868579230
+      Brick_52: -5296232224032059523
+      Brick_53: 1299077344712950684
+      Brick_54: 3244504783880896673
+      Brick_55: -5416422918771099390
+      Brick_56: -1763787235818261313
+      Brick_57: 2753944384635796825
+      Brick_58: 657381790500339606
+      Brick_59: 3507222958748961124
+      Brick_6: 819581807205930985
+      Brick_60: 1768551112751553978
+      Brick_61: -2839511611200753019
+      Brick_62: 1897717311279424376
+      Brick_63: -6270087684161668870
+      Brick_64: 2869531015497180843
+      Brick_65: -3362028625756503120
+      Brick_66: 3519457763060114998
+      Brick_67: -4623682445411760089
+      Brick_68: -1795505037171977666
+      Brick_69: -7009885104210090361
+      Brick_7: -1163464561800054771
+      Brick_70: 1492654365389208428
+      Brick_71: -8033079492650315713
+      Brick_72: 6011293759144125872
+      Brick_73: -393219432122281322
+      Brick_74: 6150216574557003931
+      Brick_75: -2648057675561431995
+      Brick_76: -6230169866174909759
+      Brick_77: 8240423878167903527
+      Brick_78: 5522270677123866054
+      Brick_79: 1670681752767929290
+      Brick_8: 8120797449598385850
+      Brick_80: 3124264008131177546
+      Brick_81: -9109992974685459497
+      Brick_82: 8808804096973325918
+      Brick_83: -6141593634446902766
+      Brick_84: -4529121239112412695
+      Brick_85: 8309750826226676121
+      Brick_86: 7906156866427445912
+      Brick_87: 4496445117997807699
+      Brick_88: -6124338032938037628
+      Brick_89: -6770845636888543744
+      Brick_9: -1715124594871698092
+      Brick_90: 3027265862988022954
+      Brick_91: 5314036923594873294
+      Brick_92: -642871761318907363
+      Brick_93: 9111708335251201163
+      Brick_94: -7532185889227635464
+      Brick_95: -1985229370576391063
+      Brick_96: 6615707592517068473
+      Brick_97: -8874524740554025201
+      Brick_98: -8777165555714075463
+      Brick_99: 8652049196843246356
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  pSDShowRemoveMatteOption: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 

@@ -20,6 +20,7 @@ public class UIManager : MonoBehaviour {
     public Text coinCountShop;
     public Image selectionImg;
     public Text coinCountHUD;
+    public Text scoreCountHUD;
     public Image[] healthBars;
     private bool losingHealth;
 
@@ -31,6 +32,14 @@ public class UIManager : MonoBehaviour {
     public void UpdateCoins(int coinCount) {
         coinCountHUD.text = coinCount.ToString();
         coinCountShop.text = coinCount.ToString();
+    }
+
+    public void UpdateScore(float newScore, bool add) {
+        if (add) {
+            scoreCountHUD.text = (int.Parse(scoreCountHUD.text) + newScore).ToString();
+        } else {
+            scoreCountHUD.text = (int.Parse(scoreCountHUD.text) - newScore).ToString();
+        }
     }
 
     public void UpdateShopSelection(int xPos, int yPos) {
@@ -55,5 +64,11 @@ public class UIManager : MonoBehaviour {
                 healthBars[i].enabled = true;
             }  
         }
+    }
+
+    public void HandleComboManager(Enemy enemy) {
+        ComboManager comboManager = FindObjectOfType<ComboManager>();
+        UpdateScore(enemy.scoreToAdd * comboManager.GetCombo(), true); // todo -> each enemy = combo multiplier
+        comboManager.HandleComboManager();
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using Pathfinding;
 using UnityEngine;
 
 public abstract class Enemy : MonoBehaviour
@@ -14,9 +13,11 @@ public abstract class Enemy : MonoBehaviour
     [SerializeField]
     protected int coins;
     [SerializeField]
-    protected Transform pointA, pointB;
+    public Transform pointA, pointB;
+    [SerializeField]
+    public int scoreToAdd;
 
-    protected Vector3 currentTarget;
+    public Vector3 currentTarget;
     protected Animator anim;
     protected SpriteRenderer sprite;
     protected bool isDead = false;
@@ -25,6 +26,7 @@ public abstract class Enemy : MonoBehaviour
     protected float distance;
     protected Transform player_t;
     protected Player player;
+    public string spawnerUuid;
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
