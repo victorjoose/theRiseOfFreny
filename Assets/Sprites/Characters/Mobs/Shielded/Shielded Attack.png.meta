@@ -149,8 +149,8 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 200
-        height: 200
+        width: 800
+        height: 800
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -168,10 +168,10 @@ TextureImporter:
       name: Shielded Attack_1
       rect:
         serializedVersion: 2
-        x: 200
+        x: 800
         y: 0
-        width: 200
-        height: 200
+        width: 800
+        height: 800
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -189,10 +189,10 @@ TextureImporter:
       name: Shielded Attack_2
       rect:
         serializedVersion: 2
-        x: 400
+        x: 1600
         y: 0
-        width: 200
-        height: 200
+        width: 800
+        height: 800
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -210,10 +210,10 @@ TextureImporter:
       name: Shielded Attack_3
       rect:
         serializedVersion: 2
-        x: 600
+        x: 2400
         y: 0
-        width: 200
-        height: 200
+        width: 800
+        height: 800
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -231,10 +231,10 @@ TextureImporter:
       name: Shielded Attack_4
       rect:
         serializedVersion: 2
-        x: 800
+        x: 3200
         y: 0
-        width: 200
-        height: 200
+        width: 800
+        height: 800
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -252,10 +252,10 @@ TextureImporter:
       name: Shielded Attack_5
       rect:
         serializedVersion: 2
-        x: 1000
+        x: 4000
         y: 0
-        width: 200
-        height: 200
+        width: 800
+        height: 800
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -273,10 +273,10 @@ TextureImporter:
       name: Shielded Attack_6
       rect:
         serializedVersion: 2
-        x: 1200
+        x: 4800
         y: 0
-        width: 200
-        height: 200
+        width: 800
+        height: 800
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
