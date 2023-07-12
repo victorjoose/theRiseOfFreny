@@ -10581,7 +10581,7 @@ PrefabInstance:
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: maxEnemies
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
@@ -10597,7 +10597,7 @@ PrefabInstance:
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: x2SpawnOffset
-      value: 4
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
@@ -13479,7 +13479,7 @@ PrefabInstance:
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: maxEnemies
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
@@ -13490,12 +13490,12 @@ PrefabInstance:
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: x1SpawnOffset
-      value: 1
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: x2SpawnOffset
-      value: 1
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7607750584768163957, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
@@ -23537,7 +23537,7 @@ PrefabInstance:
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}
       propertyPath: maxEnemies
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4379816701346619240, guid: 4090a9dd686bf2840bb016e446e7ae8c,
         type: 3}

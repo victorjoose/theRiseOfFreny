@@ -30,6 +30,8 @@ public abstract class Enemy : MonoBehaviour
     public float radius;
     public float attackDistance;
     private bool isPlayerInRange = false;
+    private float patrolPositionTolerance = 0.1f;
+    public LayerMask ignoreLayer;
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
@@ -53,13 +55,13 @@ public abstract class Enemy : MonoBehaviour
             if (distance <= radius) {
                 if (!isPlayerInRange) {
                     // enters the radius
-                    Debug.Log("in range");
+                    Debug.Log("in agro range");
                     isPlayerInRange = true;
                     AttackMode();
                 }
             } else {
                 if (isPlayerInRange) {
-                    Debug.Log("out of range");
+                    Debug.Log("out of agro range");
                     isPlayerInRange = false;
                     ResetAttackMode();
                 }
@@ -97,16 +99,16 @@ public abstract class Enemy : MonoBehaviour
     }
 
     private void Patrol() {
-        if (currentTarget == pointB.position) {
+        if (currentTarget.x == pointB.position.x) {
             transform.localScale = new Vector3(-1, 1, 1);
         } else {
             transform.localScale = new Vector3(1, 1, 1);;
         }
 
-        if (transform.position == pointA.position) {
+        if (Vector2.Distance(transform.position, pointA.position) <= patrolPositionTolerance) {
             currentTarget = pointB.position;
             anim.SetTrigger("Idle");
-        } else if (transform.position == pointB.position) {
+        } else if (Vector2.Distance(transform.position, pointB.position) <= patrolPositionTolerance) {
             currentTarget = pointA.position;
             anim.SetTrigger("Idle");
         }
@@ -120,11 +122,15 @@ public abstract class Enemy : MonoBehaviour
         // Code to trigger the enemy's attacking behavior
         if (distance <= attackDistance)
         {
+            //vira pro player
+            // ataca
+
             // Enemy is close enough to attack the player
             Debug.Log("Attacking the player!");
         }
         else
         {
+            // AI pathfinding
             // Enemy is within the radius but not close enough to attack yet
             Debug.Log("Approaching the player!");
         }
@@ -134,5 +140,13 @@ public abstract class Enemy : MonoBehaviour
     {
         // Code to reset the enemy's attacking behavior
         Debug.Log("Exiting attack mode!");
+    }
+
+       private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (((1 << collision.collider.gameObject.layer) & ignoreLayer) != 0)
+        {
+            Physics2D.IgnoreCollision(collision.collider, GetComponent<Collider2D>());
+        }
     }
 }
