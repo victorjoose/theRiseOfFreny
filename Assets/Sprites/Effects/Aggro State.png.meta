@@ -1,28 +1,7 @@
 fileFormatVersion: 2
-guid: 6899a9f52e400424b9c7d21767da6a91
+guid: 942cfc2a1c00eae41859951fe36b9270
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: 279484269988203637
-    second: Shielded Attack_0
-  - first:
-      213: -41746014559244982
-    second: Shielded Attack_1
-  - first:
-      213: -3297426105058593352
-    second: Shielded Attack_2
-  - first:
-      213: 6389228837770620502
-    second: Shielded Attack_3
-  - first:
-      213: 8340876636774131330
-    second: Shielded Attack_4
-  - first:
-      213: -7164772750342370920
-    second: Shielded Attack_5
-  - first:
-      213: 8923556347237694042
-    second: Shielded Attack_6
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 12
   mipmaps:
@@ -86,7 +65,7 @@ TextureImporter:
   ignorePngGamma: 0
   applyGammaDecoding: 0
   swizzle: 50462976
-  cookieLightType: 1
+  cookieLightType: 0
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
@@ -127,30 +106,17 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 3
-    buildTarget: WebGL
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Shielded Attack_0
+      name: Aggro State_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 200
-        height: 200
+        width: 15
+        height: 9
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -158,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 57cc4f8767de0e300800000000000000
-      internalID: 279484269988203637
+      spriteID: 5f2e170a4a3323c4bb2ca8f790383c19
+      internalID: -294922133
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Shielded Attack_1
+      name: Aggro State_1
       rect:
         serializedVersion: 2
-        x: 200
+        x: 15
         y: 0
-        width: 200
-        height: 200
+        width: 15
+        height: 9
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -179,20 +145,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a4d686f8830bb6ff0800000000000000
-      internalID: -41746014559244982
+      spriteID: 69f298bbf082b5b448f2fd7bd83dadcb
+      internalID: 2099667336
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Shielded Attack_2
+      name: Aggro State_2
       rect:
         serializedVersion: 2
-        x: 400
+        x: 30
         y: 0
-        width: 200
-        height: 200
+        width: 15
+        height: 9
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -200,92 +166,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 8b5f1ee8d603d32d0800000000000000
-      internalID: -3297426105058593352
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Shielded Attack_3
-      rect:
-        serializedVersion: 2
-        x: 600
-        y: 0
-        width: 200
-        height: 200
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 65eefffb6c91ba850800000000000000
-      internalID: 6389228837770620502
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Shielded Attack_4
-      rect:
-        serializedVersion: 2
-        x: 800
-        y: 0
-        width: 200
-        height: 200
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 286e64afb1fb0c370800000000000000
-      internalID: 8340876636774131330
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Shielded Attack_5
-      rect:
-        serializedVersion: 2
-        x: 1000
-        y: 0
-        width: 200
-        height: 200
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 899c177e42d919c90800000000000000
-      internalID: -7164772750342370920
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Shielded Attack_6
-      rect:
-        serializedVersion: 2
-        x: 1200
-        y: 0
-        width: 200
-        height: 200
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: a5af8420837d6db70800000000000000
-      internalID: 8923556347237694042
+      spriteID: 560f5eaf1999abb43b8d3eeccec42844
+      internalID: -312354421
       vertices: []
       indices: 
       edges: []
@@ -301,13 +183,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Shielded Attack_0: 279484269988203637
-      Shielded Attack_1: -41746014559244982
-      Shielded Attack_2: -3297426105058593352
-      Shielded Attack_3: 6389228837770620502
-      Shielded Attack_4: 8340876636774131330
-      Shielded Attack_5: -7164772750342370920
-      Shielded Attack_6: 8923556347237694042
+      Aggro State_0: -294922133
+      Aggro State_1: 2099667336
+      Aggro State_2: -312354421
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
