@@ -56,12 +56,12 @@ MonoBehaviour:
   pointB: {fileID: 0}
   scoreToAdd: 500
   currentTarget: {x: -70.03526, y: 9.2, z: 0}
-  spawnerUuid: 8fdca3cc-ba2a-4a95-a8a7-db60ee3239c3
+  spawnerUuid: 03e836ae-63ef-462d-9f24-dd4f4b7b69b1
   radius: 0
   attackDistance: 0
   ignoreLayer:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 1536
   jumpForce: 7
 --- !u!61 &619916628549707728
 BoxCollider2D:

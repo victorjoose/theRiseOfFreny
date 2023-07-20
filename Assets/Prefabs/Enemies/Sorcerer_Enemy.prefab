@@ -221,13 +221,13 @@ MonoBehaviour:
   pointA: {fileID: 0}
   pointB: {fileID: 0}
   scoreToAdd: 350
-  currentTarget: {x: 32.15, y: 13.22, z: 0}
-  spawnerUuid: d71961f0-4b87-418a-b92f-6467f1c5c0f7
+  currentTarget: {x: -66.35, y: 13.22, z: 0}
+  spawnerUuid: 6ef0a03f-ce87-4cc8-9fe1-7f29902ed3d4
   radius: 0
   attackDistance: 0
   ignoreLayer:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 1536
   jumpForce: 5
   hexballEffectPrefab: {fileID: 8130485229399331639, guid: 302bd1357e57762409bde635aedd8c2f,
     type: 3}
