@@ -47,9 +47,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   jumpOdds: 0
   fallOdds: 0
+  changeDirection: 0
   enemyLayer:
     serializedVersion: 2
     m_Bits: 1024
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 512
+  detectionRadius: 11
+  resetCollisionTimer: 5
   enemyTag: Enemy
 --- !u!61 &5701482783859936083
 BoxCollider2D:

@@ -12,6 +12,7 @@ public class ChangeGroundArea : MonoBehaviour
     [SerializeField]
     protected bool changeDirection;
     public LayerMask enemyLayer;
+    public LayerMask playerLayer;
     public float detectionRadius = 11f;
     public float resetCollisionTimer = 1f;
     // Start is called before the first frame update
@@ -30,7 +31,12 @@ public class ChangeGroundArea : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log("collision");
+
+        if (((1 << collision.collider.gameObject.layer) & playerLayer) != 0)
+        {
+            Physics2D.IgnoreCollision(collision.collider, GetComponent<Collider2D>());
+        }
+
         if (((1 << collision.gameObject.layer) & enemyLayer) != 0)
         {
             // Call the Jump function on the enemy when touched
