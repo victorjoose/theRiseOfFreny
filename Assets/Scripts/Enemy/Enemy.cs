@@ -102,8 +102,12 @@ public abstract class Enemy : MonoBehaviour
     }
 
     private void Patrol() {
-       ChangeDirection();
-
+        if (currentTarget.x == pointB.position.x) {
+            transform.localScale = new Vector3(-1, 1, 1);
+        } else {
+            transform.localScale = new Vector3(1, 1, 1);;
+        }
+        
         if (Vector2.Distance(transform.position, pointA.position) <= patrolPositionTolerance) {
             currentTarget = pointB.position;
             anim.SetTrigger("Idle");
@@ -119,8 +123,12 @@ public abstract class Enemy : MonoBehaviour
     public void ChangeDirection() {
         if (currentTarget.x == pointB.position.x) {
             transform.localScale = new Vector3(-1, 1, 1);
+            currentTarget = pointA.position;
+            anim.SetTrigger("Idle");
         } else {
-            transform.localScale = new Vector3(1, 1, 1);;
+            transform.localScale = new Vector3(1, 1, 1);
+            currentTarget = pointB.position;
+            anim.SetTrigger("Idle");
         }
     }
 
