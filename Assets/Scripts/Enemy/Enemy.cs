@@ -102,11 +102,7 @@ public abstract class Enemy : MonoBehaviour
     }
 
     private void Patrol() {
-        if (currentTarget.x == pointB.position.x) {
-            transform.localScale = new Vector3(-1, 1, 1);
-        } else {
-            transform.localScale = new Vector3(1, 1, 1);;
-        }
+       ChangeDirection();
 
         if (Vector2.Distance(transform.position, pointA.position) <= patrolPositionTolerance) {
             currentTarget = pointB.position;
@@ -119,6 +115,14 @@ public abstract class Enemy : MonoBehaviour
         transform.position = Vector2.MoveTowards(transform.position, currentTarget, speed * Time.deltaTime);
     }
     
+
+    public void ChangeDirection() {
+        if (currentTarget.x == pointB.position.x) {
+            transform.localScale = new Vector3(-1, 1, 1);
+        } else {
+            transform.localScale = new Vector3(1, 1, 1);;
+        }
+    }
 
     private void AttackMode()
     {

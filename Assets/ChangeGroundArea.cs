@@ -28,12 +28,18 @@ public class ChangeGroundArea : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Debug.Log("colli");
         if (((1 << collision.gameObject.layer) & enemyLayer) != 0)
         {
-            Debug.Log("enterred");
             // Call the Jump function on the enemy when touched
-            collision.collider.GetComponent<Enemy>().Jump();
+            Enemy enemy = collision.collider.GetComponent<Enemy>();
+
+            if (jumpOdds > 0 && Random.value < jumpOdds) {
+                enemy.Jump();
+            }
+
+            if (changeDirection) {
+                enemy.ChangeDirection();
+            }
         }
     }
 }
