@@ -33,7 +33,7 @@ public class ChangeGroundArea : MonoBehaviour
             // Call the Jump function on the enemy when touched
             Enemy enemy = collision.collider.GetComponent<Enemy>();
 
-            if (jumpOdds > 0 && Random.value < jumpOdds) {
+            if (jumpOdds > 0 && Random.value < jumpOdds/100) {
                 enemy.Jump();
             }
 
