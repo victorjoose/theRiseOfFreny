@@ -433,12 +433,12 @@ PrefabInstance:
     - target: {fileID: 3271913644825522907, guid: c619a3f788608ea448806110792456af,
         type: 3}
       propertyPath: jumpOdds
-      value: 0
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 3271913644825522907, guid: c619a3f788608ea448806110792456af,
         type: 3}
       propertyPath: changeDirection
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5578102684708769746, guid: c619a3f788608ea448806110792456af,
         type: 3}
@@ -493,6 +493,11 @@ PrefabInstance:
     - target: {fileID: 5578102684708769746, guid: c619a3f788608ea448806110792456af,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5701482783859936083, guid: c619a3f788608ea448806110792456af,
+        type: 3}
+      propertyPath: m_IsTrigger
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
