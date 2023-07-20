@@ -222,12 +222,13 @@ MonoBehaviour:
   pointB: {fileID: 0}
   scoreToAdd: 350
   currentTarget: {x: 32.15, y: 13.22, z: 0}
-  spawnerUuid: e3edfb8c-309b-4d5f-8224-fef504934dcf
+  spawnerUuid: d71961f0-4b87-418a-b92f-6467f1c5c0f7
   radius: 0
   attackDistance: 0
   ignoreLayer:
     serializedVersion: 2
     m_Bits: 1024
+  jumpForce: 5
   hexballEffectPrefab: {fileID: 8130485229399331639, guid: 302bd1357e57762409bde635aedd8c2f,
     type: 3}
 --- !u!50 &-7701730281249788169
@@ -255,7 +256,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!1 &5551851121951494547
 GameObject:

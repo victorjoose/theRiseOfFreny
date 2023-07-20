@@ -174,12 +174,13 @@ MonoBehaviour:
   pointB: {fileID: 0}
   scoreToAdd: 200
   currentTarget: {x: 21.058165, y: 9.01, z: 0}
-  spawnerUuid: 6a66c2c0-56a9-4ae2-ae71-c73c6423f10a
+  spawnerUuid: 80ac3c49-9377-4e42-a110-2be89f5d2574
   radius: 10
   attackDistance: 5
   ignoreLayer:
     serializedVersion: 2
     m_Bits: 1024
+  jumpForce: 5
 --- !u!61 &3905875800013260842
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -250,7 +251,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 4
 --- !u!1 &7352113425200920760
 GameObject:

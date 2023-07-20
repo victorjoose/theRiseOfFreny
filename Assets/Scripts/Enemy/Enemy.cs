@@ -32,12 +32,15 @@ public abstract class Enemy : MonoBehaviour
     private bool isPlayerInRange = false;
     private float patrolPositionTolerance = 0.1f;
     public LayerMask ignoreLayer;
+    private Rigidbody2D rb;
+    public float jumpForce = 5f;
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
         sprite = GetComponentInChildren<SpriteRenderer>();
         player_t = GameObject.FindGameObjectWithTag("Player").GetComponent<Transform>();
         player = GameObject.FindGameObjectWithTag("Player").GetComponent<Player>();
+        rb = GetComponent<Rigidbody2D>();
     }
 
     private void Start() {
@@ -148,5 +151,19 @@ public abstract class Enemy : MonoBehaviour
         {
             Physics2D.IgnoreCollision(collision.collider, GetComponent<Collider2D>());
         }
+
+        //  if (collision.collider.CompareTag("ChangeArea"))
+        // {
+        //     // Perform the jump behavior when the enemy touches the trigger object
+        //     rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        // }
+    }
+
+    public void Jump()
+    {
+        // if (isGrounded)
+        // {
+            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        // }
     }
 }
