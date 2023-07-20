@@ -145,18 +145,13 @@ public abstract class Enemy : MonoBehaviour
         Debug.Log("Exiting attack mode!");
     }
 
-       private void OnCollisionEnter2D(Collision2D collision)
+    private void OnCollisionEnter2D(Collision2D collision)
     {
         if (((1 << collision.collider.gameObject.layer) & ignoreLayer) != 0)
         {
             Physics2D.IgnoreCollision(collision.collider, GetComponent<Collider2D>());
         }
 
-        //  if (collision.collider.CompareTag("ChangeArea"))
-        // {
-        //     // Perform the jump behavior when the enemy touches the trigger object
-        //     rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-        // }
     }
 
     public void Jump()

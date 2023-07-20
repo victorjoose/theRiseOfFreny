@@ -9,6 +9,8 @@ public class ChangeGroundArea : MonoBehaviour
     protected float jumpOdds;
     [SerializeField]
     protected float fallOdds;
+    [SerializeField]
+    protected bool changeDirection;
     public LayerMask enemyLayer;
     // Start is called before the first frame update
     void Start()
