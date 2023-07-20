@@ -9,7 +9,7 @@ public class ChangeGroundArea : MonoBehaviour
     protected float jumpOdds;
     [SerializeField]
     protected float fallOdds;
-  
+    public LayerMask enemyLayer;
     // Start is called before the first frame update
     void Start()
     {
@@ -27,7 +27,7 @@ public class ChangeGroundArea : MonoBehaviour
     private void OnCollisionEnter2D(Collision2D collision)
     {
         Debug.Log("colli");
-        if (collision.collider.CompareTag("Enemy"))
+        if (((1 << collision.gameObject.layer) & enemyLayer) != 0)
         {
             Debug.Log("enterred");
             // Call the Jump function on the enemy when touched
