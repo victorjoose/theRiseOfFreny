@@ -174,13 +174,13 @@ MonoBehaviour:
   pointB: {fileID: 0}
   scoreToAdd: 200
   currentTarget: {x: -78.24184, y: 9.01, z: 0}
-  spawnerUuid: 2f92c456-261b-47ae-9a77-631eba42fe02
+  spawnerUuid: dad92a82-040e-4b18-b1d0-785b0baeb27b
   radius: 10
   attackDistance: 5
   ignoreLayer:
     serializedVersion: 2
     m_Bits: 1536
-  jumpForce: 6
+  jumpForce: 7
 --- !u!61 &3905875800013260842
 BoxCollider2D:
   m_ObjectHideFlags: 0
