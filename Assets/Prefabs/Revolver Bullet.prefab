@@ -198,7 +198,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7177082956402618282}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.0345, y: -0.0095, z: 0}
+  m_LocalPosition: {x: -0.01, y: -0.004, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -213,7 +213,7 @@ ParticleSystem:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7177082956402618282}
   serializedVersion: 8
-  lengthInSec: 0.2
+  lengthInSec: 0.15
   simulationSpeed: 1
   stopAction: 0
   cullingMode: 0
@@ -459,7 +459,7 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.05
+      scalar: 0.08
       minScalar: 1
       maxCurve:
         serializedVersion: 2
@@ -1042,7 +1042,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 30
+      scalar: 40
       minScalar: 10
       maxCurve:
         serializedVersion: 2
@@ -1095,7 +1095,7 @@ ParticleSystem:
     rateOverDistance:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 30
+      scalar: 40
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -1158,22 +1158,22 @@ ParticleSystem:
         serializedVersion: 2
         m_Curve:
         - serializedVersion: 3
-          time: 0.67357635
+          time: 0.4455971
           value: 1
-          inSlope: 0.15758969
-          outSlope: 0.15758969
+          inSlope: 0.14097905
+          outSlope: 0.14097905
           tangentMode: 0
           weightedMode: 0
           inWeight: 0
-          outWeight: 1
+          outWeight: 0.34579286
         - serializedVersion: 3
           time: 1
           value: 0
-          inSlope: -9.910796
-          outSlope: -9.910796
+          inSlope: -4.890193
+          outSlope: -4.890193
           tangentMode: 0
           weightedMode: 0
-          inWeight: 0.15873097
+          inWeight: 0.07476667
           outWeight: 0
         m_PreInfinity: 2
         m_PostInfinity: 2
@@ -4949,7 +4949,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
