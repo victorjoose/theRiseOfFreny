@@ -29,9 +29,9 @@ public class RangedAttack : MonoBehaviour {
 
     private Vector3 BulletDirection() {
         if (player_t.transform.localScale.x > 0) {
-            bulletDirection = Vector3.right * (5 * Time.deltaTime);
+            bulletDirection = Vector3.right * (15 * Time.deltaTime);
         } else if(player_t.transform.localScale.x < 0) {
-            bulletDirection = Vector3.left * (5 * Time.deltaTime);
+            bulletDirection = Vector3.left * (15 * Time.deltaTime);
         }
 
         return bulletDirection;
