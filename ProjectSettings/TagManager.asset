@@ -15,6 +15,7 @@ TagManager:
   - Golem
   - Licker
   - Spawner
+  - ChangeArea
   layers:
   - Default
   - TransparentFX
