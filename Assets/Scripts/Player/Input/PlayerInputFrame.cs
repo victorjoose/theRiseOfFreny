@@ -9,6 +9,9 @@ public struct PlayerInputFrame {
     public bool meleePressed;
     public bool rangedPressed;
     public bool dashPressed;
+    public bool runHeld;         // sprint while held (short, with a cooldown)
+    public bool selectPistol;    // weapon keys
+    public bool selectShotgun;
     public bool potionPressed;
     public bool grenadePressed;  // release: throw now
     public bool grenadeHeld;     // charging (the HUD shows the power bar)
@@ -16,7 +19,7 @@ public struct PlayerInputFrame {
 
     public bool IsEmpty =>
         Mathf.Approximately(move, 0f) && !jumpPressed && !jumpHeld && !meleePressed &&
-        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed && !grenadeHeld;
+        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed && !grenadeHeld && !runHeld && !selectPistol && !selectShotgun;
 }
 
 public interface IPlayerInputSource {

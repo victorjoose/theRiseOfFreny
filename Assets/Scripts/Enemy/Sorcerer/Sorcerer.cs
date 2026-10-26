@@ -15,7 +15,7 @@ public class Sorcerer : Enemy, IDamageable {
         SorcererCastPosition = FindCastPosition();
     }
 
-    [SerializeField] private float castRange = 10f;   // how far the sorcerer sees the player, in any direction
+    [SerializeField] private float castRange = 100f;  // the sorcerer always knows where Freny is and keeps casting
     [SerializeField] private float castCooldown = 2.5f;
     // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where she is
     [SerializeField] private bool predictive = false;

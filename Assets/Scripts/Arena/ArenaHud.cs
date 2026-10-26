@@ -93,7 +93,8 @@ public class ArenaHud : MonoBehaviour {
             }
             GUILayout.EndHorizontal();
         }
-        GUILayout.Label("U: melhorias   I: ajustes da IA");
+        GUILayout.Label("U: melhorias   I: ajustes da IA   T: auto");
+        GUILayout.Label("Setas: andar  Espaço: pular  Clique: espada  R: atirar  C: dash  Shift: correr  G: granada (segure)  1/2: arma");
 
         GUILayout.EndVertical();
         GUILayout.EndArea();
@@ -116,11 +117,11 @@ public class ArenaHud : MonoBehaviour {
         float y = 175f * scale;
 
         DrawIcon(FrenyProgress.HasGreatSword ? assets.greatSwordIcon : assets.swordIcon, ref x, y, size);
-        if (player.UsingShotgun) {
-            DrawIcon(assets.shotgunIcon, ref x, y, size);
-            GUI.Label(new Rect(x - 6f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.ShotgunShells}");
-        } else {
-            DrawIcon(assets.revolverIcon, ref x, y, size);
+        DrawIcon(assets.revolverIcon, ref x, y, size, !player.UsingShotgun);
+        if (FrenyProgress.HasShotgun) {
+            float sx = x;
+            DrawIcon(assets.shotgunIcon, ref x, y, size, player.UsingShotgun);
+            GUI.Label(new Rect(sx + size - 10f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.ShotgunShells}");
         }
         if (FrenyProgress.HasGrenade) {
             Color old = GUI.color;
@@ -138,14 +139,19 @@ public class ArenaHud : MonoBehaviour {
         }
     }
 
-    private static void DrawIcon(Sprite sprite, ref float x, float y, float size) {
+    private static void DrawIcon(Sprite sprite, ref float x, float y, float size, bool selected = true) {
         if (sprite == null) {
             return;
+        }
+        Color old = GUI.color;
+        if (!selected) {
+            GUI.color = new Color(1f, 1f, 1f, 0.35f);
         }
         Rect tr = sprite.textureRect;
         Texture tex = sprite.texture;
         Rect uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
         GUI.DrawTextureWithTexCoords(new Rect(x, y, size, size), tex, uv);
+        GUI.color = old;
         x += size + 6f;
     }
 

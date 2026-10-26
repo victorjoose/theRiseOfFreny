@@ -41,9 +41,23 @@ public class Player : MonoBehaviour, IDamageable {
     // With no shells the revolver is used.
     [SerializeField] private int shellsPerRun = 6;
     public int ShotgunShells { get; private set; }
-    public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunShells > 0;
+    public bool ShotgunEquipped { get; private set; } = true; // 1 = pistol, 2 = shotgun
+    public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunShells > 0 && ShotgunEquipped;
     [SerializeField] public float fallMultiplier = 4.0f;
-    [SerializeField] public float lowJumpMultiplier = 3.0f;
+    [SerializeField] public float lowJumpMultiplier = 3.0f; // unused: the jump has a fixed height now (TowerFall style)
+    [SerializeField] private float coyoteTime = 0.1f;        // may still jump this long after walking off an edge
+    [SerializeField] private float jumpBuffer = 0.12f;       // a jump pressed this long before landing still happens
+    private float lastGroundedTime = -10f;
+    private float jumpPressedTime = -10f;
+
+    // sprint (Shift): a short burst, then it needs to recover
+    [SerializeField] private float runMultiplier = 1.6f;
+    [SerializeField] private float runDuration = 1.5f;
+    [SerializeField] private float runCooldown = 2.5f;
+    private float runUntil = -1f;
+    private float runReadyAt;
+    public bool IsRunning { get; private set; }
+    public bool RunReady => Time.time >= runReadyAt && runUntil < 0f;
     private bool isGrounded;
     public Transform feetPos;
     public float checkRadius;
@@ -131,14 +145,13 @@ public class Player : MonoBehaviour, IDamageable {
 
         // while dashing, Dash owns the horizontal velocity; while shoved, the knockback does
         if ((_dash == null || !_dash.IsDashing) && Time.time >= knockbackUntil) {
-            velocity.x = move * _speed;
+            velocity.x = move * _speed * (IsRunning ? runMultiplier : 1f);
         }
 
+        // fixed-height jump with a quick fall: holding the button no longer changes the height
         float gravity = Physics2D.gravity.y * gravityScale;
         if (velocity.y < 0) {
             velocity += Vector2.up * (gravity * (fallMultiplier - 1) * Time.fixedDeltaTime);
-        } else if (velocity.y > 0 && !input.jumpHeld) {
-            velocity += Vector2.up * (gravity * (lowJumpMultiplier - 1) * Time.fixedDeltaTime);
         }
 
         rg2d.SetVel(velocity);
@@ -184,7 +197,9 @@ public class Player : MonoBehaviour, IDamageable {
         }
 
         Movement();
+        Run();
         Jump();
+        SelectWeapon();
         Attack();
         RangedAttack();
         ThrowGrenade();
@@ -233,6 +248,31 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
+    // Shift: a short sprint, then a cooldown so it can't be held all the time
+    void Run() {
+        bool wantsRun = _input.Current.runHeld && Mathf.Abs(_input.Current.move) > 0f;
+        if (IsRunning) {
+            if (!wantsRun || Time.time >= runUntil) {
+                IsRunning = false;
+                runUntil = -1f;
+                runReadyAt = Time.time + runCooldown;
+            }
+        } else if (wantsRun && RunReady) {
+            IsRunning = true;
+            runUntil = Time.time + runDuration;
+            Fx.Dust(feetPos ? feetPos.position : transform.position, 4);
+        }
+    }
+
+    // 1 = pistol, 2 = shotgun (when owned and loaded)
+    void SelectWeapon() {
+        if (_input.Current.selectPistol) {
+            ShotgunEquipped = false;
+        } else if (_input.Current.selectShotgun && FrenyProgress.HasShotgun) {
+            ShotgunEquipped = true;
+        }
+    }
+
     void Jump() {
         isGrounded = Physics2D.OverlapCircle(feetPos.position, checkRadius, whatIsGround);
 
@@ -243,12 +283,19 @@ public class Player : MonoBehaviour, IDamageable {
         }
         if (isGrounded) {
             airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
+            lastGroundedTime = Time.time;
         }
         wasGrounded = isGrounded;
 
-        bool canJump = (isGrounded && !isJumping) || CanAirJump;
-        if (_input.Current.jumpPressed && canJump) {
-            if (!isGrounded) {
+        if (_input.Current.jumpPressed) {
+            jumpPressedTime = Time.time;
+        }
+        bool wantsJump = Time.time - jumpPressedTime <= jumpBuffer;
+        bool groundJump = (isGrounded || Time.time - lastGroundedTime <= coyoteTime) && !isJumping;
+        bool canJump = groundJump || (wantsJump && _input.Current.jumpPressed && CanAirJump);
+        if (wantsJump && canJump) {
+            jumpPressedTime = -10f;
+            if (!isGrounded && !groundJump) {
                 airJumpsLeft--;
                 Fx.Burst(feet, Color.white, 8, 1.5f, 0.07f, 0.3f);
             } else {
@@ -269,7 +316,8 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     void Attack() {
-        if (_input.Current.meleePressed && isGrounded) {
+        // the sword works mid-air too; the gun does not (see RangedAttack)
+        if (_input.Current.meleePressed) {
             if (_resetAttack == false) {
                 _playerAnim.Melee();
                 StartCoroutine(ResetAttackRoutine());
@@ -282,15 +330,11 @@ public class Player : MonoBehaviour, IDamageable {
             return;
         }
 
-        if (_resetAttack != false) {
-            return;
+        if (_resetAttack != false || !isGrounded) {
+            return; // no shooting in the air (it made her too strong)
         }
 
-        if (!isGrounded) {
-            _playerAnim.RangedJump();
-        } else {
-            _playerAnim.Ranged();
-        }
+        _playerAnim.Ranged();
         Vector3 muzzle = playerRevolverShootPosition.position;
         Vector3 forward = FacingRight ? Vector3.right : Vector3.left;
         Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);

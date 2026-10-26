@@ -163,7 +163,7 @@ MonoBehaviour:
   scoreToAdd: 150
   currentTarget: {x: 0, y: 0, z: 0}
   spawnerUuid: 
-  radius: 7
+  radius: 12
   attackDistance: 0.4
 --- !u!61 &807850912414132264
 BoxCollider2D:

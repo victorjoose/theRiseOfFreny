@@ -8,8 +8,10 @@ public class Bat : Enemy, IDamageable {
 
     [SerializeField] private float hoverAmplitude = 0.4f;
     [SerializeField] private float hoverFrequency = 2.5f;
-    [SerializeField] private float biteDistance = 0.7f;   // centre to centre
+    [SerializeField] private float biteDistance = 0.9f;   // horizontal, when at body height
     [SerializeField] private float biteCooldown = 1.4f;
+    [SerializeField] private float sideOffset = 0.7f;     // comes in beside Freny, not down onto her head
+    private float side = 1f;
 
     private Vector3 home;
     private float nextBiteTime;
@@ -37,7 +39,16 @@ public class Bat : Enemy, IDamageable {
         SetInCombat(chasing);
 
         float bob = Mathf.Sin(Time.time * hoverFrequency + phase) * hoverAmplitude;
-        Vector3 goal = chasing ? player_t.position + Vector3.up * 0.3f : home;
+        Vector3 goal;
+        if (chasing) {
+            // approach from the side it is already on, flying at her body height
+            if (Mathf.Abs(transform.position.x - player_t.position.x) > sideOffset * 1.5f) {
+                side = Mathf.Sign(transform.position.x - player_t.position.x);
+            }
+            goal = player_t.position + new Vector3(side * sideOffset, 0.5f, 0f);
+        } else {
+            goal = home;
+        }
         goal.y += bob;
         float speedNow = MoveSpeed * (chasing ? 1f : 0.5f);
 
@@ -50,7 +61,9 @@ public class Bat : Enemy, IDamageable {
             transform.localScale = new Vector3(dx > 0 ? -1 : 1, 1, 1);
         }
 
-        if (chasing && distance <= biteDistance && Time.time >= nextBiteTime) {
+        float dxToPlayer = Mathf.Abs(transform.position.x - player_t.position.x);
+        float dyToPlayer = Mathf.Abs(transform.position.y - (player_t.position.y + 0.5f));
+        if (chasing && dxToPlayer <= biteDistance && dyToPlayer <= 0.8f && Time.time >= nextBiteTime) {
             HitPlayer();
             nextBiteTime = Time.time + biteCooldown * Tuning.EnemyCooldown.Value;
         }

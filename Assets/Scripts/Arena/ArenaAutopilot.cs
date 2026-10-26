@@ -165,11 +165,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 retreating = false;
                 if (!facingTarget) {
                     Turn(ref frame, towardTarget);
-                } else if (player.IsGrounded) {
+                } else {
                     frame.meleePressed = true;
                     CurrentAction = "Golpe de espada";
-                } else {
-                    CurrentAction = "Esperando aterrissar";
                 }
                 return frame;
             }
@@ -205,8 +203,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
         }
 
-        // 4. gun
-        if (sameFloor && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && player.AttackReady) {
+        // 4. gun (only from the ground)
+        if (sameFloor && player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && player.AttackReady) {
             if (!facingTarget) {
                 Turn(ref frame, towardTarget);
             } else {
@@ -242,7 +240,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 return frame;
             }
             frame.move = towardTarget;
-            CurrentAction = "Indo até o inimigo";
+            frame.runHeld = Mathf.Abs(dx) > 4f && player.RunReady;
+            CurrentAction = frame.runHeld ? "Correndo até o inimigo" : "Indo até o inimigo";
             return frame;
         }
 
@@ -268,7 +267,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private bool Dodge(ref PlayerInputFrame frame, float away, string what) {
         bool facingAway = (away > 0) == player.FacingRight;
-        if (FrenyProgress.HasDashDodge && facingAway && dash && dash.CanDash && player.IsGrounded) {
+        if (FrenyProgress.HasDashDodge && facingAway && dash && dash.CanDash) {
             frame.dashPressed = true;
             CurrentAction = "Esquivando com dash de " + what;
         } else if ((player.IsGrounded && Time.time >= nextJumpTime) || player.CanAirJump) {

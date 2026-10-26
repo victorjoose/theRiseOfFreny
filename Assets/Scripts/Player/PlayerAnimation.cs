@@ -33,15 +33,31 @@ public class PlayerAnimation : MonoBehaviour
 
     public void  Melee()
     {
-        _anim.SetTrigger("Melee");
+        Fire("Melee");
     }
 
     public void Ranged() {
-        _anim.SetTrigger("Ranged");
+        _anim.ResetTrigger("RangedJump");
+        Fire("Ranged");
     }
     
     public void RangedJump() {
-        _anim.SetTrigger("RangedJump");
+        _anim.ResetTrigger("Ranged");
+        Fire("RangedJump");
+    }
+
+    // a trigger stays armed until some state has a transition for it; if the current state has
+    // none (e.g. Ranged while in Landing), it used to fire the animation seconds later
+    private void Fire(string trigger) {
+        _anim.SetTrigger(trigger);
+        StartCoroutine(ClearTrigger(trigger));
+    }
+
+    private System.Collections.IEnumerator ClearTrigger(string trigger) {
+        yield return new WaitForSeconds(0.15f);
+        if (_anim) {
+            _anim.ResetTrigger(trigger);
+        }
     }
 
     public void Dash()
