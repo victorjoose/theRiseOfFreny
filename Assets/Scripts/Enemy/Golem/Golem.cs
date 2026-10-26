@@ -6,6 +6,7 @@ using Utility;
 public class Golem : Enemy, IDamageable
 {
     public int Health { get; set; }
+    protected override Color DeathColor => new Color(0.6f, 0.55f, 0.5f);
     //Use for initialize
     public override void Init()
     {
@@ -21,9 +22,7 @@ public class Golem : Enemy, IDamageable
             return;
         }
         Health--;
-        anim.SetTrigger("Hit");
-        isHit = true;
-        anim.SetBool("InCombat", true);
+        TakeHit();
 
         if (Util.ShouldBeDead(Health))
         {

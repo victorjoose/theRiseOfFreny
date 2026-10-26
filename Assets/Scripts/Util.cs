@@ -26,16 +26,19 @@ namespace Utility {
         }
 
         public static Boolean Dies(Animator anim, GameObject gameObject) {
-            anim.SetTrigger("Death");
             Enemy enemy = gameObject.GetComponent<Enemy>();
             if (enemy != null) {
+                enemy.OnDied(); // particles instead of the death animation
                 FrenyProgress.AddXp(Mathf.Max(enemy.scoreToAdd, 10));
                 updateSpawnerCountEnemies(enemy, false);
                 if (UIManager.Instance) {
                     UIManager.Instance.HandleComboManager(enemy);
                 }
             }
-            Object.Destroy(gameObject, 3f);
+            if (enemy == null) {
+                anim.SetTrigger("Death");
+            }
+            Object.Destroy(gameObject, enemy != null ? 1f : 3f);
             return true;
         }
 

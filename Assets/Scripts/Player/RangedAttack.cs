@@ -43,6 +43,7 @@ public class RangedAttack : MonoBehaviour {
 
         if (hit != null) {
             hit.Damage();
+            Fx.Burst(transform.position, new Color(1f, 0.85f, 0.4f), 8, 2f, 0.07f, 0.3f);
             Destroy(gameObject);
         }
     }

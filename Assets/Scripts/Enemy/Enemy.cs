@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Utility;
 
 public abstract class Enemy : MonoBehaviour
 {
@@ -17,7 +18,7 @@ public abstract class Enemy : MonoBehaviour
     }
 
     public GameObject coinPrefab;
-    
+
     [SerializeField]
     protected int health;
     [SerializeField]
@@ -40,29 +41,41 @@ public abstract class Enemy : MonoBehaviour
     protected Transform player_t;
     protected Player player;
     public string spawnerUuid;
+    // sight: enemies look sideways. They only notice Freny within `radius` horizontally and
+    // `sightHeight` vertically, so a Golem on a platform ignores her walking underneath
     public float radius;
+    [SerializeField]
+    protected float sightHeight = 1.5f;
     // gap between the enemy's collider and the player's collider (edge to edge, not centre to centre)
     public float attackDistance = 0.5f;
     [SerializeField]
     protected float attackWindup = 0.35f; // seconds between the Attack animation and the hit
+    [SerializeField]
+    protected float knockback = 0f; // horizontal push given to Freny by a hit (0 = none)
     private bool isPlayerInRange = false;
     private float patrolPositionTolerance = 0.1f;
     public LayerMask ignoreLayer;
-    private Rigidbody2D rb;
+    protected Rigidbody2D rb;
     public float jumpForce = 5f;
     [SerializeField]
     protected float attackCooldown = 1.5f;
     private float nextAttackTime;
     private bool hasAttackTrigger;
-    private Collider2D col;
+    protected Collider2D col;
     private Collider2D playerCol;
     private Coroutine attackRoutine;
     private bool hasMovingParam;
+    private bool hasInCombatParam;
+    private bool hasHitTrigger;
     [SerializeField]
     protected float patrolPause = 0.8f; // seconds standing at each end of the patrol
     private float patrolPauseUntil;
     [SerializeField]
     protected float provokedRadius = 10f; // how far a hit enemy keeps chasing
+    private float nextDustTime;
+
+    // colour of the particles when this enemy is hit or dies
+    protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
@@ -77,6 +90,15 @@ public abstract class Enemy : MonoBehaviour
         playerCol = player ? player.GetComponent<Collider2D>() : null;
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
         hasMovingParam = anim && HasParameter(anim, "Moving");
+        hasInCombatParam = anim && HasParameter(anim, "InCombat");
+        hasHitTrigger = anim && HasParameter(anim, "Hit");
+    }
+
+    // the Bat's controller has no parameters, so every animator call checks first
+    protected void SetInCombat(bool value) {
+        if (hasInCombatParam) {
+            anim.SetBool("InCombat", value);
+        }
     }
 
     private void Start() {
@@ -90,15 +112,18 @@ public abstract class Enemy : MonoBehaviour
 
         if (player_t && player != null) {
             distance = Vector2.Distance(transform.position, player_t.position);
+            float dx = Mathf.Abs(player_t.position.x - transform.position.x);
+            float dy = Mathf.Abs(player_t.position.y - transform.position.y);
 
-            // chase when the player enters the aggro radius, or after being hit (even enemies
-            // with radius 0, like the Licker, fight back instead of standing still)
+            // chase when the player enters the (horizontal) sight, or after being hit (even enemies
+            // with radius 0 fight back instead of standing still)
+            bool sameLevel = dy <= sightHeight;
             bool provoked = isHit && distance <= provokedRadius;
-            bool shouldChase = player.Health > 0 && (distance <= radius * Tuning.EnemyAggro.Value || provoked);
+            bool shouldChase = player.Health > 0 && sameLevel && (dx <= radius * Tuning.EnemyAggro.Value || provoked);
 
             if (shouldChase && !isPlayerInRange) {
                 isPlayerInRange = true;
-                anim.SetBool("InCombat", true);
+                SetInCombat(true);
             } else if (!shouldChase && isPlayerInRange) {
                 isPlayerInRange = false;
                 ResetAttackMode();
@@ -107,11 +132,19 @@ public abstract class Enemy : MonoBehaviour
 
         Vector3 before = transform.position;
         Movement();
+        bool moving = Mathf.Abs(transform.position.x - before.x) > 0.0001f;
         if (hasMovingParam) {
             // Walk/Idle follow real movement, so the walk cycle never plays while standing still
-            anim.SetBool("Moving", Mathf.Abs(transform.position.x - before.x) > 0.0001f);
+            anim.SetBool("Moving", moving);
+        }
+        if (moving && Time.time >= nextDustTime) {
+            Fx.Dust(Feet, 1);
+            nextDustTime = Time.time + 0.2f;
         }
     }
+
+    protected Vector3 Feet => col ? new Vector3(col.bounds.center.x, col.bounds.min.y, 0f) : transform.position;
+    protected Vector3 Center => col ? col.bounds.center : transform.position;
 
     public virtual void Movement() {
         if (isPlayerInRange) {
@@ -196,10 +229,21 @@ public abstract class Enemy : MonoBehaviour
 
         // the player can still step or dash out of the swing
         if (!isDead && player != null && player.Health > 0 && InAttackReach()) {
-            player.Damage();
+            HitPlayer();
         }
         nextAttackTime = Time.time + attackCooldown * Tuning.EnemyCooldown.Value;
         attackRoutine = null;
+    }
+
+    // damages Freny and, for heavy hitters, shoves her away from the enemy
+    protected void HitPlayer() {
+        if (!player.TryDamage()) {
+            return;
+        }
+        if (knockback > 0f) {
+            float dir = Mathf.Sign(player_t.position.x - transform.position.x);
+            player.Knockback(new Vector2(dir * knockback, knockback * 0.5f));
+        }
     }
 
     private void FacePlayer() {
@@ -213,11 +257,42 @@ public abstract class Enemy : MonoBehaviour
 
     private void ResetAttackMode() {
         isHit = false;
-        anim.SetBool("InCombat", false);
+        SetInCombat(false);
         // go back to patrolling towards the nearest end
         if (pointA && pointB) {
             currentTarget = Mathf.Abs(transform.position.x - pointA.position.x) < Mathf.Abs(transform.position.x - pointB.position.x)
                 ? pointA.position : pointB.position;
+        }
+    }
+
+    // shared by every enemy's Damage(): flinch, fight back, and bleed a few particles
+    protected void TakeHit() {
+        isHit = true;
+        if (hasHitTrigger) {
+            anim.SetTrigger("Hit");
+        }
+        SetInCombat(true);
+        Fx.Burst(Center, DeathColor, 6, 2.5f, 0.08f, 0.4f);
+    }
+
+    // the sprite disappears in a burst of particles instead of playing the "pieces" animation,
+    // and the body stops colliding and moving at once (the pieces used to keep walking)
+    public void OnDied() {
+        isDead = true;
+        if (attackRoutine != null) {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+        Fx.Burst(Center, DeathColor, 28, 3.5f, 0.12f, 0.8f);
+        Fx.Dust(Feet, 6);
+        foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>()) {
+            renderer.enabled = false;
+        }
+        foreach (Collider2D c in GetComponentsInChildren<Collider2D>()) {
+            c.enabled = false;
+        }
+        if (rb) {
+            rb.simulated = false;
         }
     }
 

@@ -6,6 +6,9 @@ public enum FrenyUpgrade {
     MaxHealth,
     MoveSpeed,
     AttackSpeed,
+    DoubleJump,
+    Shotgun,
+    GreatSword,
     // the autopilot's brain: bought with points from levelling up, arena only
     Reaction,
     DashDodge,
@@ -107,7 +110,12 @@ public static class FrenyProgress {
         if (IsBrain(upgrade)) {
             return 1;
         }
-        return 100 + 50 * GetLevel(upgrade);
+        switch (upgrade) {
+            case FrenyUpgrade.DoubleJump: return 150;
+            case FrenyUpgrade.Shotgun: return 300;
+            case FrenyUpgrade.GreatSword: return 250;
+            default: return 100 + 50 * GetLevel(upgrade);
+        }
     }
 
     public static string DisplayName(FrenyUpgrade upgrade) {
@@ -115,6 +123,9 @@ public static class FrenyProgress {
             case FrenyUpgrade.MaxHealth: return "Vida máxima +1";
             case FrenyUpgrade.MoveSpeed: return "Velocidade +8%";
             case FrenyUpgrade.AttackSpeed: return "Recarga -10%";
+            case FrenyUpgrade.DoubleJump: return "Pulo duplo";
+            case FrenyUpgrade.Shotgun: return "Escopeta (3 tiros)";
+            case FrenyUpgrade.GreatSword: return "Espadão (golpe mais largo)";
             case FrenyUpgrade.Reaction: return "Reação mais rápida";
             case FrenyUpgrade.DashDodge: return "Esquiva com dash";
             case FrenyUpgrade.AutoPotion: return "Usar poção sozinho";
@@ -159,6 +170,9 @@ public static class FrenyProgress {
     public static int BonusMaxHealth => GetLevel(FrenyUpgrade.MaxHealth);
     public static float SpeedMultiplier => 1f + 0.08f * GetLevel(FrenyUpgrade.MoveSpeed);
     public static float AttackCooldownMultiplier => 1f - 0.1f * GetLevel(FrenyUpgrade.AttackSpeed);
+    public static bool HasDoubleJump => GetLevel(FrenyUpgrade.DoubleJump) > 0;
+    public static bool HasShotgun => GetLevel(FrenyUpgrade.Shotgun) > 0;
+    public static bool HasGreatSword => GetLevel(FrenyUpgrade.GreatSword) > 0;
 
     // seconds between autopilot decisions: 0.6 s untrained, 0.1 s maxed
     public static float AutopilotReactionTime => 0.6f - 0.1f * GetLevel(FrenyUpgrade.Reaction);

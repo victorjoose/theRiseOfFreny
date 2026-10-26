@@ -17,12 +17,37 @@ public class EnemySpawner : MonoBehaviour
     // shared by every enemy of this spawner (before, two new GameObjects were created per spawn)
     private Transform pointA, pointB;
 
+    public Transform PointA => pointA;
+    public Transform PointB => pointB;
+
     // Start is called before the first frame update
     void Start()
     {
         uuid = Guid.NewGuid().ToString();
         CreatePatrolPoints();
-        StartCoroutine(Spawner());
+        if (canSpawn) {
+            StartCoroutine(Spawner());
+        }
+    }
+
+    // the arena director decides what and when to spawn; this spawner only lends its position and patrol
+    public void SetDirected() {
+        canSpawn = false;
+        StopAllCoroutines();
+    }
+
+    public Vector2 RandomSpawnPosition() {
+        return new Vector2(UnityEngine.Random.Range(transform.position.x - x1SpawnOffset, transform.position.x + x2SpawnOffset), transform.position.y);
+    }
+
+    public Enemy SpawnDirected(GameObject prefab) {
+        GameObject spawned = Instantiate(prefab, RandomSpawnPosition(), Quaternion.identity);
+        Enemy enemy = spawned.GetComponent<Enemy>();
+        if (enemy != null) {
+            AssignPatrol(enemy);
+        }
+        countEnemies++;
+        return enemy;
     }
 
    private IEnumerator Spawner () {

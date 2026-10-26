@@ -5,6 +5,7 @@ using Utility;
 
 public class Bug : Enemy, IDamageable {
     public int Health { get; set; }
+    protected override Color DeathColor => new Color(0.5f, 0.75f, 0.3f);
 
     //Use for initialize
     public override void Init() {
@@ -18,9 +19,7 @@ public class Bug : Enemy, IDamageable {
         }
 
         Health--;
-        anim.SetTrigger("Hit");
-        isHit = true;
-        anim.SetBool("InCombat", true);
+        TakeHit();
 
         if (Util.ShouldBeDead(Health)) {
             isDead = Util.Dies(anim, gameObject);

@@ -15,10 +15,14 @@ public class Sorcerer : Enemy, IDamageable {
         SorcererCastPosition = FindCastPosition();
     }
 
-    [SerializeField] private float castRange = 9f;          // how far the sorcerer sees the player
-    [SerializeField] private float castHeightTolerance = 1.2f; // the hexball flies straight, so only cast at the same height
+    [SerializeField] private float castRange = 10f;   // how far the sorcerer sees the player, in any direction
     [SerializeField] private float castCooldown = 2.5f;
+    // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where she is
+    [SerializeField] private bool predictive = false;
     private float nextCastTime;
+    private Rigidbody2D playerRb;
+
+    protected override Color DeathColor => predictive ? new Color(0.8f, 0.4f, 1f) : new Color(0.45f, 0.3f, 0.7f);
 
     // the sorcerer stands still and casts on a steady rhythm; the Fire animation event calls Attack()
     // (before, the animator looped the cast forever, even with nobody around)
@@ -28,7 +32,7 @@ public class Sorcerer : Enemy, IDamageable {
         }
 
         Vector2 offset = player_t.position - transform.position;
-        if (Mathf.Abs(offset.x) > castRange * Tuning.EnemyAggro.Value || Mathf.Abs(offset.y) > castHeightTolerance) {
+        if (offset.magnitude > castRange * Tuning.EnemyAggro.Value) {
             return;
         }
 
@@ -62,11 +66,22 @@ public class Sorcerer : Enemy, IDamageable {
 
         Vector3 castPosition = SorcererCastPosition ? SorcererCastPosition.position : transform.position;
         GameObject hexball = Instantiate(hexballEffectPrefab, castPosition, Quaternion.identity);
+        Fx.Burst(castPosition, DeathColor, 8, 1.5f, 0.08f, 0.4f);
 
-        // shoot towards the player instead of always to the right
+        // aim at Freny wherever she is (below, above, diagonal), not only left or right
         HexballEffect effect = hexball.GetComponent<HexballEffect>();
         if (effect && player_t) {
-            effect.SetDirection(player_t.position.x >= castPosition.x ? Vector3.right : Vector3.left);
+            Vector3 target = player_t.position;
+            if (predictive) {
+                if (playerRb == null) {
+                    playerRb = player_t.GetComponent<Rigidbody2D>();
+                }
+                if (playerRb) {
+                    float flightTime = Vector2.Distance(castPosition, target) / Mathf.Max(0.1f, effect.Speed);
+                    target += (Vector3)(playerRb.velocity * flightTime);
+                }
+            }
+            effect.SetDirection(target - castPosition);
         }
     }
 

@@ -217,7 +217,7 @@ MonoBehaviour:
     type: 3}
   health: 2
   speed: 0
-  coins: 1
+  coins: 4
   pointA: {fileID: 0}
   pointB: {fileID: 0}
   scoreToAdd: 350

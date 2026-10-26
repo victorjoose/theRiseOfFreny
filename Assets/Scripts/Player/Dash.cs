@@ -13,8 +13,11 @@ public class Dash : MonoBehaviour {
     private float dashTime;
     public float startDashTime;
     private int direction;
+    public float dashCooldown = 1.2f;
+    private float nextDashTime;
 
     public bool IsDashing => direction != 0;
+    public bool CanDash => direction == 0 && Time.time >= nextDashTime;
 
     void Start() {
         rb = GetComponent<Rigidbody2D>();
@@ -31,7 +34,7 @@ public class Dash : MonoBehaviour {
         }
 
         if (direction == 0) {
-            if (input && input.Current.dashPressed) {
+            if (input && input.Current.dashPressed && Time.time >= nextDashTime) {
                 if (pl.transform.localScale.x > 0) {
                     direction = 1;
                 }
@@ -41,6 +44,8 @@ public class Dash : MonoBehaviour {
                 if (playerAnim) {
                     playerAnim.Dash();
                 }
+                nextDashTime = Time.time + startDashTime + dashCooldown;
+                Fx.Spray(transform.position, new Vector2(-direction, 0.2f), new Color(1f, 1f, 1f, 0.7f), 10, 3f, 0.5f);
             }
         }
         else {

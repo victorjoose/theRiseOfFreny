@@ -50,9 +50,14 @@ public static class Tuning {
     public static readonly Knob AutoDodgeRange = new Knob("autoDodge", "Autopiloto: distância da esquiva", 0f, 8f, 3.5f);
     public static readonly Knob AutoKeepDistance = new Knob("autoKeep", "Autopiloto: recuar na recarga", 0f, 1f, 0.5f);
 
+    // difficulty curve (ArenaDirector)
+    public static readonly Knob RampSeconds = new Knob("rampSeconds", "Arena: segundos até o pico", 60f, 600f, 300f);
+    public static readonly Knob PeakEnemies = new Knob("peakEnemies", "Arena: inimigos no pico", 2f, 10f, 6f);
+
     public static readonly Knob[] All = {
         EnemyCooldown, EnemyWindup, EnemySpeed, EnemyAggro,
         AutoReaction, AutoMeleeRange, AutoShootRange, AutoDodgeRange, AutoKeepDistance,
+        RampSeconds, PeakEnemies,
     };
 
     public static void ResetAll() {

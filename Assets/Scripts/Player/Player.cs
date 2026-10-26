@@ -16,7 +16,7 @@ public class Player : MonoBehaviour, IDamageable {
     private bool _resetAttack = false;
 
     [SerializeField] private float _speed = 3.0f;
-    [SerializeField] private float attackCooldown = 1.5f;
+    [SerializeField] private float attackCooldown = 1.0f;
     private float _baseSpeed;
     private float _baseAttackCooldown;
     private int _baseMaxHealth;
@@ -48,6 +48,13 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private float invulnerableTime = 0.8f;
     private float invulnerableUntil;
     private float jumpStartTime;
+    private int airJumpsLeft;          // double jump upgrade
+    private float knockbackUntil;      // while shoved, the input doesn't override the velocity
+    private float nextDustTime;
+    private bool wasGrounded;
+    private Transform swordBox;
+
+    public bool CanAirJump => !isGrounded && airJumpsLeft > 0;
     public bool IsInvulnerable => Time.time < invulnerableUntil;
 
     // read by the arena autopilot so it decides with the same information a person sees
@@ -83,6 +90,8 @@ public class Player : MonoBehaviour, IDamageable {
         _dash = GetComponent<Dash>();
         _sprite = GetComponentInChildren<SpriteRenderer>();
         _gameManager = FindObjectOfType<GameManager>();
+        swordBox = FindChild("Sword_Hit_Box");
+        ApplyUpgrades();
         if (playerRevolverShootPosition == null) {
             playerRevolverShootPosition = FindShootPosition();
         }
@@ -99,8 +108,8 @@ public class Player : MonoBehaviour, IDamageable {
         move = input.move;
         Vector2 velocity = rg2d.velocity;
 
-        // while dashing, Dash owns the horizontal velocity
-        if (_dash == null || !_dash.IsDashing) {
+        // while dashing, Dash owns the horizontal velocity; while shoved, the knockback does
+        if ((_dash == null || !_dash.IsDashing) && Time.time >= knockbackUntil) {
             velocity.x = move * _speed;
         }
 
@@ -121,6 +130,24 @@ public class Player : MonoBehaviour, IDamageable {
         }
         GameObject tagged = GameObject.FindGameObjectWithTag("RevolverShootPosition");
         return tagged ? tagged.transform : transform;
+    }
+
+    private Transform FindChild(string name) {
+        foreach (Transform child in GetComponentsInChildren<Transform>(true)) {
+            if (child.name == name) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    // a hit from a heavy enemy shoves Freny back (and a little up)
+    public void Knockback(Vector2 velocity) {
+        if (isDead || rg2d == null) {
+            return;
+        }
+        rg2d.velocity = velocity;
+        knockbackUntil = Time.time + 0.25f;
     }
 
     // Update is called once per frame
@@ -152,6 +179,11 @@ public class Player : MonoBehaviour, IDamageable {
         _speed = _baseSpeed * FrenyProgress.SpeedMultiplier;
         attackCooldown = _baseAttackCooldown * FrenyProgress.AttackCooldownMultiplier;
 
+        // the great sword swings a wider hitbox (the animation drives offset/size, the scale multiplies them)
+        if (swordBox) {
+            swordBox.localScale = new Vector3(FrenyProgress.HasGreatSword ? 1.5f : 1f, 1f, 1f);
+        }
+
         // a bought heart arrives full
         if (Health > 0 && MaxHealth > oldMax) {
             Health += MaxHealth - oldMax;
@@ -165,6 +197,12 @@ public class Player : MonoBehaviour, IDamageable {
         float move = _input.Current.move;
         _playerAnim.Move(move != 0);
 
+        // dust kicked up while running
+        if (move != 0 && isGrounded && Time.time >= nextDustTime) {
+            Fx.Dust(feetPos ? feetPos.position : transform.position, 2);
+            nextDustTime = Time.time + 0.15f;
+        }
+
         if (move > 0) {
             Util.Flip(true, transform);
         } else if (move < 0) {
@@ -175,7 +213,24 @@ public class Player : MonoBehaviour, IDamageable {
     void Jump() {
         isGrounded = Physics2D.OverlapCircle(feetPos.position, checkRadius, whatIsGround);
 
-        if (_input.Current.jumpPressed && isGrounded && !isJumping) {
+        Vector3 feet = feetPos ? feetPos.position : transform.position;
+        if (isGrounded && !wasGrounded && Time.time - jumpStartTime > 0.15f) {
+            // landed
+            Fx.Dust(feet, 5);
+        }
+        if (isGrounded) {
+            airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
+        }
+        wasGrounded = isGrounded;
+
+        bool canJump = (isGrounded && !isJumping) || CanAirJump;
+        if (_input.Current.jumpPressed && canJump) {
+            if (!isGrounded) {
+                airJumpsLeft--;
+                Fx.Burst(feet, Color.white, 8, 1.5f, 0.07f, 0.3f);
+            } else {
+                Fx.Dust(feet, 4);
+            }
             isJumping = true;
             jumpStartTime = Time.time;
             // keep the horizontal speed; the old Vector2.up * jumpForce zeroed it for one physics step
@@ -212,12 +267,27 @@ public class Player : MonoBehaviour, IDamageable {
         } else {
             _playerAnim.Ranged();
         }
-        GameObject bullet = Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
-        RangedAttack shot = bullet.GetComponent<RangedAttack>();
-        if (shot) {
-            shot.SetDirection(FacingRight ? Vector3.right : Vector3.left);
+        Vector3 muzzle = playerRevolverShootPosition.position;
+        Vector3 forward = FacingRight ? Vector3.right : Vector3.left;
+        Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);
+
+        // the shotgun fires three bullets in a fan
+        if (FrenyProgress.HasShotgun) {
+            FireBullet(muzzle, Quaternion.Euler(0f, 0f, 10f) * forward);
+            FireBullet(muzzle, forward);
+            FireBullet(muzzle, Quaternion.Euler(0f, 0f, -10f) * forward);
+        } else {
+            FireBullet(muzzle, forward);
         }
         StartCoroutine(ResetAttackRoutine());
+    }
+
+    private void FireBullet(Vector3 from, Vector3 direction) {
+        GameObject bullet = Instantiate(revolverBulletPrefab, from, Quaternion.identity);
+        RangedAttack shot = bullet.GetComponent<RangedAttack>();
+        if (shot) {
+            shot.SetDirection(direction);
+        }
     }
 
     IEnumerator ResetAttackRoutine() {
@@ -227,22 +297,30 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void Damage() {
-        if (isDead || IsInvulnerable) return;
+        TryDamage();
+    }
+
+    // false when the hit was ignored (dead or still blinking from the last one)
+    public bool TryDamage() {
+        if (isDead || IsInvulnerable) return false;
         invulnerableUntil = Time.time + invulnerableTime;
         Health = Mathf.Max(Health - 1, 0);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, true);
         }
         _playerAnim.Hit();
+        Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.9f, 0.2f, 0.2f), 10, 2.5f, 0.08f, 0.4f);
 
         if (Health >= 1) {
-            return;
+            return true;
         }
         
         _playerAnim.Death();
         isDead = true;
+        // Freny bursts into particles instead of the "pieces" death animation
+        Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.9f, 0.3f, 0.3f), 36, 3.5f, 0.12f, 0.9f);
         if (_sprite) {
-            _sprite.enabled = true;
+            _sprite.enabled = false;
         }
         if (gameOver) {
             gameOver.SetActive(true);
@@ -251,6 +329,7 @@ public class Player : MonoBehaviour, IDamageable {
         //Temporary solution for being able to move after death
         Destroy(rg2d);
         Destroy(col2d);
+        return true;
     }
 
     // drinks the potion bought at the shop (Q, or the autopilot when it has the upgrade)

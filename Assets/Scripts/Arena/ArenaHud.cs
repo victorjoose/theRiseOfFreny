@@ -14,6 +14,7 @@ public class ArenaHud : MonoBehaviour {
     private FrenyInput input;
     private ArenaAutopilot autopilot;
     private ArenaRunManager run;
+    private ArenaDirector director;
     private GUIStyle boxStyle;
 
     private static readonly FrenyUpgrade[] Upgrades = (FrenyUpgrade[])Enum.GetValues(typeof(FrenyUpgrade));
@@ -23,6 +24,7 @@ public class ArenaHud : MonoBehaviour {
         input = GetComponent<FrenyInput>();
         autopilot = GetComponent<ArenaAutopilot>();
         run = GetComponent<ArenaRunManager>();
+        director = FindObjectOfType<ArenaDirector>();
     }
 
     private void Update() {
@@ -43,7 +45,7 @@ public class ArenaHud : MonoBehaviour {
             boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, wordWrap = true };
         }
 
-        GUILayout.BeginArea(new Rect(10, Screen.height - 360, 300, 350));
+        GUILayout.BeginArea(new Rect(10, Screen.height - 440, 300, 430));
         GUILayout.BeginVertical(boxStyle);
 
         string who;
@@ -60,6 +62,10 @@ public class ArenaHud : MonoBehaviour {
 
         if (GUILayout.Button(input.AutoEnabled ? "Auto: LIGADO (T)" : "Auto: DESLIGADO (T)")) {
             input.ToggleAuto();
+        }
+
+        if (director) {
+            GUILayout.Label($"Tempo {director.Elapsed:0}s  Dificuldade {director.Difficulty * 100f:0}%  Inimigos até {director.MaxAlive}");
         }
 
         int level = FrenyProgress.Level;

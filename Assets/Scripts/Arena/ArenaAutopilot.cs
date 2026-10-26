@@ -14,6 +14,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     // sword, gun and dodge distances come from the tuning sliders (Tuning.Auto*), so they can be tried live
     [SerializeField] private float verticalTolerance = 1.2f;   // "same height" for sword and gun
     [SerializeField] private float jumpToReachHeight = 1.5f;   // target this much higher -> jump
+    [SerializeField] private float dodgeWindow = 0.55f;        // dodge only when the projectile lands within this many seconds
+    [SerializeField] private float dashCloseDistance = 3.5f;   // farther than this (same height) -> dash in
     [SerializeField] private int lowHealth = 1;
     [SerializeField] private float scanInterval = 0.25f;
 
@@ -79,23 +81,19 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         PlayerInputFrame frame = new PlayerInputFrame();
         Vector2 me = transform.position;
 
-        // 1. dodge
+        // 1. dodge, only when a projectile is about to land (before, any hexball nearby kept her
+        // hopping forever instead of fighting)
         HexballEffect threat = IncomingProjectile(me);
         if (threat) {
             float awayFromThreat = Mathf.Sign(me.x - threat.transform.position.x);
             bool facingAway = (awayFromThreat > 0) == player.FacingRight;
-            if (FrenyProgress.HasDashDodge && facingAway && dash && !dash.IsDashing) {
+            if (FrenyProgress.HasDashDodge && facingAway && dash && dash.CanDash) {
                 frame.dashPressed = true;
                 CurrentAction = "Esquivando com dash";
-            } else if (player.IsGrounded) {
+            } else if (player.IsGrounded || player.CanAirJump) {
                 frame.jumpPressed = true;
                 frame.jumpHeld = true;
                 CurrentAction = "Pulando o projétil";
-            } else if (FrenyProgress.HasDashDodge) {
-                // in the air: turn away now, dash on the next decision
-                frame.move = awayFromThreat;
-                frame.jumpHeld = true;
-                CurrentAction = "Virando para esquivar";
             }
             if (!frame.IsEmpty) {
                 return frame;
@@ -116,7 +114,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         bool sameHeight = Mathf.Abs(dy) <= verticalTolerance;
 
         // 2. sword
-        if (sameHeight && Mathf.Abs(dx) <= Tuning.AutoMeleeRange.Value) {
+        float meleeRange = Tuning.AutoMeleeRange.Value * (FrenyProgress.HasGreatSword ? 1.4f : 1f);
+        if (sameHeight && Mathf.Abs(dx) <= meleeRange) {
             if (!player.AttackReady && Random.value < Tuning.AutoKeepDistance.Value) {
                 // step back while the sword recharges instead of trading hits
                 frame.move = -towardTarget;
@@ -152,6 +151,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             return frame;
         }
 
+        // 4b. far away on the same floor: dash in (a person would)
+        if (sameHeight && facingTarget && Mathf.Abs(dx) > dashCloseDistance && player.IsGrounded && dash && dash.CanDash) {
+            frame.dashPressed = true;
+            frame.move = towardTarget;
+            CurrentAction = "Dash até o inimigo";
+            return frame;
+        }
+
         // 5. walk to the target, jumping up to it when it is above
         frame.move = towardTarget;
         if (dy > jumpToReachHeight && player.IsGrounded) {
@@ -164,23 +171,31 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         return frame;
     }
 
+    // a hexball that will pass within a body's width of Freny in the next dodgeWindow seconds
     private HexballEffect IncomingProjectile(Vector2 me) {
+        Vector2 body = me + Vector2.up * 0.5f;
         foreach (HexballEffect projectile in projectiles) {
             if (!projectile) {
                 continue;
             }
             Vector2 pos = projectile.transform.position;
-            float dx = me.x - pos.x;
-            bool headingAtMe = Mathf.Sign(dx) == Mathf.Sign(projectile.Direction.x);
-            if (headingAtMe && Mathf.Abs(dx) <= Tuning.AutoDodgeRange.Value && Mathf.Abs(me.y - pos.y) <= verticalTolerance) {
+            Vector2 dir = ((Vector2)projectile.Direction).normalized;
+            Vector2 toMe = body - pos;
+            float along = Vector2.Dot(toMe, dir);           // distance still to travel towards her
+            if (along < 0f || along > Tuning.AutoDodgeRange.Value) {
+                continue;                                    // moving away, or still far
+            }
+            float miss = Mathf.Abs(toMe.x * dir.y - toMe.y * dir.x); // closest approach to her body
+            float timeToHit = along / Mathf.Max(0.1f, projectile.Speed);
+            if (miss <= 0.8f && timeToHit <= dodgeWindow) {
                 return projectile;
             }
         }
         return null;
     }
 
-    // untrained: the nearest enemy. Smart targeting also weighs height (enemies on another
-    // platform are expensive to reach) and prefers enemies that are almost dead.
+    // enemies on her own floor come first (another platform is expensive to reach). Smart
+    // targeting also prefers enemies that are almost dead and ignores the ones she can't reach.
     private Enemy PickTarget(Vector2 me) {
         Enemy best = null;
         float bestScore = float.MaxValue;
@@ -190,12 +205,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 continue;
             }
             Vector2 offset = (Vector2)enemy.transform.position - me;
-            float score = offset.magnitude;
+            float score = Mathf.Abs(offset.x) + 4f * Mathf.Abs(offset.y);
 
             if (FrenyProgress.HasSmartTarget) {
-                score = Mathf.Abs(offset.x) + 3f * Mathf.Abs(offset.y);
                 if (enemy is IDamageable damageable) {
                     score += 1.5f * damageable.Health;
+                }
+                if (offset.y > jumpToReachHeight * 2.5f) {
+                    score += 50f; // too high up, only when nothing else is around
                 }
             }
 
