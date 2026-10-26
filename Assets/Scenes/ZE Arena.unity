@@ -29123,4 +29123,4 @@ MonoBehaviour:
   shotgunIcon: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   swordIcon: {fileID: -8525561222273819436, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   greatSwordIcon: {fileID: 3846876039218944220, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
-  grenadeIcon: {fileID: 21300000, guid: 6a3a495618e44f229266704d72959a05, type: 3}
+  grenadeIcon: {fileID: -1480233837858187749, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}

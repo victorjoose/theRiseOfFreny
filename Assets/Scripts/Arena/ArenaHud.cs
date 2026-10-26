@@ -145,15 +145,19 @@ public class ArenaHud : MonoBehaviour {
             }
         }
 
-        // sprint and dash: stamina while running, recovery afterwards
-        float meterW = 110f * scale;
+        // sprint and dash, in two rows under the icons: stamina while running, recovery afterwards
+        float meterW = 120f * scale;
+        float rowY = y + size + 14f * scale;
         float runMeter = player.RunMeter;
-        GUI.Label(new Rect(x, y - 4f * scale, meterW, 20f * scale), player.IsRunning ? "Corrida (Shift)" : runMeter >= 1f ? "Corrida pronta (Shift)" : "Corrida recarregando");
-        DrawMeter(new Rect(x, y + 16f * scale, meterW, 6f * scale), runMeter, player.IsRunning ? ActiveColor : runMeter >= 1f ? ReadyColor : ChargingColor);
+        DrawMeter(new Rect(swordX, rowY + 5f * scale, meterW, 8f * scale), runMeter, player.IsRunning ? ActiveColor : runMeter >= 1f ? ReadyColor : ChargingColor);
+        GUI.Label(new Rect(swordX + meterW + 8f * scale, rowY - 2f * scale, 260f * scale, 22f * scale),
+            player.IsRunning ? "Corrida (Shift)" : runMeter >= 1f ? "Corrida pronta (Shift)" : "Corrida recarregando");
         if (dash) {
+            rowY += 22f * scale;
             float dashReady = dash.Readiness;
-            GUI.Label(new Rect(x, y + 26f * scale, meterW, 20f * scale), dashReady >= 1f ? "Dash pronto (C)" : "Dash recarregando");
-            DrawMeter(new Rect(x, y + 46f * scale, meterW, 6f * scale), dashReady, dashReady >= 1f ? ReadyColor : ChargingColor);
+            DrawMeter(new Rect(swordX, rowY + 5f * scale, meterW, 8f * scale), dashReady, dashReady >= 1f ? ReadyColor : ChargingColor);
+            GUI.Label(new Rect(swordX + meterW + 8f * scale, rowY - 2f * scale, 260f * scale, 22f * scale),
+                dashReady >= 1f ? "Dash pronto (C)" : "Dash recarregando");
         }
     }
 

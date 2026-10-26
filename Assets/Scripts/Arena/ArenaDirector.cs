@@ -98,15 +98,24 @@ public class ArenaDirector : MonoBehaviour {
         return null;
     }
 
-    // the spawners float above their platforms; the portal and the enemy go on the floor itself
-    private static Vector3 OnFloor(Vector2 position) {
-        RaycastHit2D hit = Physics2D.Raycast(position + Vector2.up * 0.5f, Vector2.down, 6f, LayerMask.GetMask("Ground"));
-        return hit.collider != null ? new Vector3(position.x, hit.point.y + 0.05f, 0f) : (Vector3)position;
+    // the spawners float above their platforms; the portal and the enemy go on the floor itself.
+    // A random x over a gap (or past the screen edge) is rolled again, so nothing spawns in the air.
+    private static Vector3 SpawnPoint(EnemySpawner spawner) {
+        int ground = LayerMask.GetMask("Ground");
+        for (int attempt = 0; attempt < 8; attempt++) {
+            Vector2 position = attempt < 7 ? spawner.RandomSpawnPosition() : (Vector2)spawner.transform.position;
+            position.x = ArenaBounds.ClampX(position.x, 1f);
+            RaycastHit2D hit = Physics2D.Raycast(position + Vector2.up * 0.5f, Vector2.down, 6f, ground);
+            if (hit.collider != null) {
+                return new Vector3(position.x, hit.point.y + 0.05f, 0f);
+            }
+        }
+        return spawner.transform.position;
     }
 
     private IEnumerator SpawnWithPortal(Entry entry) {
         EnemySpawner spawner = spawners[Random.Range(0, spawners.Count)];
-        Vector3 position = OnFloor(spawner.RandomSpawnPosition());
+        Vector3 position = SpawnPoint(spawner);
         if (entry.flying) {
             position += Vector3.up * Random.Range(1.5f, 2.5f);
         }
@@ -133,7 +142,7 @@ public class ArenaDirector : MonoBehaviour {
 
     private IEnumerator SpawnChest() {
         EnemySpawner spawner = spawners[Random.Range(0, spawners.Count)];
-        Vector3 position = OnFloor(spawner.RandomSpawnPosition());
+        Vector3 position = SpawnPoint(spawner);
         Fx.Portal(position, portalSeconds, ChestPortalColor);
         yield return new WaitForSeconds(portalSeconds);
         Instantiate(chestPrefab, position, Quaternion.identity);

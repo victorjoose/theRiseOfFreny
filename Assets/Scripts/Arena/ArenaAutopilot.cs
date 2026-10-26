@@ -23,7 +23,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     [SerializeField] private float dashCloseDistance = 5f;     // farther than this (same floor, sword ready) -> dash in
     [SerializeField] private float pickupRange = 7f;           // coins/chests this far away are worth a detour
     [SerializeField] private float grabRange = 4f;             // coins this close are grabbed even mid-fight
-    [SerializeField] private float stuckSeconds = 3f;          // no progress towards the target this long -> it's unreachable
+    [SerializeField] private float stuckSeconds = 3f;          // not getting closer to the target this long -> it's unreachable
+    [SerializeField] private float grenadeAimError = 0.15f;    // +-15% on the charge: a person doesn't land every grenade on the head
     [SerializeField] private float dangerRange = 3f;           // an enemy this close means no detours
     [SerializeField] private float jumpCooldown = 0.5f;        // no hopping: one jump, then land and think
     [SerializeField] private float unreachableMemory = 4f;     // seconds an enemy with no route is ignored
@@ -43,8 +44,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private bool planTurnsOnly;      // the move in the plan is a one-frame tap to turn around
     private Enemy currentTarget;     // kept between decisions, so she doesn't flip-flop between two enemies
     private bool retreating;         // decided once per sword cooldown
-    private Vector2 lastProgressPos;
+    private float bestTargetDistance = float.MaxValue; // closest she has been to the current target
     private float lastProgressTime;
+    private Enemy progressTarget;
     private LayerMask ground;
 
     public string CurrentAction { get; private set; } = "";  // shown in the HUD: enemies, target and what she is doing
@@ -152,7 +154,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float dy = target.Feet.y - myFeet;
         float towardTarget = Mathf.Sign(dx);
         bool facingTarget = (dx > 0) == player.FacingRight;
-        bool sameFloor = Mathf.Abs(dy) <= verticalTolerance;
+        bool sameFloor = dy <= verticalTolerance && dy >= -0.7f;
         float meleeRange = Tuning.AutoMeleeRange.Value * (FrenyProgress.HasGreatSword ? 1.4f : 1f);
         float nearestEnemy = NearestEnemyDistance(me);
 
@@ -202,7 +204,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                     Turn(ref frame, towardTarget);
                 } else {
                     frame.grenadePressed = true;
-                    frame.grenadeCharge = charge;
+                    frame.grenadeCharge = Mathf.Clamp01(charge * Random.Range(1f - grenadeAimError, 1f + grenadeAimError));
                     action = group ? "Granada no grupo" : "Granada na plataforma";
                 }
                 return frame;
@@ -381,24 +383,30 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         return routed;
     }
 
-    // Walking, climbing or descending towards something without getting anywhere for stuckSeconds
-    // means the route is blocked (a wall, an enemy in the way): forget that target for a while.
+    // Travelling towards the target without ever getting closer for stuckSeconds means the route is
+    // blocked (a wall, a ledge she can't reach, pacing above it): forget that target for a while.
+    // Pacing moves her, so progress is measured as distance to the target, not as movement.
     private void CheckStuck() {
-        Vector2 pos = transform.position;
+        if (currentTarget != progressTarget) {
+            progressTarget = currentTarget;
+            bestTargetDistance = float.MaxValue;
+            lastProgressTime = Time.time;
+        }
+        if (currentTarget == null) {
+            return;
+        }
         bool travelling = action.StartsWith("Indo") || action.StartsWith("Correndo") || action.StartsWith("Subindo")
-            || action.StartsWith("Descendo") || action.StartsWith("Pegando");
-        if (!travelling || (pos - lastProgressPos).sqrMagnitude > 0.25f) {
-            lastProgressPos = pos;
+            || action.StartsWith("Descendo") || action.StartsWith("Na beirada");
+        float distance = Vector2.Distance(transform.position, currentTarget.transform.position);
+        if (!travelling || distance < bestTargetDistance - 0.3f) {
+            bestTargetDistance = Mathf.Min(bestTargetDistance, distance);
             lastProgressTime = Time.time;
             return;
         }
         if (Time.time - lastProgressTime > stuckSeconds) {
-            if (currentTarget) {
-                unreachableUntil[currentTarget] = Time.time + unreachableMemory;
-                currentTarget = null;
-            }
-            lastProgressTime = Time.time;
-            action = "Travada, trocando de alvo";
+            unreachableUntil[currentTarget] = Time.time + unreachableMemory;
+            currentTarget = null;
+            action = "Sem chegar perto, trocando de alvo";
         }
     }
 

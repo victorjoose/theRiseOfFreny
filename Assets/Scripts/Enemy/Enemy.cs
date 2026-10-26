@@ -78,6 +78,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     [SerializeField]
     protected float provokedRadius = 10f; // how far a hit enemy keeps chasing
     private float nextDustTime;
+    private float fallVelocity;      // enemies without a Rigidbody fall through StickToGround
     private static int groundMask = -1;
     protected static int GroundMask => groundMask >= 0 ? groundMask : (groundMask = LayerMask.GetMask("Ground"));
 
@@ -117,6 +118,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (isDead) {
             return;
         }
+        if (FellOutOfArena()) {
+            return;
+        }
 
         if (player_t && player != null) {
             distance = Vector2.Distance(transform.position, player_t.position);
@@ -150,7 +154,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Vector3 before = transform.position;
         Movement();
         if (rb == null) {
-            SnapToGround();
+            StickToGround();
         }
         ClampToArena();
         bool moving = Mathf.Abs(transform.position.x - before.x) > 0.0001f;
@@ -164,19 +168,58 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
     }
 
-    // enemies moved by their transform (no Rigidbody) keep their feet on the floor below them
-    protected void SnapToGround() {
+    // enemies moved by their transform (no Rigidbody, like the Bug) keep their feet on the floor
+    // under them, and fall when there is none (before, one spawned over a gap walked on air)
+    protected void StickToGround() {
         if (col == null) {
             return;
         }
         Vector2 feet = Feet;
-        RaycastHit2D hit = Physics2D.Raycast(feet + Vector2.up * 0.3f, Vector2.down, 3f, GroundMask);
+        float probe = 0.3f + Mathf.Max(0.15f, fallVelocity * Time.deltaTime + 0.05f);
+        RaycastHit2D hit = Physics2D.Raycast(feet + Vector2.up * 0.3f, Vector2.down, probe, GroundMask);
         if (hit.collider != null) {
+            fallVelocity = 0f;
             float delta = hit.point.y - feet.y;
             if (Mathf.Abs(delta) > 0.005f) {
                 transform.position += Vector3.up * delta;
             }
+        } else {
+            fallVelocity = Mathf.Min(fallVelocity + 20f * Time.deltaTime, 12f);
+            transform.position += Vector3.down * (fallVelocity * Time.deltaTime);
         }
+    }
+
+    // is there floor to step on just ahead (within one unit below the feet)? Ground enemies stop
+    // or turn at platform edges instead of walking off into a hole
+    protected bool GroundAhead(float direction) {
+        if (col == null) {
+            return true;
+        }
+        Vector2 feet = Feet;
+        float ahead = col.bounds.extents.x + 0.15f;
+        Vector2 from = new Vector2(feet.x + direction * ahead, feet.y + 0.3f);
+        return Physics2D.Raycast(from, Vector2.down, 1.3f, GroundMask).collider != null;
+    }
+
+    // an enemy that somehow ended up under the arena (a hole, a bad spawn) is removed quietly, so
+    // it stops counting as alive and the director can spawn the next one
+    protected bool FellOutOfArena() {
+        if (!ArenaBounds.Active || transform.position.y >= ArenaBounds.Bottom - 3f) {
+            return false;
+        }
+        Despawn();
+        return true;
+    }
+
+    // gone without a fight: no XP, coins or combo
+    public void Despawn() {
+        isDead = true;
+        if (attackRoutine != null) {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+        ReleaseSpawnerSlot();
+        Destroy(gameObject);
     }
 
     // in the arena the screen is the world: nobody walks out of view (no-op in the campaign)
@@ -232,7 +275,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return;
         }
 
-        transform.localScale = new Vector3(goalX > transform.position.x ? -1 : 1, 1, 1);
+        float dir = goalX > transform.position.x ? 1f : -1f;
+        transform.localScale = new Vector3(-dir, 1, 1);
+        if (!GroundAhead(dir)) {
+            ChangeDirection(); // the platform ends here
+            return;
+        }
         Vector2 goal = new Vector2(goalX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, goal, MoveSpeed * Time.deltaTime);
     }
@@ -268,6 +316,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (pointA && pointB) {
             PatrolRange(out float min, out float max);
             targetX = Mathf.Clamp(targetX, min, max);
+        }
+        float step = targetX - transform.position.x;
+        if (Mathf.Abs(step) < 0.01f || !GroundAhead(Mathf.Sign(step))) {
+            return; // at the player's x, or the platform ends here: hold the edge and keep facing her
         }
         Vector2 target = new Vector2(targetX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, target, MoveSpeed * Time.deltaTime);
