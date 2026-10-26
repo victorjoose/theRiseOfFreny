@@ -5,10 +5,14 @@ using UnityEngine;
 public class Dash : MonoBehaviour {
     private Rigidbody2D rb;
     private Player pl;
-    public float dashSpeed;
+    // horizontal speed (units/s) kept for the whole dash; replaces the old per-frame AddForce, which
+    // depended on the frame rate and was overwritten by Player.FixedUpdate every physics step
+    public float dashVelocity = 12f;
     private float dashTime;
     public float startDashTime;
     private int direction;
+
+    public bool IsDashing => direction != 0;
 
     void Start() {
         rb = GetComponent<Rigidbody2D>();
@@ -23,7 +27,7 @@ public class Dash : MonoBehaviour {
                     direction = 1;
                 }
                 else {
-                    direction = 2;
+                    direction = -1;
                 }    
             }
         }
@@ -31,17 +35,20 @@ public class Dash : MonoBehaviour {
             if (dashTime <= 0) {
                 direction = 0;
                 dashTime = startDashTime;
-                rb.velocity = Vector2.zero;
+                if (rb) {
+                    rb.velocity = new Vector2(0, rb.velocity.y);
+                }
             }
             else {
                 dashTime -= Time.deltaTime;
-                if (direction == 1) {
-                    rb.AddForce(Vector2.right * dashSpeed);
-                }
-                else if (direction == 2) {
-                    rb.AddForce(Vector2.left * dashSpeed);
-                }
             }
+        }
+    }
+
+    void FixedUpdate() {
+        // rb is destroyed when the player dies
+        if (IsDashing && rb) {
+            rb.velocity = new Vector2(direction * dashVelocity, rb.velocity.y);
         }
     }
 }

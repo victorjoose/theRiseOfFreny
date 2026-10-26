@@ -34,20 +34,23 @@ public class Player : MonoBehaviour, IDamageable {
     public int MaxHealth = 4;
     public int Health { get; set; }
     public int Energy { get; set; }
+    private Dash _dash;
 
     // Start is called before the first frame update
     void Start() {
-        Health = 4;
+        Health = MaxHealth;
         Energy = 100;
         rg2d = GetComponent<Rigidbody2D>();
         col2d = GetComponent<Collider2D>();
         _playerAnim = GetComponent<PlayerAnimation>();
+        _dash = GetComponent<Dash>();
         playerRevolverShootPosition = GameObject.FindGameObjectWithTag("RevolverShootPosition").GetComponent<Transform>();
     }
 
     private void FixedUpdate() {
         move = Input.GetAxisRaw("Horizontal");
-        if (isDead == false){
+        // while dashing, Dash owns the horizontal velocity
+        if (isDead == false && (_dash == null || !_dash.IsDashing)){
             rg2d.velocity = new Vector2(move * _speed, rg2d.velocity.y);
         }
     }
@@ -55,7 +58,10 @@ public class Player : MonoBehaviour, IDamageable {
     // Update is called once per frame
     void Update() {
         if (isDead) {
-            gameOver.SetActive(true);
+            if (gameOver) {
+                gameOver.SetActive(true);
+            }
+            return;
         }
 
         Movement();
@@ -132,9 +138,10 @@ public class Player : MonoBehaviour, IDamageable {
 
     public void Damage() {
         if (isDead) return;
-        Debug.Log("Player::Damage()");
-        Health--;
-        UIManager.Instance.UpdateLives(Health, true);
+        Health = Mathf.Max(Health - 1, 0);
+        if (UIManager.Instance) {
+            UIManager.Instance.UpdateLives(Health, true);
+        }
         _playerAnim.Hit();
 
         if (Health >= 1) {
@@ -151,15 +158,19 @@ public class Player : MonoBehaviour, IDamageable {
 
     public void AddCoins(int amount) {
         coins += amount;
-        UIManager.Instance.UpdateCoins(coins);
+        if (UIManager.Instance) {
+            UIManager.Instance.UpdateCoins(coins);
+        }
     }
 
     public void PickUpItem(HealthPotion healthPotion) {
-        if (Health == MaxHealth) {
+        if (Health >= MaxHealth) {
             return;
         }
-        Health++;
-        UIManager.Instance.UpdateLives(Health, false);
+        Health = Mathf.Min(Health + Mathf.Max(healthPotion.healPoints, 1), MaxHealth);
+        if (UIManager.Instance) {
+            UIManager.Instance.UpdateLives(Health, false);
+        }
         Destroy(healthPotion.gameObject);
         
     }
