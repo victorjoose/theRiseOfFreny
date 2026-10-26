@@ -447,8 +447,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             Vector2 offset = (Vector2)enemy.transform.position - me;
             float score = Mathf.Abs(offset.x) + 4f * Mathf.Abs(enemy.Feet.y - myFeet);
 
-            if (FrenyProgress.HasSmartTarget && enemy is IDamageable damageable) {
-                score += 1.5f * damageable.Health;
+            if (FrenyProgress.HasSmartTarget) {
+                score += 1.5f * enemy.Health; // prefers the ones that die fastest
             }
             if (enemy.Feet.y - myFeet > maxJumpHeight * 2f) {
                 score += 50f; // too high up, only when nothing else is around

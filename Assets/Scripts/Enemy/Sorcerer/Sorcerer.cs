@@ -1,26 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Utility;
 
-public class Sorcerer : Enemy, IDamageable {
+// Ranged enemy: stands still and lobs hexballs at Freny wherever she is (any height, any side).
+// The Attack animation calls Attack() through SorcererAnimationEvent when the cast hand opens.
+public class Sorcerer : Enemy {
     public GameObject hexballEffectPrefab;
-    private Transform SorcererCastPosition;
-    public int Health { get; set; }
-
-    void Start() {
-        base.Init();
-        isDead = false;
-        Health = base.health;
-        SorcererCastPosition = FindCastPosition();
-    }
-
     [SerializeField] private float castRange = 100f;  // the sorcerer always knows where Freny is and keeps casting
     [SerializeField] private float castCooldown = 2.5f;
     // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where she is
     [SerializeField] private bool predictive = false;
     private float nextCastTime;
     private Rigidbody2D playerRb;
+
+    private Transform SorcererCastPosition;
+
+    public override void Init() {
+        base.Init();
+        SorcererCastPosition = FindCastPosition();
+    }
 
     protected override Color DeathColor => predictive ? new Color(0.8f, 0.4f, 1f) : new Color(0.45f, 0.3f, 0.7f);
 
@@ -42,20 +38,6 @@ public class Sorcerer : Enemy, IDamageable {
         if (Time.time >= nextCastTime) {
             anim.SetTrigger("Attack");
             nextCastTime = Time.time + castCooldown * Tuning.EnemyCooldown.Value;
-        }
-    }
-
-    public void Damage() {
-        if (!Util.IsAlive(isDead, gameObject)) {
-            return;
-        }
-
-        Health--;
-        anim.SetTrigger("Hit");
-
-        if (Util.ShouldBeDead(Health)) {
-            isDead = Util.Dies(anim, gameObject);
-            Util.DropCoin(coins, coinPrefab, transform);
         }
     }
 

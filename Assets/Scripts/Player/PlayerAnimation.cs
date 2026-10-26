@@ -1,77 +1,66 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
-public class PlayerAnimation : MonoBehaviour
-{
+// Thin wrapper over Freny's Animator, so Player and Dash never spell parameter names.
+// Player_Animator parameters in use:
+//   bools     Moving, isJumping, Stunned
+//   triggers  Melee, Ranged, Dash, Hit, Death
+public class PlayerAnimation : MonoBehaviour {
+
     private Animator _anim;
 
-    void Awake()
-    {
+    private void Awake() {
         _anim = GetComponentInChildren<Animator>();
     }
 
-    public void Falling(bool falling)
-    {
-        _anim.SetBool("Falling", falling);
-    }
-    
-    public void Jump(bool jump)
-    {
-        _anim.SetBool("isJumping", jump);
-    }
-    
-    public void Landing()
-    {
-        _anim.SetTrigger("Landing");
-    }
-
-    public void Move(bool moving)
-    {
+    public void Move(bool moving) {
         _anim.SetBool("Moving", moving);
     }
 
-    public void  Melee()
-    {
+    // true while airborne (Jump state), false on the ground (Landing -> Idle/Walk)
+    public void Jump(bool inAir) {
+        _anim.SetBool("isJumping", inAir);
+    }
+
+    // knocked down: Any State -> Duck while true, Duck -> Idle when it clears
+    public void Stunned(bool stunned) {
+        if (stunned) {
+            _anim.ResetTrigger("Hit"); // the crouch replaces the flinch
+        }
+        _anim.SetBool("Stunned", stunned);
+    }
+
+    public void Melee() {
         Fire("Melee");
     }
 
     public void Ranged() {
-        _anim.ResetTrigger("RangedJump");
         Fire("Ranged");
     }
-    
-    public void RangedJump() {
-        _anim.ResetTrigger("Ranged");
-        Fire("RangedJump");
+
+    public void Dash() {
+        Fire("Dash");
+    }
+
+    public void Hit() {
+        _anim.SetTrigger("Hit");
+    }
+
+    public void Death() {
+        _anim.SetTrigger("Death");
     }
 
     // a trigger stays armed until some state has a transition for it; if the current state has
-    // none (e.g. Ranged while in Landing), it used to fire the animation seconds later
+    // none, it used to fire the animation seconds later (a pistol draw right after landing)
     private void Fire(string trigger) {
         _anim.SetTrigger(trigger);
         StartCoroutine(ClearTrigger(trigger));
     }
 
-    private System.Collections.IEnumerator ClearTrigger(string trigger) {
+    private IEnumerator ClearTrigger(string trigger) {
         yield return new WaitForSeconds(0.15f);
         if (_anim) {
             _anim.ResetTrigger(trigger);
         }
-    }
-
-    public void Dash()
-    {
-        _anim.SetTrigger("Dash");
-    }
-
-    public void Hit()
-    {
-        _anim.SetTrigger("Hit");
-    }
-
-    public void Death()
-    {
-        _anim.SetTrigger("Death");
     }
 }

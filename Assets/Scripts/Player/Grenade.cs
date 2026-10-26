@@ -46,9 +46,8 @@ public class Grenade : MonoBehaviour {
             if (enemy == null || enemy.IsDead || !hit.Add(enemy)) {
                 continue;
             }
-            IDamageable target = enemy as IDamageable;
-            for (int i = 0; i < damage && target != null && !enemy.IsDead; i++) {
-                target.Damage();
+            for (int i = 0; i < damage && !enemy.IsDead; i++) {
+                enemy.Damage();
             }
         }
         Destroy(gameObject);

@@ -1,107 +1,130 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Utility;
 
+// Freny. Reads one PlayerInputFrame per frame (keyboard or arena autopilot, picked by FrenyInput)
+// and turns it into movement, jumps and attacks. Nothing here knows who is driving.
+//
+//   Update       what she wants to do this frame: ground check, stun, move, sprint, jump, weapons
+//   FixedUpdate  the physics: horizontal speed, fast fall, knockback slide
+//
+// Animation goes through PlayerAnimation; the Melee Attack clip switches the sword hitbox on and off.
 public class Player : MonoBehaviour, IDamageable {
-    
+
+    // ---- scene references ---------------------------------------------------------------------
     public GameObject revolverBulletPrefab;
     public Transform playerRevolverShootPosition;
-    
-    public int coins;
-    private Rigidbody2D rg2d;
-    private Collider2D col2d;
+    public Transform feetPos;          // ground check circle (read by the autopilot too)
+    public float checkRadius;
+    public LayerMask whatIsGround;
+    public GameObject gameOver;
 
-    private bool _resetAttack = false;
-
+    // ---- tuning -------------------------------------------------------------------------------
+    [Header("Movement")]
     [SerializeField] private float _speed = 3.0f;
-    [SerializeField] private float attackCooldown = 1.0f;
-    private float _baseSpeed;
-    private float _baseAttackCooldown;
-    private int _baseMaxHealth;
-    private FrenyInput _input;
-    private float move;
-    private PlayerAnimation _playerAnim;
-    
-    [SerializeField] private float jumpForce = 4.0f; // unused since jumpHeight; kept so old scenes still load
-    [SerializeField] private float jumpHeight = 2.6f;    // units; platforms in the arena are 2 apart
-    [SerializeField] private float gravityScale = 3f;    // heavier than Unity's default: a quick, snappy jump
+    [SerializeField] private float jumpHeight = 2.6f;      // units; arena platforms are 2 apart
+    [SerializeField] private float gravityScale = 3f;      // heavier than Unity's default: a snappy jump
+    [SerializeField] private float fallMultiplier = 4.0f;  // extra gravity on the way down (TowerFall feel)
+    [SerializeField] private float coyoteTime = 0.1f;      // may still jump this long after walking off an edge
+    [SerializeField] private float jumpBuffer = 0.12f;     // a jump pressed this long before landing still happens
+
+    [Header("Sprint (Shift)")]
+    [SerializeField] private float runMultiplier = 1.6f;
+    [SerializeField] private float runDuration = 1.5f;     // a short burst...
+    [SerializeField] private float runCooldown = 2.5f;     // ...then it needs to recover
+
+    [Header("Combat")]
+    public int MaxHealth = 4;
+    [SerializeField] private float attackCooldown = 1.0f;  // shared by sword and gun
+    [SerializeField] private float invulnerableTime = 0.8f; // blinking after a hit: two enemies landing together take one heart
+    [SerializeField] private float stunTime = 0.5f;        // crouched and helpless after a knockback
+    [SerializeField] private float knockbackDrag = 14f;    // how fast the shove dies out (units/s²)
+    [SerializeField] private int shellsPerRun = 6;         // shotgun shells at the start of a run; chests add more
+
+    [Header("Grenade (G)")]
     [SerializeField] private float grenadeCooldown = 8f;
-    [SerializeField] private float grenadeAngle = 55f;      // degrees above the horizontal
+    [SerializeField] private float grenadeAngle = 55f;     // degrees above the horizontal
     [SerializeField] private float grenadeMinSpeed = 5f;
     [SerializeField] private float grenadeMaxSpeed = 13f;
     public const float GrenadeGravity = 1.5f;
-    private float nextGrenadeTime;
-    public bool GrenadeReady => Time.time >= nextGrenadeTime;
+
+    // ---- state --------------------------------------------------------------------------------
+    public int coins;
+    public int Health { get; set; }
+    public int ShotgunShells { get; private set; }
+    public bool ShotgunEquipped { get; private set; } = true; // 1 = pistol, 2 = shotgun
+    public bool IsRunning { get; private set; }
     public bool ChargingGrenade { get; private set; }
     public float GrenadeCharge { get; private set; }
 
-    // shotgun shells for this run (the shotgun upgrade starts each run with some; chests add more).
-    // With no shells the revolver is used.
-    [SerializeField] private int shellsPerRun = 6;
-    public int ShotgunShells { get; private set; }
-    public bool ShotgunEquipped { get; private set; } = true; // 1 = pistol, 2 = shotgun
-    public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunShells > 0 && ShotgunEquipped;
-    [SerializeField] public float fallMultiplier = 4.0f;
-    [SerializeField] public float lowJumpMultiplier = 3.0f; // unused: the jump has a fixed height now (TowerFall style)
-    [SerializeField] private float coyoteTime = 0.1f;        // may still jump this long after walking off an edge
-    [SerializeField] private float jumpBuffer = 0.12f;       // a jump pressed this long before landing still happens
+    private bool isGrounded;
+    private bool wasGrounded;
+    private bool isJumping;
+    private bool stunned;
+    private bool isDead;
+    private int airJumpsLeft;          // double jump upgrade
     private float lastGroundedTime = -10f;
     private float jumpPressedTime = -10f;
-
-    // sprint (Shift): a short burst, then it needs to recover
-    [SerializeField] private float runMultiplier = 1.6f;
-    [SerializeField] private float runDuration = 1.5f;
-    [SerializeField] private float runCooldown = 2.5f;
-    private float runUntil = -1f;
+    private float jumpStartTime = -10f;
+    private float attackReadyAt;
+    private float invulnerableUntil;
+    private float stunnedUntil;
+    private float runUntil;
     private float runReadyAt;
-    public bool IsRunning { get; private set; }
-    public bool RunReady => Time.time >= runReadyAt && runUntil < 0f;
-    private bool isGrounded;
-    public Transform feetPos;
-    public float checkRadius;
-    public LayerMask whatIsGround;
-    private float jumpTimeCounter;
-    public bool isJumping;
-    
-    private bool isDead = false;
-    public GameObject gameOver;
-    public int MaxHealth = 4;
-    public int Health { get; set; }
-    public int Energy { get; set; }
+    private float nextGrenadeTime;
+    private float nextDustTime;
+
+    private float _baseSpeed;
+    private float _baseAttackCooldown;
+    private int _baseMaxHealth;
+
+    private Rigidbody2D rg2d;
+    private Collider2D col2d;
+    private FrenyInput _input;
+    private PlayerAnimation _playerAnim;
     private Dash _dash;
     private SpriteRenderer _sprite;
     private GameManager _gameManager;
-
-    // after a hit Freny blinks and can't be hit again for a moment, so two enemies (or a swing
-    // and a hexball) landing together don't take two hearts at once
-    [SerializeField] private float invulnerableTime = 0.8f;
-    private float invulnerableUntil;
-    private float jumpStartTime;
-    private int airJumpsLeft;          // double jump upgrade
-    private float knockbackUntil;      // while shoved, the input doesn't override the velocity
-    private float nextDustTime;
-    private bool wasGrounded;
     private Transform swordBox;
 
-    public bool CanAirJump => !isGrounded && airJumpsLeft > 0;
-    public bool IsInvulnerable => Time.time < invulnerableUntil;
-
-    // read by the arena autopilot so it decides with the same information a person sees
+    // ---- read by the autopilot and the HUD, so they decide with the same information a person sees
     public bool IsGrounded => isGrounded;
     public bool IsDead => isDead;
-    public bool AttackReady => !_resetAttack;
+    public bool IsStunned => stunned;
+    public bool IsInvulnerable => Time.time < invulnerableUntil;
+    public bool CanAirJump => !isGrounded && airJumpsLeft > 0;
+    public bool AttackReady => Time.time >= attackReadyAt;
     public bool FacingRight => transform.localScale.x > 0;
+    public bool RunReady => !IsRunning && Time.time >= runReadyAt;
+    public bool GrenadeReady => Time.time >= nextGrenadeTime;
+    public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunEquipped && ShotgunShells > 0;
+    // the GameManager is looked up once in Start (FindObjectOfType walks the whole scene,
+    // and the autopilot asks this on every decision)
+    public bool HasPotion => _gameManager != null && _gameManager.HasPotion;
 
-    // Start is called before the first frame update
-    void Start() {
+    private Vector3 Feet => feetPos ? feetPos.position : transform.position;
+
+    // ==== lifecycle ============================================================================
+
+    private void Start() {
         _input = GetComponent<FrenyInput>();
         if (_input == null) {
             // scenes made before the input layer still get keyboard control
             _input = gameObject.AddComponent<FrenyInput>();
         }
+        rg2d = GetComponent<Rigidbody2D>();
+        col2d = GetComponent<Collider2D>();
+        _playerAnim = GetComponent<PlayerAnimation>();
+        _dash = GetComponent<Dash>();
+        _sprite = GetComponentInChildren<SpriteRenderer>();
+        _gameManager = FindObjectOfType<GameManager>();
+        swordBox = FindChild("Sword_Hit_Box");
+        if (playerRevolverShootPosition == null) {
+            playerRevolverShootPosition = FindShootPosition();
+        }
+        if (rg2d) {
+            rg2d.gravityScale = gravityScale;
+        }
 
+        // Freny's attribute track (FrenyProgress) multiplies the inspector values
         _baseSpeed = _speed;
         _baseAttackCooldown = attackCooldown;
         _baseMaxHealth = MaxHealth;
@@ -109,84 +132,19 @@ public class Player : MonoBehaviour, IDamageable {
         FrenyProgress.Changed += ApplyUpgrades;
 
         Health = MaxHealth;
-        Energy = 100;
         ShotgunShells = FrenyProgress.HasShotgun ? shellsPerRun : 0;
         // coins persist between runs and scenes (GDD: persistência)
         coins = FrenyProgress.Coins;
         if (UIManager.Instance) {
             UIManager.Instance.UpdateCoins(coins);
         }
-        rg2d = GetComponent<Rigidbody2D>();
-        if (rg2d) {
-            rg2d.gravityScale = gravityScale;
-        }
-        col2d = GetComponent<Collider2D>();
-        _playerAnim = GetComponent<PlayerAnimation>();
-        _dash = GetComponent<Dash>();
-        _sprite = GetComponentInChildren<SpriteRenderer>();
-        _gameManager = FindObjectOfType<GameManager>();
-        swordBox = FindChild("Sword_Hit_Box");
-        ApplyUpgrades();
-        if (playerRevolverShootPosition == null) {
-            playerRevolverShootPosition = FindShootPosition();
-        }
     }
 
-    // all physics in FixedUpdate: horizontal speed and the "better jump" gravity. Changing the
-    // velocity in Update made the jump height depend on the frame rate.
-    private void FixedUpdate() {
-        if (isDead || rg2d == null) {
-            return;
-        }
-
-        PlayerInputFrame input = _input.Current;
-        move = input.move;
-        Vector2 velocity = rg2d.Vel();
-
-        // while dashing, Dash owns the horizontal velocity; while shoved, the knockback does
-        if ((_dash == null || !_dash.IsDashing) && Time.time >= knockbackUntil) {
-            velocity.x = move * _speed * (IsRunning ? runMultiplier : 1f);
-        }
-
-        // fixed-height jump with a quick fall: holding the button no longer changes the height
-        float gravity = Physics2D.gravity.y * gravityScale;
-        if (velocity.y < 0) {
-            velocity += Vector2.up * (gravity * (fallMultiplier - 1) * Time.fixedDeltaTime);
-        }
-
-        rg2d.SetVel(velocity);
+    private void OnDestroy() {
+        FrenyProgress.Changed -= ApplyUpgrades;
     }
 
-    private Transform FindShootPosition() {
-        foreach (Transform child in GetComponentsInChildren<Transform>()) {
-            if (child.CompareTag("RevolverShootPosition")) {
-                return child;
-            }
-        }
-        GameObject tagged = GameObject.FindGameObjectWithTag("RevolverShootPosition");
-        return tagged ? tagged.transform : transform;
-    }
-
-    private Transform FindChild(string name) {
-        foreach (Transform child in GetComponentsInChildren<Transform>(true)) {
-            if (child.name == name) {
-                return child;
-            }
-        }
-        return null;
-    }
-
-    // a hit from a heavy enemy shoves Freny back (and a little up)
-    public void Knockback(Vector2 velocity) {
-        if (isDead || rg2d == null) {
-            return;
-        }
-        rg2d.SetVel(velocity);
-        knockbackUntil = Time.time + 0.25f;
-    }
-
-    // Update is called once per frame
-    void Update() {
+    private void Update() {
         if (isDead) {
             return;
         }
@@ -196,21 +154,45 @@ public class Player : MonoBehaviour, IDamageable {
             _sprite.enabled = !IsInvulnerable || Mathf.Repeat(Time.time, 0.16f) < 0.08f;
         }
 
+        CheckGround();
+        if (UpdateStun()) {
+            return; // knocked down: no control until she gets up
+        }
+
         Movement();
         Run();
         Jump();
         SelectWeapon();
         Attack();
-        RangedAttack();
+        Shoot();
         ThrowGrenade();
         UsePotion();
     }
 
-    private void OnDestroy() {
-        FrenyProgress.Changed -= ApplyUpgrades;
+    // all velocity changes happen here: doing them in Update made the jump depend on the frame rate
+    private void FixedUpdate() {
+        if (isDead || rg2d == null) {
+            return;
+        }
+
+        Vector2 velocity = rg2d.Vel();
+        if (stunned) {
+            // the shove carries her and fades out instead of stopping dead
+            velocity.x = Mathf.MoveTowards(velocity.x, 0f, knockbackDrag * Time.fixedDeltaTime);
+        } else if (_dash == null || !_dash.IsDashing) {
+            // while dashing, Dash owns the horizontal velocity
+            velocity.x = _input.Current.move * _speed * (IsRunning ? runMultiplier : 1f);
+        }
+
+        // fixed-height jump with a quick fall: holding the button doesn't change the height
+        if (velocity.y < 0f) {
+            velocity.y += Physics2D.gravity.y * gravityScale * (fallMultiplier - 1f) * Time.fixedDeltaTime;
+        }
+
+        rg2d.SetVel(velocity);
     }
 
-    // Freny's attribute track (FrenyProgress): applies in the arena, by hand and in the campaign
+    // applies in the arena, by hand and in the campaign
     public void ApplyUpgrades() {
         int oldMax = MaxHealth;
         MaxHealth = _baseMaxHealth + FrenyProgress.BonusMaxHealth;
@@ -231,41 +213,131 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
-    void Movement() {
-        float move = _input.Current.move;
-        _playerAnim.Move(move != 0);
+    // ==== movement =============================================================================
 
-        // dust kicked up while running
-        if (move != 0 && isGrounded && Time.time >= nextDustTime) {
-            Fx.Dust(feetPos ? feetPos.position : transform.position, 2);
-            nextDustTime = Time.time + 0.15f;
+    private void CheckGround() {
+        isGrounded = Physics2D.OverlapCircle(Feet, checkRadius, whatIsGround);
+        if (isGrounded) {
+            // the feet circle still touches the ground for a moment after take-off
+            bool justTookOff = Time.time - jumpStartTime <= 0.15f;
+            if (!wasGrounded && !justTookOff) {
+                Fx.Dust(Feet, 5); // landed
+            }
+            if (!justTookOff) {
+                isJumping = false;
+            }
+            airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
+            lastGroundedTime = Time.time;
+        }
+        wasGrounded = isGrounded;
+    }
+
+    // true while she is still down
+    private bool UpdateStun() {
+        if (!stunned) {
+            return false;
+        }
+        if (Time.time < stunnedUntil) {
+            _playerAnim.Move(false);
+            return true;
+        }
+        stunned = false;
+        _playerAnim.Stunned(false);
+        return false;
+    }
+
+    private void Movement() {
+        float move = _input.Current.move;
+        _playerAnim.Move(move != 0f);
+        if (move == 0f) {
+            return;
         }
 
-        if (move > 0) {
-            Util.Flip(true, transform);
-        } else if (move < 0) {
-            Util.Flip(false, transform);
+        Face(move > 0f);
+        // dust kicked up while running
+        if (isGrounded && Time.time >= nextDustTime) {
+            Fx.Dust(Feet, 2);
+            nextDustTime = Time.time + 0.15f;
         }
     }
 
+    private void Face(bool right) {
+        Vector3 scale = transform.localScale;
+        scale.x = Mathf.Abs(scale.x) * (right ? 1f : -1f);
+        transform.localScale = scale;
+    }
+
     // Shift: a short sprint, then a cooldown so it can't be held all the time
-    void Run() {
-        bool wantsRun = _input.Current.runHeld && Mathf.Abs(_input.Current.move) > 0f;
+    private void Run() {
+        PlayerInputFrame input = _input.Current;
+        bool wantsRun = input.runHeld && input.move != 0f;
         if (IsRunning) {
             if (!wantsRun || Time.time >= runUntil) {
-                IsRunning = false;
-                runUntil = -1f;
-                runReadyAt = Time.time + runCooldown;
+                EndRun();
             }
         } else if (wantsRun && RunReady) {
             IsRunning = true;
             runUntil = Time.time + runDuration;
-            Fx.Dust(feetPos ? feetPos.position : transform.position, 4);
+            Fx.Dust(Feet, 4);
         }
     }
 
+    private void EndRun() {
+        IsRunning = false;
+        runReadyAt = Time.time + runCooldown;
+    }
+
+    // TowerFall style: fixed height, with coyote time and a jump buffer so it feels responsive
+    private void Jump() {
+        if (_input.Current.jumpPressed) {
+            jumpPressedTime = Time.time;
+        }
+        bool wantsJump = Time.time - jumpPressedTime <= jumpBuffer;
+        bool groundJump = !isJumping && (isGrounded || Time.time - lastGroundedTime <= coyoteTime);
+        bool airJump = _input.Current.jumpPressed && CanAirJump; // the buffer only applies on the ground
+
+        if (wantsJump && (groundJump || airJump)) {
+            jumpPressedTime = -10f;
+            if (groundJump) {
+                Fx.Dust(Feet, 4);
+            } else {
+                airJumpsLeft--;
+                Fx.Burst(Feet, Color.white, 8, 1.5f, 0.07f, 0.3f);
+            }
+            isJumping = true;
+            jumpStartTime = Time.time;
+            // keep the horizontal speed; setting Vector2.up * force zeroed it for one physics step
+            float jumpVelocity = Mathf.Sqrt(2f * Mathf.Abs(Physics2D.gravity.y) * gravityScale * jumpHeight);
+            rg2d.SetVel(new Vector2(rg2d.Vel().x, jumpVelocity));
+        }
+
+        _playerAnim.Jump(!isGrounded || isJumping);
+    }
+
+    // a hit from a heavy enemy shoves Freny back and knocks her down for stunTime
+    public void Knockback(Vector2 velocity) {
+        if (isDead || rg2d == null) {
+            return;
+        }
+        if (_dash) {
+            _dash.Cancel();
+        }
+        if (IsRunning) {
+            EndRun();
+        }
+        ChargingGrenade = false;
+        GrenadeCharge = 0f;
+
+        rg2d.SetVel(velocity);
+        stunned = true;
+        stunnedUntil = Time.time + stunTime;
+        _playerAnim.Stunned(true);
+    }
+
+    // ==== weapons ==============================================================================
+
     // 1 = pistol, 2 = shotgun (when owned and loaded)
-    void SelectWeapon() {
+    private void SelectWeapon() {
         if (_input.Current.selectPistol) {
             ShotgunEquipped = false;
         } else if (_input.Current.selectShotgun && FrenyProgress.HasShotgun) {
@@ -273,69 +345,22 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
-    void Jump() {
-        isGrounded = Physics2D.OverlapCircle(feetPos.position, checkRadius, whatIsGround);
-
-        Vector3 feet = feetPos ? feetPos.position : transform.position;
-        if (isGrounded && !wasGrounded && Time.time - jumpStartTime > 0.15f) {
-            // landed
-            Fx.Dust(feet, 5);
-        }
-        if (isGrounded) {
-            airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
-            lastGroundedTime = Time.time;
-        }
-        wasGrounded = isGrounded;
-
-        if (_input.Current.jumpPressed) {
-            jumpPressedTime = Time.time;
-        }
-        bool wantsJump = Time.time - jumpPressedTime <= jumpBuffer;
-        bool groundJump = (isGrounded || Time.time - lastGroundedTime <= coyoteTime) && !isJumping;
-        bool canJump = groundJump || (wantsJump && _input.Current.jumpPressed && CanAirJump);
-        if (wantsJump && canJump) {
-            jumpPressedTime = -10f;
-            if (!isGrounded && !groundJump) {
-                airJumpsLeft--;
-                Fx.Burst(feet, Color.white, 8, 1.5f, 0.07f, 0.3f);
-            } else {
-                Fx.Dust(feet, 4);
-            }
-            isJumping = true;
-            jumpStartTime = Time.time;
-            // keep the horizontal speed; the old Vector2.up * jumpForce zeroed it for one physics step
-            float jumpVelocity = Mathf.Sqrt(2f * Mathf.Abs(Physics2D.gravity.y) * gravityScale * jumpHeight);
-            rg2d.SetVel(new Vector2(rg2d.Vel().x, jumpVelocity));
-        }
-
-        _playerAnim.Jump(!isGrounded || isJumping);
-        // the feet circle still touches the ground for a moment after take-off
-        if (isGrounded && Time.time - jumpStartTime > 0.15f) {
-            isJumping = false;
-        }
-    }
-
-    void Attack() {
-        // the sword works mid-air too; the gun does not (see RangedAttack)
-        if (_input.Current.meleePressed) {
-            if (_resetAttack == false) {
-                _playerAnim.Melee();
-                StartCoroutine(ResetAttackRoutine());
-            }
-        }
-    }
-
-    public void RangedAttack() {
-        if (!_input || !_input.Current.rangedPressed) {
+    // the sword works mid-air too; the gun does not (see Shoot)
+    private void Attack() {
+        if (!_input.Current.meleePressed || !AttackReady) {
             return;
         }
+        _playerAnim.Melee();
+        attackReadyAt = Time.time + attackCooldown;
+    }
 
-        if (_resetAttack != false || !isGrounded) {
+    private void Shoot() {
+        if (!_input.Current.rangedPressed || !AttackReady || !isGrounded) {
             return; // no shooting in the air (it made her too strong)
         }
 
         _playerAnim.Ranged();
-        Vector3 muzzle = playerRevolverShootPosition.position;
+        Vector3 muzzle = playerRevolverShootPosition ? playerRevolverShootPosition.position : transform.position;
         Vector3 forward = FacingRight ? Vector3.right : Vector3.left;
         Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);
 
@@ -348,7 +373,15 @@ public class Player : MonoBehaviour, IDamageable {
         } else {
             FireBullet(muzzle, forward);
         }
-        StartCoroutine(ResetAttackRoutine());
+        attackReadyAt = Time.time + attackCooldown;
+    }
+
+    private void FireBullet(Vector3 from, Vector3 direction) {
+        GameObject bullet = Instantiate(revolverBulletPrefab, from, Quaternion.identity);
+        RangedAttack shot = bullet.GetComponent<RangedAttack>();
+        if (shot) {
+            shot.SetDirection(direction);
+        }
     }
 
     public void AddShells(int amount) {
@@ -359,7 +392,7 @@ public class Player : MonoBehaviour, IDamageable {
 
     // Worms style: hold G to charge, release to lob the grenade forward in an arc whose range
     // depends on the charge. The autopilot sends the charge it wants directly.
-    void ThrowGrenade() {
+    private void ThrowGrenade() {
         PlayerInputFrame input = _input.Current;
         ChargingGrenade = FrenyProgress.HasGrenade && GrenadeReady && input.grenadeHeld;
         GrenadeCharge = ChargingGrenade ? input.grenadeCharge : 0f;
@@ -376,6 +409,7 @@ public class Player : MonoBehaviour, IDamageable {
         float rad = grenadeAngle * Mathf.Deg2Rad;
         Vector2 velocity = new Vector2(facing * Mathf.Cos(rad), Mathf.Sin(rad)) * speed;
 
+        // built at runtime, so no prefab is needed
         GameObject grenade = new GameObject("Grenade");
         grenade.transform.position = from;
         grenade.transform.localScale = Vector3.one * 0.35f;
@@ -410,19 +444,7 @@ public class Player : MonoBehaviour, IDamageable {
         return Mathf.Clamp01(Mathf.InverseLerp(grenadeMinSpeed, grenadeMaxSpeed, speed));
     }
 
-    private void FireBullet(Vector3 from, Vector3 direction) {
-        GameObject bullet = Instantiate(revolverBulletPrefab, from, Quaternion.identity);
-        RangedAttack shot = bullet.GetComponent<RangedAttack>();
-        if (shot) {
-            shot.SetDirection(direction);
-        }
-    }
-
-    IEnumerator ResetAttackRoutine() {
-        _resetAttack = true;
-        yield return new WaitForSeconds(attackCooldown);
-        _resetAttack = false;
-    }
+    // ==== health ===============================================================================
 
     public void Damage() {
         TryDamage();
@@ -430,7 +452,9 @@ public class Player : MonoBehaviour, IDamageable {
 
     // false when the hit was ignored (dead or still blinking from the last one)
     public bool TryDamage() {
-        if (isDead || IsInvulnerable) return false;
+        if (isDead || IsInvulnerable) {
+            return false;
+        }
         invulnerableUntil = Time.time + invulnerableTime;
         Health = Mathf.Max(Health - 1, 0);
         if (UIManager.Instance) {
@@ -439,12 +463,15 @@ public class Player : MonoBehaviour, IDamageable {
         _playerAnim.Hit();
         Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.9f, 0.2f, 0.2f), 10, 2.5f, 0.08f, 0.4f);
 
-        if (Health >= 1) {
-            return true;
+        if (Health < 1) {
+            Die();
         }
-        
-        _playerAnim.Death();
+        return true;
+    }
+
+    private void Die() {
         isDead = true;
+        _playerAnim.Death();
         // Freny bursts into particles instead of the "pieces" death animation
         Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.9f, 0.3f, 0.3f), 36, 3.5f, 0.12f, 0.9f);
         if (_sprite) {
@@ -453,33 +480,34 @@ public class Player : MonoBehaviour, IDamageable {
         if (gameOver) {
             gameOver.SetActive(true);
         }
-
-        //Temporary solution for being able to move after death
+        // the body stops moving and colliding at once; Dash and the enemies check for a missing rb/collider
         Destroy(rg2d);
         Destroy(col2d);
-        return true;
     }
 
     // drinks the potion bought at the shop (Q, or the autopilot when it has the upgrade)
-    void UsePotion() {
-        if (!_input.Current.potionPressed || Health >= MaxHealth) {
+    private void UsePotion() {
+        if (!_input.Current.potionPressed || Health >= MaxHealth || !HasPotion) {
             return;
         }
-
-        if (!HasPotion) {
-            return;
-        }
-
         _gameManager.HasPotion = false;
-        Health = Mathf.Min(Health + 1, MaxHealth);
+        Heal(1);
+    }
+
+    public void PickUpItem(HealthPotion healthPotion) {
+        if (Health >= MaxHealth) {
+            return;
+        }
+        Heal(Mathf.Max(healthPotion.healPoints, 1));
+        Destroy(healthPotion.gameObject);
+    }
+
+    private void Heal(int amount) {
+        Health = Mathf.Min(Health + amount, MaxHealth);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, false);
         }
     }
-
-    // the GameManager is looked up once in Start (FindObjectOfType searches the whole scene,
-    // and the autopilot asks this on every decision)
-    public bool HasPotion => _gameManager != null && _gameManager.HasPotion;
 
     public void AddCoins(int amount) {
         coins = Mathf.Max(0, coins + amount);
@@ -489,15 +517,24 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
-    public void PickUpItem(HealthPotion healthPotion) {
-        if (Health >= MaxHealth) {
-            return;
+    // ==== helpers ==============================================================================
+
+    private Transform FindShootPosition() {
+        foreach (Transform child in GetComponentsInChildren<Transform>()) {
+            if (child.CompareTag("RevolverShootPosition")) {
+                return child;
+            }
         }
-        Health = Mathf.Min(Health + Mathf.Max(healthPotion.healPoints, 1), MaxHealth);
-        if (UIManager.Instance) {
-            UIManager.Instance.UpdateLives(Health, false);
+        GameObject tagged = GameObject.FindGameObjectWithTag("RevolverShootPosition");
+        return tagged ? tagged.transform : transform;
+    }
+
+    private Transform FindChild(string name) {
+        foreach (Transform child in GetComponentsInChildren<Transform>(true)) {
+            if (child.name == name) {
+                return child;
+            }
         }
-        Destroy(healthPotion.gameObject);
-        
+        return null;
     }
 }

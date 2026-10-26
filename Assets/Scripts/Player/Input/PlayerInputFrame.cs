@@ -5,7 +5,7 @@ using UnityEngine;
 public struct PlayerInputFrame {
     public float move;          // -1 left .. 1 right
     public bool jumpPressed;    // this frame only
-    public bool jumpHeld;       // longer jump while held
+    public bool jumpHeld;       // not used by the fixed-height jump; kept for a variable jump later
     public bool meleePressed;
     public bool rangedPressed;
     public bool dashPressed;

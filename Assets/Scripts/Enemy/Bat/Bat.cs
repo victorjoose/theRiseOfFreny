@@ -1,10 +1,8 @@
 using UnityEngine;
-using Utility;
 
 // Flying enemy: hovers near its spawn point and, when Freny comes into sight, swoops at her and
 // bites on contact. It ignores platforms, so it reaches her wherever she is.
-public class Bat : Enemy, IDamageable {
-    public int Health { get; set; }
+public class Bat : Enemy {
 
     [SerializeField] private float hoverAmplitude = 0.4f;
     [SerializeField] private float hoverFrequency = 2.5f;
@@ -21,7 +19,6 @@ public class Bat : Enemy, IDamageable {
 
     public override void Init() {
         base.Init();
-        Health = base.health;
         home = transform.position;
         phase = Random.Range(0f, Mathf.PI * 2f);
         if (rb) {
@@ -69,16 +66,4 @@ public class Bat : Enemy, IDamageable {
         }
     }
 
-    public void Damage() {
-        if (!Util.IsAlive(isDead, gameObject)) {
-            return;
-        }
-        Health--;
-        TakeHit();
-
-        if (Util.ShouldBeDead(Health)) {
-            isDead = Util.Dies(anim, gameObject);
-            Util.DropCoin(coins, coinPrefab, transform);
-        }
-    }
 }

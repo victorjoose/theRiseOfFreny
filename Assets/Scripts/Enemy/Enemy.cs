@@ -1,9 +1,11 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Utility;
 
-public abstract class Enemy : MonoBehaviour
+// Base of every enemy: sight, patrol, chase, the wind-up attack, taking hits and dying. Subclasses
+// (Golem, Bug, Licker) only pick their colours; Bat and Sorcerer override Update for their own
+// movement and attacks. Health and death live here, so every enemy dies the same way.
+public abstract class Enemy : MonoBehaviour, IDamageable
 {
     // every enemy in the scene, kept up to date by OnEnable/OnDisable, so the autopilot
     // doesn't need FindObjectsOfType (which walks the whole scene) to find them
@@ -35,8 +37,9 @@ public abstract class Enemy : MonoBehaviour
     protected SpriteRenderer sprite;
     protected bool isDead = false;
     public bool IsDead => isDead;
+    public int Health { get; set; }
 
-    protected bool isHit;
+    protected bool isHit; // provoked: fights back even outside its sight
     protected float distance;
     protected Transform player_t;
     protected Player player;
@@ -90,6 +93,7 @@ public abstract class Enemy : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
         playerCol = player ? player.GetComponent<Collider2D>() : null;
+        Health = health; // the inspector value
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
         hasMovingParam = anim && HasParameter(anim, "Moving");
         hasInCombatParam = anim && HasParameter(anim, "InCombat");
@@ -265,7 +269,7 @@ public abstract class Enemy : MonoBehaviour
         attackRoutine = null;
     }
 
-    // damages Freny and, for heavy hitters, shoves her away from the enemy
+    // damages Freny and, for heavy hitters, shoves her away from the enemy (she stays down for a moment)
     protected void HitPlayer() {
         if (!player.TryDamage()) {
             return;
@@ -295,7 +299,21 @@ public abstract class Enemy : MonoBehaviour
         }
     }
 
-    // shared by every enemy's Damage(): flinch, fight back, and bleed a few particles
+    // ==== taking hits ==========================================================================
+
+    // one point of damage from the sword, a bullet or a grenade
+    public virtual void Damage() {
+        if (isDead) {
+            return;
+        }
+        Health--;
+        TakeHit();
+        if (Health < 1) {
+            Die();
+        }
+    }
+
+    // flinch, fight back, and bleed a few particles
     protected void TakeHit() {
         isHit = true;
         if (hasHitTrigger) {
@@ -307,7 +325,7 @@ public abstract class Enemy : MonoBehaviour
 
     // the sprite disappears in a burst of particles instead of playing the "pieces" animation,
     // and the body stops colliding and moving at once (the pieces used to keep walking)
-    public void OnDied() {
+    protected void Die() {
         isDead = true;
         if (attackRoutine != null) {
             StopCoroutine(attackRoutine);
@@ -323,6 +341,38 @@ public abstract class Enemy : MonoBehaviour
         }
         if (rb) {
             rb.simulated = false;
+        }
+
+        FrenyProgress.AddXp(Mathf.Max(scoreToAdd, 10));
+        if (UIManager.Instance) {
+            UIManager.Instance.HandleComboManager(this);
+        }
+        ReleaseSpawnerSlot();
+        DropCoin();
+        Destroy(gameObject, 1f);
+    }
+
+    private void DropCoin() {
+        if (coins <= 0 || coinPrefab == null) {
+            return;
+        }
+        GameObject dropped = Instantiate(coinPrefab, transform.position, Quaternion.identity);
+        Coin coin = dropped.GetComponent<Coin>();
+        if (coin) {
+            coin.coins = coins;
+        }
+    }
+
+    // the spawner that made this enemy may spawn another one
+    private void ReleaseSpawnerSlot() {
+        if (string.IsNullOrEmpty(spawnerUuid)) {
+            return;
+        }
+        foreach (GameObject spawnerObj in GameObject.FindGameObjectsWithTag("Spawner")) {
+            EnemySpawner spawner = spawnerObj.GetComponent<EnemySpawner>();
+            if (spawner != null && spawner.uuid == spawnerUuid) {
+                spawner.countEnemies--;
+            }
         }
     }
 
