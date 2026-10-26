@@ -63,6 +63,11 @@ public class Player : MonoBehaviour, IDamageable {
 
         Health = MaxHealth;
         Energy = 100;
+        // coins persist between runs and scenes (GDD: persistência)
+        coins = FrenyProgress.Coins;
+        if (UIManager.Instance) {
+            UIManager.Instance.UpdateCoins(coins);
+        }
         rg2d = GetComponent<Rigidbody2D>();
         col2d = GetComponent<Collider2D>();
         _playerAnim = GetComponent<PlayerAnimation>();
@@ -227,7 +232,8 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void AddCoins(int amount) {
-        coins += amount;
+        coins = Mathf.Max(0, coins + amount);
+        FrenyProgress.Coins = coins;
         if (UIManager.Instance) {
             UIManager.Instance.UpdateCoins(coins);
         }

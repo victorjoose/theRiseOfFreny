@@ -99,10 +99,7 @@ public class Merchant : MonoBehaviour {
                 GameManager.Instance.HasPotion = true;
             }
             
-            _player.coins -= itemCost;
-            if (UIManager.Instance) {
-                UIManager.Instance.UpdateCoins(_player.coins);
-            }
+            _player.AddCoins(-itemCost);
             Debug.Log("Bought");
         } else {
             Debug.Log("Didnt buy");

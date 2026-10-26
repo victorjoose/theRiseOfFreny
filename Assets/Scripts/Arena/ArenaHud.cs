@@ -11,6 +11,7 @@ public class ArenaHud : MonoBehaviour {
     private Player player;
     private FrenyInput input;
     private ArenaAutopilot autopilot;
+    private ArenaRunManager run;
     private GUIStyle boxStyle;
 
     private static readonly FrenyUpgrade[] Upgrades = (FrenyUpgrade[])Enum.GetValues(typeof(FrenyUpgrade));
@@ -19,6 +20,7 @@ public class ArenaHud : MonoBehaviour {
         player = GetComponent<Player>();
         input = GetComponent<FrenyInput>();
         autopilot = GetComponent<ArenaAutopilot>();
+        run = GetComponent<ArenaRunManager>();
     }
 
     private void Update() {
@@ -40,7 +42,9 @@ public class ArenaHud : MonoBehaviour {
         GUILayout.BeginVertical(boxStyle);
 
         string who;
-        if (input.IsAutopilotDriving) {
+        if (run && run.RunOver) {
+            who = $"Freny caiu após {run.RunSeconds:0}s (recorde {FrenyProgress.BestRunSeconds:0}s). Nova corrida em {run.SecondsUntilRestart:0}s";
+        } else if (input.IsAutopilotDriving) {
             who = "Autopiloto: " + (autopilot ? autopilot.CurrentAction : "");
         } else if (input.AutoEnabled && input.HasAutopilot) {
             who = $"Você no controle (Auto volta em {input.SecondsUntilAutopilot:0.0} s)";

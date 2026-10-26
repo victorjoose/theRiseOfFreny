@@ -7,7 +7,10 @@ public class MeleeAttack : MonoBehaviour
     private bool _canDamage = true;
 
     private void OnTriggerEnter2D(Collider2D other) {
-        Debug.Log("Hit: " + other.name);
+        // the sword hitbox overlaps Freny herself, and she is IDamageable too
+        if (other.CompareTag("Player") || other.transform.IsChildOf(transform.root)) {
+            return;
+        }
 
         IDamageable hit = other.GetComponent<IDamageable>();
 

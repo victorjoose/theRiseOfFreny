@@ -32,6 +32,7 @@ public static class ArenaBootstrap {
 
         FrenyInput input = GetOrAdd<FrenyInput>(playerObj);
         GetOrAdd<ArenaAutopilot>(playerObj);
+        GetOrAdd<ArenaRunManager>(playerObj);
         GetOrAdd<ArenaHud>(playerObj);
         input.FindAutopilot();
     }
