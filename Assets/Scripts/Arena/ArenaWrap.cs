@@ -1,26 +1,18 @@
 using UnityEngine;
 
 // The arena camera is fixed, so whatever leaves the screen sideways comes back on the other
-// side (like Pac-Man). Added to the player by ArenaBootstrap; enemies stay on their patrols.
+// side (like Pac-Man). Added to the player by ArenaBootstrap; enemies are kept inside instead.
 public class ArenaWrap : MonoBehaviour {
 
-    [SerializeField] private float margin = 0.4f; // how far past the edge before wrapping
-
-    private Camera cam;
-
-    private void Start() {
-        cam = Camera.main;
-    }
+    [SerializeField] private float margin = 0f; // 0: wraps as soon as her centre crosses the edge (half out, half in)
 
     private void LateUpdate() {
-        if (cam == null || !cam.orthographic) {
+        if (!ArenaBounds.Active) {
             return;
         }
 
-        float halfWidth = cam.orthographicSize * cam.aspect;
-        float left = cam.transform.position.x - halfWidth;
-        float right = cam.transform.position.x + halfWidth;
-
+        float left = ArenaBounds.Left;
+        float right = ArenaBounds.Right;
         Vector3 pos = transform.position;
         if (pos.x < left - margin) {
             pos.x = right + margin - 0.05f;

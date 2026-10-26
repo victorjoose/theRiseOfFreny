@@ -15,6 +15,7 @@ public class ArenaHud : MonoBehaviour {
     private ArenaAutopilot autopilot;
     private ArenaRunManager run;
     private ArenaDirector director;
+    private Dash dash;
     private GUIStyle boxStyle;
 
     private static readonly FrenyUpgrade[] Upgrades = (FrenyUpgrade[])Enum.GetValues(typeof(FrenyUpgrade));
@@ -24,6 +25,7 @@ public class ArenaHud : MonoBehaviour {
         input = GetComponent<FrenyInput>();
         autopilot = GetComponent<ArenaAutopilot>();
         run = GetComponent<ArenaRunManager>();
+        dash = GetComponent<Dash>();
         director = FindObjectOfType<ArenaDirector>();
     }
 
@@ -105,7 +107,12 @@ public class ArenaHud : MonoBehaviour {
         DrawWeapons();
     }
 
-    // icons of what Freny carries, under the hearts (the HUD canvas is laid out for 1920x1080)
+    private static readonly Color ReadyColor = new Color(0.35f, 0.9f, 0.35f);
+    private static readonly Color ChargingColor = new Color(1f, 0.6f, 0.2f);
+    private static readonly Color ActiveColor = new Color(0.3f, 0.8f, 1f);
+
+    // icons of what Freny carries, under the hearts (the HUD canvas is laid out for 1920x1080),
+    // with the cooldowns as bars so it is clear why a key did nothing
     private void DrawWeapons() {
         ArenaAssets assets = ArenaAssets.Instance;
         if (assets == null) {
@@ -116,7 +123,10 @@ public class ArenaHud : MonoBehaviour {
         float x = 60f * scale;
         float y = 175f * scale;
 
+        float swordX = x;
         DrawIcon(FrenyProgress.HasGreatSword ? assets.greatSwordIcon : assets.swordIcon, ref x, y, size);
+        float swordReady = player.AttackReadiness;
+        DrawMeter(new Rect(swordX, y + size + 2f, size, 6f * scale), swordReady, swordReady >= 1f ? ReadyColor : ChargingColor);
         DrawIcon(assets.revolverIcon, ref x, y, size, !player.UsingShotgun);
         if (FrenyProgress.HasShotgun) {
             float sx = x;
@@ -131,12 +141,28 @@ public class ArenaHud : MonoBehaviour {
             GUI.color = old;
             if (player.ChargingGrenade) {
                 // power bar while G is held
-                GUI.Box(new Rect(gx, y + size + 2f, size, 6f * scale), GUIContent.none);
-                GUI.color = Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge);
-                GUI.DrawTexture(new Rect(gx, y + size + 2f, size * player.GrenadeCharge, 6f * scale), Texture2D.whiteTexture);
-                GUI.color = old;
+                DrawMeter(new Rect(gx, y + size + 2f, size, 6f * scale), player.GrenadeCharge, Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge));
             }
         }
+
+        // sprint and dash: stamina while running, recovery afterwards
+        float meterW = 110f * scale;
+        float runMeter = player.RunMeter;
+        GUI.Label(new Rect(x, y - 4f * scale, meterW, 20f * scale), player.IsRunning ? "Corrida (Shift)" : runMeter >= 1f ? "Corrida pronta (Shift)" : "Corrida recarregando");
+        DrawMeter(new Rect(x, y + 16f * scale, meterW, 6f * scale), runMeter, player.IsRunning ? ActiveColor : runMeter >= 1f ? ReadyColor : ChargingColor);
+        if (dash) {
+            float dashReady = dash.Readiness;
+            GUI.Label(new Rect(x, y + 26f * scale, meterW, 20f * scale), dashReady >= 1f ? "Dash pronto (C)" : "Dash recarregando");
+            DrawMeter(new Rect(x, y + 46f * scale, meterW, 6f * scale), dashReady, dashReady >= 1f ? ReadyColor : ChargingColor);
+        }
+    }
+
+    private static void DrawMeter(Rect rect, float fill, Color color) {
+        Color old = GUI.color;
+        GUI.Box(rect, GUIContent.none);
+        GUI.color = color;
+        GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(fill), rect.height), Texture2D.whiteTexture);
+        GUI.color = old;
     }
 
     private static void DrawIcon(Sprite sprite, ref float x, float y, float size, bool selected = true) {

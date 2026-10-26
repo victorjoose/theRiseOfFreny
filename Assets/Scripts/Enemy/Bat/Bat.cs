@@ -51,6 +51,7 @@ public class Bat : Enemy {
 
         Vector3 before = transform.position;
         transform.position = Vector3.MoveTowards(transform.position, goal, speedNow * Time.deltaTime);
+        ClampToArena();
 
         float dx = transform.position.x - before.x;
         if (Mathf.Abs(dx) > 0.0001f) {

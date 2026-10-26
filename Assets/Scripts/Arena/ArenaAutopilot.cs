@@ -20,9 +20,10 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     [SerializeField] private float jumpToReachHeight = 1.0f;   // target this much higher -> needs a jump
     [SerializeField] private float maxJumpHeight = 2.4f;       // what one jump can climb
     [SerializeField] private float dodgeWindow = 0.55f;        // dodge only when the projectile lands within this many seconds
-    [SerializeField] private float dashCloseDistance = 3.5f;   // farther than this (same floor) -> dash in
+    [SerializeField] private float dashCloseDistance = 5f;     // farther than this (same floor, sword ready) -> dash in
     [SerializeField] private float pickupRange = 7f;           // coins/chests this far away are worth a detour
-    [SerializeField] private float grabRange = 2.5f;           // coins this close are grabbed even mid-fight
+    [SerializeField] private float grabRange = 4f;             // coins this close are grabbed even mid-fight
+    [SerializeField] private float stuckSeconds = 3f;          // no progress towards the target this long -> it's unreachable
     [SerializeField] private float dangerRange = 3f;           // an enemy this close means no detours
     [SerializeField] private float jumpCooldown = 0.5f;        // no hopping: one jump, then land and think
     [SerializeField] private float unreachableMemory = 4f;     // seconds an enemy with no route is ignored
@@ -42,9 +43,12 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private bool planTurnsOnly;      // the move in the plan is a one-frame tap to turn around
     private Enemy currentTarget;     // kept between decisions, so she doesn't flip-flop between two enemies
     private bool retreating;         // decided once per sword cooldown
+    private Vector2 lastProgressPos;
+    private float lastProgressTime;
     private LayerMask ground;
 
-    public string CurrentAction { get; private set; } = "";
+    public string CurrentAction { get; private set; } = "";  // shown in the HUD: enemies, target and what she is doing
+    private string action = "";
 
     private void Awake() {
         player = GetComponent<Player>();
@@ -76,6 +80,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (Time.time >= nextDecisionTime) {
             planTurnsOnly = false;
             plan = Decide();
+            CheckStuck();
+            CurrentAction = Describe();
             if (plan.jumpPressed) {
                 if (Time.time < nextJumpTime) {
                     plan.jumpPressed = false; // landed a moment ago: walk this tick, jump on the next
@@ -137,7 +143,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             if (GoToPickup(ref frame, me, myFeet, pickupRange * 3f)) {
                 return frame;
             }
-            CurrentAction = enemies.Count > 0 ? "Sem caminho até os inimigos" : "Esperando inimigos";
+            action = enemies.Count > 0 ? "Sem caminho até os inimigos" : "Esperando inimigos";
             return frame;
         }
 
@@ -167,7 +173,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                     Turn(ref frame, towardTarget);
                 } else {
                     frame.meleePressed = true;
-                    CurrentAction = "Golpe de espada";
+                    action = "Golpe de espada";
                 }
                 return frame;
             }
@@ -178,9 +184,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
             if (retreating || player.Health <= lowHealth) {
                 frame.move = -towardTarget;
-                CurrentAction = "Recuando na recarga";
+                action = "Recuando na recarga";
             } else {
-                CurrentAction = "Esperando a recarga";
+                action = "Esperando a recarga";
             }
             return frame;
         }
@@ -197,7 +203,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 } else {
                     frame.grenadePressed = true;
                     frame.grenadeCharge = charge;
-                    CurrentAction = group ? "Granada no grupo" : "Granada na plataforma";
+                    action = group ? "Granada no grupo" : "Granada na plataforma";
                 }
                 return frame;
             }
@@ -209,7 +215,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 Turn(ref frame, towardTarget);
             } else {
                 frame.rangedPressed = true;
-                CurrentAction = player.UsingShotgun ? "Tiro de escopeta" : "Tiro";
+                action = player.UsingShotgun ? "Tiro de escopeta" : "Tiro";
             }
             return frame;
         }
@@ -217,7 +223,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         // 5. potion
         if (FrenyProgress.HasAutoPotion && player.Health <= lowHealth && player.HasPotion) {
             frame.potionPressed = true;
-            CurrentAction = "Bebendo poção";
+            action = "Bebendo poção";
             return frame;
         }
 
@@ -228,20 +234,20 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
         // 7. go to the target
         if (sameFloor) {
-            bool farForGun = Mathf.Abs(dx) > Tuning.AutoShootRange.Value;
-            if ((farForGun || !player.AttackReady) && Mathf.Abs(dx) > dashCloseDistance && player.IsGrounded && dash && dash.CanDash) {
+            bool dashIn = Mathf.Abs(dx) > dashCloseDistance && player.AttackReady && striker == null && player.IsGrounded && dash && dash.CanDash;
+            if (dashIn) {
                 if (!facingTarget) {
                     Turn(ref frame, towardTarget);
                 } else {
                     frame.dashPressed = true;
                     frame.move = towardTarget;
-                    CurrentAction = "Dash até o inimigo";
+                    action = "Dash até o inimigo";
                 }
                 return frame;
             }
             frame.move = towardTarget;
             frame.runHeld = Mathf.Abs(dx) > 4f && player.RunReady;
-            CurrentAction = frame.runHeld ? "Correndo até o inimigo" : "Indo até o inimigo";
+            action = frame.runHeld ? "Correndo até o inimigo" : "Indo até o inimigo";
             return frame;
         }
 
@@ -252,7 +258,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             // no platform edge leads there: forget this enemy for a while and shoot whoever else is around
             unreachableUntil[target] = Time.time + unreachableMemory;
             currentTarget = null;
-            CurrentAction = "Sem caminho, trocando de alvo";
+            action = "Sem caminho, trocando de alvo";
         }
         return frame;
     }
@@ -262,19 +268,19 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private void Turn(ref PlayerInputFrame frame, float direction) {
         frame.move = direction;
         planTurnsOnly = true;
-        CurrentAction = "Virando";
+        action = "Virando";
     }
 
     private bool Dodge(ref PlayerInputFrame frame, float away, string what) {
         bool facingAway = (away > 0) == player.FacingRight;
         if (FrenyProgress.HasDashDodge && facingAway && dash && dash.CanDash) {
             frame.dashPressed = true;
-            CurrentAction = "Esquivando com dash de " + what;
+            action = "Esquivando com dash de " + what;
         } else if ((player.IsGrounded && Time.time >= nextJumpTime) || player.CanAirJump) {
             frame.jumpPressed = true;
             frame.jumpHeld = true;
             frame.move = away;
-            CurrentAction = "Pulando " + what;
+            action = "Pulando " + what;
         } else {
             return false;
         }
@@ -299,16 +305,23 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (Mathf.Abs(toSpot) <= 0.45f) {
             // at the spot: jump towards the platform, pushing the stick that way
             frame.move = jumpDir;
+            frame.jumpHeld = true;
+            action = "Subindo a plataforma";
             if (player.IsGrounded) {
-                frame.jumpPressed = true;
+                if (Time.time >= nextJumpTime) {
+                    frame.jumpPressed = true;
+                } else {
+                    // landed a moment ago: stand still until the jump is allowed again (walking on
+                    // took her under the ledge, then back to the spot, then under again...)
+                    frame.move = 0f;
+                    action = "Na beirada, esperando para pular";
+                }
             } else if (player.CanAirJump && level - myFeet > maxJumpHeight) {
                 frame.jumpPressed = true;
             }
-            frame.jumpHeld = true;
-            CurrentAction = "Subindo a plataforma";
         } else {
             frame.move = Mathf.Sign(toSpot);
-            CurrentAction = "Indo até a beirada";
+            action = "Indo até a beirada";
         }
         return true;
     }
@@ -318,7 +331,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (FindDrop(me.x, myFeet, toward, out float edgeX) || FindDrop(me.x, myFeet, -toward, out edgeX)) {
             float d = edgeX - me.x;
             frame.move = Mathf.Sign(d == 0f ? toward : d);
-            CurrentAction = "Descendo";
+            action = "Descendo";
             return true;
         }
         return false;
@@ -337,6 +350,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (bestDist == float.MaxValue) {
             return false;
         }
+        bool isChest = what == "o baú";
 
         float dx = best.x - me.x;
         float dy = best.y - myFeet;
@@ -345,6 +359,15 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             routed = Climb(ref frame, me, myFeet, best.y, Mathf.Sign(dx));
         } else if (dy < -verticalTolerance) {
             routed = Descend(ref frame, me, myFeet, Mathf.Sign(dx));
+        } else if (isChest && Mathf.Abs(dx) <= Tuning.AutoMeleeRange.Value) {
+            // the chest only opens when hit
+            if ((dx > 0) != player.FacingRight) {
+                Turn(ref frame, Mathf.Sign(dx));
+            } else if (player.AttackReady) {
+                frame.meleePressed = true;
+            }
+            action = "Quebrando o baú";
+            return true;
         } else {
             if (Mathf.Abs(dx) < 0.15f) {
                 return false;
@@ -353,9 +376,44 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             routed = true;
         }
         if (routed) {
-            CurrentAction = "Pegando " + what;
+            action = "Pegando " + what;
         }
         return routed;
+    }
+
+    // Walking, climbing or descending towards something without getting anywhere for stuckSeconds
+    // means the route is blocked (a wall, an enemy in the way): forget that target for a while.
+    private void CheckStuck() {
+        Vector2 pos = transform.position;
+        bool travelling = action.StartsWith("Indo") || action.StartsWith("Correndo") || action.StartsWith("Subindo")
+            || action.StartsWith("Descendo") || action.StartsWith("Pegando");
+        if (!travelling || (pos - lastProgressPos).sqrMagnitude > 0.25f) {
+            lastProgressPos = pos;
+            lastProgressTime = Time.time;
+            return;
+        }
+        if (Time.time - lastProgressTime > stuckSeconds) {
+            if (currentTarget) {
+                unreachableUntil[currentTarget] = Time.time + unreachableMemory;
+                currentTarget = null;
+            }
+            lastProgressTime = Time.time;
+            action = "Travada, trocando de alvo";
+        }
+    }
+
+    // "3 inimigos, alvo Golem (acima, 4 m à direita) · Indo até a beirada"
+    private string Describe() {
+        string status = enemies.Count == 1 ? "1 inimigo" : enemies.Count + " inimigos";
+        if (currentTarget) {
+            float dx = currentTarget.transform.position.x - transform.position.x;
+            float myFeet = player.feetPos ? player.feetPos.position.y : transform.position.y;
+            float dy = currentTarget.Feet.y - myFeet;
+            string level = dy > jumpToReachHeight ? "acima" : dy < -verticalTolerance ? "abaixo" : "mesmo andar";
+            string side = dx >= 0f ? "à direita" : "à esquerda";
+            status += $", alvo {currentTarget.GetType().Name} ({level}, {Mathf.Abs(dx):0} m {side})";
+        }
+        return status + " · " + action;
     }
 
     private void Consider(Transform item, Vector2 me, float myFeet, float range, ref Vector2 best, ref float bestDist, ref string what, string name) {
@@ -492,7 +550,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             for (int pass = 0; pass < 2; pass++) {
                 float dir = pass == 0 ? direction : -direction;
                 for (float d = step; d <= reach; d += step) {
-                    if (!GroundAt(fromX + dir * d, floorY)) {
+                    float x = fromX + dir * d;
+                    if (!ArenaBounds.Inside(x, 0.3f)) {
+                        break; // the platform runs into the arena wall on this side
+                    }
+                    if (!GroundAt(x, floorY)) {
                         if (d < bestD) {
                             bestD = d;
                             standX = fromX + dir * (d + outside);
@@ -508,7 +570,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         for (int pass = 0; pass < 2; pass++) {
             float dir = pass == 0 ? direction : -direction;
             for (float d = step; d <= reach; d += step) {
-                if (GroundAt(fromX + dir * d, floorY)) {
+                float x = fromX + dir * d;
+                if (!ArenaBounds.Inside(x, 0.3f)) {
+                    break;
+                }
+                if (GroundAt(x, floorY)) {
                     standX = fromX + dir * Mathf.Max(0f, d - outside);
                     jumpDir = dir;
                     return true;
@@ -524,6 +590,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private bool FindDrop(float fromX, float myFeet, float direction, out float edgeX) {
         for (float d = 0.5f; d <= 10f; d += 0.5f) {
             float x = fromX + direction * d;
+            if (!ArenaBounds.Inside(x, 0.3f)) {
+                break; // this floor reaches the arena wall: no edge to drop from on this side
+            }
             if (!GroundAt(x, myFeet)) {
                 edgeX = x + direction * 0.6f;
                 return true;

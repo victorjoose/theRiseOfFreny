@@ -19,6 +19,8 @@ public class Dash : MonoBehaviour {
 
     public bool IsDashing => direction != 0;
     public bool CanDash => direction == 0 && Time.time >= nextDashTime;
+    // 1 = ready, 0 = just dashed (for the HUD)
+    public float Readiness => 1f - Mathf.Clamp01((nextDashTime - Time.time) / (startDashTime + dashCooldown));
 
     private void Start() {
         rb = GetComponent<Rigidbody2D>();

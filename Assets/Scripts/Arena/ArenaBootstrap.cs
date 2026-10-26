@@ -22,8 +22,10 @@ public static class ArenaBootstrap {
 
     private static void SetUp(Scene scene) {
         if (scene.name != ArenaSceneName) {
+            ArenaBounds.Disable();
             return;
         }
+        ArenaBounds.Enable(Camera.main); // the screen is the whole arena
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {

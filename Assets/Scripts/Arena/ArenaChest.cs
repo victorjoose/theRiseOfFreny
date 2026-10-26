@@ -1,15 +1,22 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// Treasure chest dropped into the arena by the director: walk into it to get coins.
-public class ArenaChest : MonoBehaviour {
+// Treasure chest dropped into the arena by the director. It has to be broken: a sword swing or a
+// bullet makes it burst and scatter a few coins around it, plus shotgun shells for Freny.
+public class ArenaChest : MonoBehaviour, IDamageable {
 
-    [SerializeField] private int minCoins = 10;
+    [SerializeField] private GameObject coinPrefab;
+    [SerializeField] private int coinCount = 5;
+    [SerializeField] private int minCoins = 10;     // total value, split over the coins
     [SerializeField] private int maxCoins = 25;
-    [SerializeField] private float lifetime = 20f; // disappears if nobody picks it up
+    [SerializeField] private int shells = 4;
+    [SerializeField] private float scatter = 2.2f;  // sideways speed of the outermost coins (about 1.3 units of spread)
+    [SerializeField] private float lifetime = 20f;  // disappears if nobody breaks it
 
-    private bool opened;
+    public int Health { get; set; } = 1;
+    private bool broken;
 
-    public static readonly System.Collections.Generic.List<ArenaChest> Active = new System.Collections.Generic.List<ArenaChest>();
+    public static readonly List<ArenaChest> Active = new List<ArenaChest>();
 
     private void OnEnable() {
         Active.Add(this);
@@ -30,19 +37,44 @@ public class ArenaChest : MonoBehaviour {
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other) {
-        if (opened || !other.CompareTag("Player")) {
+    // one hit is enough (MeleeAttack and RangedAttack find this through IDamageable)
+    public void Damage() {
+        if (broken) {
             return;
         }
-        Player player = other.GetComponent<Player>();
-        if (player == null) {
-            return;
+        broken = true;
+        Health = 0;
+
+        Vector3 center = transform.position + Vector3.up * 0.2f;
+        Fx.Burst(center, new Color(0.55f, 0.35f, 0.15f), 18, 3f, 0.1f, 0.6f);   // wood
+        Fx.Burst(center, new Color(1f, 0.85f, 0.2f), 24, 3.5f, 0.1f, 0.8f);    // gold
+
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        Player player = playerObj ? playerObj.GetComponent<Player>() : null;
+        if (player) {
+            player.AddShells(shells);
         }
 
-        opened = true;
-        player.AddCoins(Random.Range(minCoins, maxCoins + 1));
-        player.AddShells(4);
-        Fx.Burst(transform.position + Vector3.up * 0.2f, new Color(1f, 0.85f, 0.2f), 30, 3f, 0.1f, 0.8f);
+        ScatterCoins();
         Destroy(gameObject);
+    }
+
+    // the coins fly out in a small fan and land back on this platform (Coin.Toss)
+    private void ScatterCoins() {
+        if (coinPrefab == null || coinCount <= 0) {
+            return;
+        }
+        int total = Random.Range(minCoins, maxCoins + 1);
+        int each = Mathf.Max(1, total / coinCount);
+        for (int i = 0; i < coinCount; i++) {
+            float side = coinCount == 1 ? 0f : Mathf.Lerp(-1f, 1f, i / (float)(coinCount - 1));
+            Vector2 velocity = new Vector2(side * scatter * Random.Range(0.75f, 1f), Random.Range(4.5f, 6f));
+            GameObject dropped = Instantiate(coinPrefab, transform.position + Vector3.up * 0.3f, Quaternion.identity);
+            Coin coin = dropped.GetComponent<Coin>();
+            if (coin) {
+                coin.coins = each;
+                coin.Toss(velocity);
+            }
+        }
     }
 }

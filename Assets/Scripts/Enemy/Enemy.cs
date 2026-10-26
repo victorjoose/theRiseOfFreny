@@ -49,6 +49,8 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     public float radius;
     [SerializeField]
     protected float sightHeight = 1.5f;
+    [SerializeField]
+    protected float rearSightFactor = 0.6f; // behind its back it only notices Freny this fraction of `radius` away
     // gap between the enemy's collider and the player's collider (edge to edge, not centre to centre)
     public float attackDistance = 0.5f;
     [SerializeField]
@@ -130,8 +132,11 @@ public abstract class Enemy : MonoBehaviour, IDamageable
                 Bounds theirs = playerCol.bounds;
                 sameLevel = theirs.max.y > mine.min.y + 0.2f && theirs.min.y < mine.max.y - 0.2f;
             }
+            // sight is shorter behind the back, but not zero: Freny sneaking up still gets noticed
+            bool playerBehind = (player_t.position.x > transform.position.x) != FacingRight;
+            float sight = radius * Tuning.EnemyAggro.Value * (playerBehind ? rearSightFactor : 1f);
             bool provoked = isHit && distance <= provokedRadius;
-            bool shouldChase = player.Health > 0 && sameLevel && (dx <= radius * Tuning.EnemyAggro.Value || provoked);
+            bool shouldChase = player.Health > 0 && sameLevel && (dx <= sight || provoked);
 
             if (shouldChase && !isPlayerInRange) {
                 isPlayerInRange = true;
@@ -147,6 +152,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (rb == null) {
             SnapToGround();
         }
+        ClampToArena();
         bool moving = Mathf.Abs(transform.position.x - before.x) > 0.0001f;
         if (hasMovingParam) {
             // Walk/Idle follow real movement, so the walk cycle never plays while standing still
@@ -173,6 +179,33 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
     }
 
+    // in the arena the screen is the world: nobody walks out of view (no-op in the campaign)
+    protected void ClampToArena() {
+        if (!ArenaBounds.Active) {
+            return;
+        }
+        Vector3 pos = transform.position;
+        float clamped = ArenaBounds.ClampX(pos.x, 0.5f);
+        if (clamped != pos.x) {
+            pos.x = clamped;
+            transform.position = pos;
+        }
+    }
+
+    // the patrol ends, kept inside the arena so an end beyond the screen edge doesn't keep the
+    // enemy walking into the wall forever
+    private void PatrolRange(out float min, out float max) {
+        min = Mathf.Min(pointA.position.x, pointB.position.x);
+        max = Mathf.Max(pointA.position.x, pointB.position.x);
+        if (ArenaBounds.Active) {
+            min = ArenaBounds.ClampX(min, 0.6f);
+            max = ArenaBounds.ClampX(max, 0.6f);
+        }
+    }
+
+    // sprites face left by default, so scale.x = -1 means looking right
+    protected bool FacingRight => transform.localScale.x < 0f;
+
     public Vector3 Feet => col ? new Vector3(col.bounds.center.x, col.bounds.min.y, 0f) : transform.position;
     public Vector3 Center => col ? col.bounds.center : transform.position;
     // winding up or landing a hit right now (the autopilot steps out of the way)
@@ -192,17 +225,15 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
 
         // only x matters: the patrol points sit at the spawner's height, not on the floor
-        if (Mathf.Abs(transform.position.x - pointA.position.x) <= patrolPositionTolerance) {
-            currentTarget = pointB.position;
-            patrolPauseUntil = Time.time + patrolPause;
-        } else if (Mathf.Abs(transform.position.x - pointB.position.x) <= patrolPositionTolerance) {
-            currentTarget = pointA.position;
-            patrolPauseUntil = Time.time + patrolPause;
+        PatrolRange(out float min, out float max);
+        float goalX = Mathf.Clamp(currentTarget.x, min, max);
+        if (Mathf.Abs(transform.position.x - goalX) <= patrolPositionTolerance) {
+            ChangeDirection(); // reached this end: pause, then head for the other one
+            return;
         }
 
-        // sprites face left by default, so scale.x = -1 means looking right
-        transform.localScale = new Vector3(currentTarget.x > transform.position.x ? -1 : 1, 1, 1);
-        Vector2 goal = new Vector2(currentTarget.x, transform.position.y);
+        transform.localScale = new Vector3(goalX > transform.position.x ? -1 : 1, 1, 1);
+        Vector2 goal = new Vector2(goalX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, goal, MoveSpeed * Time.deltaTime);
     }
 
@@ -233,9 +264,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
 
         // inside the radius but too far to attack: walk towards the player, never leaving the patrol area
-        float targetX = player_t.position.x;
+        float targetX = ArenaBounds.ClampX(player_t.position.x, 0.5f);
         if (pointA && pointB) {
-            targetX = Mathf.Clamp(targetX, Mathf.Min(pointA.position.x, pointB.position.x), Mathf.Max(pointA.position.x, pointB.position.x));
+            PatrolRange(out float min, out float max);
+            targetX = Mathf.Clamp(targetX, min, max);
         }
         Vector2 target = new Vector2(targetX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, target, MoveSpeed * Time.deltaTime);
@@ -281,12 +313,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     }
 
     private void FacePlayer() {
-        // sprites face left by default, so scale.x = -1 means looking right
-        if (player_t.position.x > transform.position.x) {
-            transform.localScale = new Vector3(-1, 1, 1);
-        } else {
-            transform.localScale = new Vector3(1, 1, 1);
-        }
+        transform.localScale = new Vector3(player_t.position.x > transform.position.x ? -1 : 1, 1, 1);
     }
 
     private void ResetAttackMode() {

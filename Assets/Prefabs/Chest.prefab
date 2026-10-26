@@ -97,8 +97,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01e54526bb03416bb8ca610aee9130d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coinPrefab: {fileID: 1839722716228608488, guid: 71247d32d6f48964d842d8570fb2e767, type: 3}
+  coinCount: 5
   minCoins: 10
   maxCoins: 25
+  shells: 4
+  scatter: 2.2
   lifetime: 20
 --- !u!61 &2430778306648478375
 BoxCollider2D:

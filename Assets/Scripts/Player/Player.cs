@@ -96,6 +96,11 @@ public class Player : MonoBehaviour, IDamageable {
     public bool RunReady => !IsRunning && Time.time >= runReadyAt;
     public bool GrenadeReady => Time.time >= nextGrenadeTime;
     public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunEquipped && ShotgunShells > 0;
+    // meters for the HUD: 1 = ready / full, 0 = just used / empty
+    public float AttackReadiness => attackCooldown > 0f ? 1f - Mathf.Clamp01((attackReadyAt - Time.time) / attackCooldown) : 1f;
+    public float RunMeter => IsRunning
+        ? Mathf.Clamp01((runUntil - Time.time) / runDuration)                 // stamina left while sprinting
+        : 1f - Mathf.Clamp01((runReadyAt - Time.time) / runCooldown);        // recovery
     // the GameManager is looked up once in Start (FindObjectOfType walks the whole scene,
     // and the autopilot asks this on every decision)
     public bool HasPotion => _gameManager != null && _gameManager.HasPotion;
