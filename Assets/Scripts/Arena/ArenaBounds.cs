@@ -20,6 +20,7 @@ public static class ArenaBounds {
     public static float Left => cam ? cam.transform.position.x - cam.orthographicSize * cam.aspect : float.NegativeInfinity;
     public static float Right => cam ? cam.transform.position.x + cam.orthographicSize * cam.aspect : float.PositiveInfinity;
     public static float Bottom => cam ? cam.transform.position.y - cam.orthographicSize : float.NegativeInfinity;
+    public static float Top => cam ? cam.transform.position.y + cam.orthographicSize : float.PositiveInfinity;
 
     public static float ClampX(float x, float margin = 0f) {
         return Active ? Mathf.Clamp(x, Left + margin, Right - margin) : x;

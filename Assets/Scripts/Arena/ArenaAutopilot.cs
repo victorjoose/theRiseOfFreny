@@ -12,13 +12,14 @@ using UnityEngine;
 // 4. enemy aligned and far -> shot
 // 5. low health and a potion -> drink it
 // 6. coins and chests nearby when nobody is close
-// 7. otherwise walk to the target, climbing platforms by their edges
+// 7. otherwise walk to the target; another platform is reached over the ArenaMap, one hop at a
+//    time: stand beside the platform's edge, jump straight up, move onto it once the feet are
+//    above it (or walk off an edge and fall). The hop is driven frame by frame, not per decision.
 [RequireComponent(typeof(Player))]
 public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     [SerializeField] private float verticalTolerance = 1.2f;   // "same floor" for sword and gun
-    [SerializeField] private float jumpToReachHeight = 1.0f;   // target this much higher -> needs a jump
-    [SerializeField] private float maxJumpHeight = 2.4f;       // what one jump can climb
+    [SerializeField] private float jumpToReachHeight = 1.0f;   // target this much higher -> "above" (grenade, HUD)
     [SerializeField] private float dodgeWindow = 0.55f;        // dodge only when the projectile lands within this many seconds
     [SerializeField] private float dashCloseDistance = 5f;     // farther than this (same floor, sword ready) -> dash in
     [SerializeField] private float pickupRange = 7f;           // coins/chests this far away are worth a detour
@@ -28,6 +29,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     [SerializeField] private float dangerRange = 3f;           // an enemy this close means no detours
     [SerializeField] private float jumpCooldown = 0.5f;        // no hopping: one jump, then land and think
     [SerializeField] private float unreachableMemory = 4f;     // seconds an enemy with no route is ignored
+    [SerializeField] private float routeHopCost = 3f;          // one platform hop weighs this many metres when picking a target
+    [SerializeField] private float maneuverTimeout = 3f;       // a climb or drop taking longer than this has failed
+    [SerializeField] private int maneuverAttempts = 3;         // failed climbs before the target is given up for a while
     [SerializeField] private int lowHealth = 1;
     [SerializeField] private float scanInterval = 0.25f;
 
@@ -49,6 +53,19 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private Enemy progressTarget;
     private LayerMask ground;
 
+    // the map of platforms and where she is on it
+    private ArenaMap map;
+    private ArenaMap.Platform standingOn;   // the last platform she stood on
+    private int[] hops;                     // hops from standingOn to every platform, for this decision
+    private bool wantsRoute;                // this decision asked for the current route
+
+    // the hop being executed frame by frame; decisions only choose it
+    private enum Phase { None, Walk, Jump, Steer, Fall }
+    private Phase phase;
+    private ArenaMap.Step route;
+    private float phaseStart;
+    private int attempts;
+
     public string CurrentAction { get; private set; } = "";  // enemies, target and what she is doing (logged to the console)
     private string action = "";
     private string lastLogged = "";
@@ -65,31 +82,39 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
     }
 
+    private float FeetY => player.feetPos ? player.feetPos.position.y : transform.position.y;
+
     public PlayerInputFrame ReadInput() {
         if (player == null || player.IsDead) {
             CurrentAction = "";
+            phase = Phase.None;
             return default;
         }
 
         if (dash == null) {
             dash = GetComponent<Dash>();
         }
+        if (map == null && !BuildMap()) {
+            return default;
+        }
+        TrackPlatform();
 
         if (Time.time >= nextScanTime) {
             Scan();
             nextScanTime = Time.time + scanInterval;
         }
 
-        if (Time.time >= nextDecisionTime) {
+        // in the air during a hop nothing is re-decided: the hop steers her until she lands
+        bool airborne = phase == Phase.Jump || phase == Phase.Steer || phase == Phase.Fall;
+        if (!airborne && Time.time >= nextDecisionTime) {
             planTurnsOnly = false;
+            wantsRoute = false;
             plan = Decide();
-            CheckStuck();
-            CurrentAction = Describe();
-            if (CurrentAction != lastLogged) {
-                // the console keeps a readable history of every decision change (the HUD line was too small)
-                Debug.Log($"[Autopiloto {Time.time:0.0}s] {CurrentAction}");
-                lastLogged = CurrentAction;
+            if (!wantsRoute) {
+                phase = Phase.None; // the decision went another way: the route is dropped
             }
+            CheckStuck();
+            Announce();
             if (plan.jumpPressed) {
                 if (Time.time < nextJumpTime) {
                     plan.jumpPressed = false; // landed a moment ago: walk this tick, jump on the next
@@ -99,6 +124,10 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
             planIsFresh = true;
             nextDecisionTime = Time.time + FrenyProgress.AutopilotReactionTime * Tuning.AutoReaction.Value;
+        }
+
+        if (phase != Phase.None) {
+            return ManeuverFrame();
         }
 
         PlayerInputFrame frame = plan;
@@ -119,6 +148,44 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         return frame;
     }
 
+    // the console keeps a readable history of every decision change (the HUD line was too small)
+    private void Announce() {
+        CurrentAction = Describe();
+        if (CurrentAction != lastLogged) {
+            Debug.Log($"[Autopiloto {Time.time:0.0}s] {CurrentAction}");
+            lastLogged = CurrentAction;
+        }
+    }
+
+    private bool BuildMap() {
+        if (!ArenaBounds.Active) {
+            return false;
+        }
+        map = ArenaMap.Build(ground, ArenaBounds.Left, ArenaBounds.Right, ArenaBounds.Bottom, ArenaBounds.Top,
+            player.BodyHalfWidth, player.BodyHeight, player.JumpHeight);
+        Debug.Log($"[Autopiloto] Mapa da arena: {map.Describe()}");
+        return true;
+    }
+
+    private void TrackPlatform() {
+        if (!player.IsGrounded) {
+            return;
+        }
+        ArenaMap.Platform under = map.PlatformUnder(new Vector2(transform.position.x, FeetY + 0.1f), 0.5f);
+        if (under != null) {
+            standingOn = under;
+        }
+    }
+
+    // where she is for route planning: the platform she stands on, or the one she will land on
+    private ArenaMap.Platform MyPlatform() {
+        if (player.IsGrounded && standingOn != null) {
+            return standingOn;
+        }
+        ArenaMap.Platform below = map.PlatformUnder(new Vector2(transform.position.x, FeetY + 0.1f), 100f);
+        return below ?? standingOn;
+    }
+
     private void Scan() {
         enemies.Clear();
         foreach (Enemy enemy in Enemy.Active) {
@@ -134,7 +201,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private PlayerInputFrame Decide() {
         PlayerInputFrame frame = new PlayerInputFrame();
         Vector2 me = transform.position;
-        float myFeet = player.feetPos ? player.feetPos.position.y : me.y;
+        float myFeet = FeetY;
+        ArenaMap.Platform myPlatform = MyPlatform();
+        hops = map.HopsFrom(myPlatform);
 
         // 1. dodge, only when a projectile is about to land (before, any hexball nearby kept her
         // hopping forever instead of fighting)
@@ -148,7 +217,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
         Enemy target = PickTarget(me, myFeet);
         if (target == null) {
-            if (GoToPickup(ref frame, me, myFeet, pickupRange * 3f)) {
+            if (GoToPickup(ref frame, me, myFeet, myPlatform, pickupRange * 3f)) {
                 return frame;
             }
             action = enemies.Count > 0 ? "Sem caminho até os inimigos" : "Esperando inimigos";
@@ -236,12 +305,15 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         // 6. loot: a coin within arm's reach is grabbed even mid-fight; farther loot only when nobody is close
-        if (nearestEnemy > dangerRange ? GoToPickup(ref frame, me, myFeet, pickupRange) : GoToPickup(ref frame, me, myFeet, grabRange)) {
+        if (GoToPickup(ref frame, me, myFeet, myPlatform, nearestEnemy > dangerRange ? pickupRange : grabRange)) {
             return frame;
         }
 
-        // 7. go to the target
-        if (sameFloor) {
+        // 7. go to the target: walk when it stands on her platform (or flies at her height), else hop
+        // towards its platform over the map
+        ArenaMap.Platform targetPlatform = PlatformOf(target);
+        bool walkable = targetPlatform == null ? sameFloor : targetPlatform == myPlatform;
+        if (walkable) {
             bool dashIn = Mathf.Abs(dx) > dashCloseDistance && player.AttackReady && striker == null && player.IsGrounded && dash && dash.CanDash;
             if (dashIn) {
                 if (!facingTarget) {
@@ -259,15 +331,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             return frame;
         }
 
-        bool routed = dy > jumpToReachHeight
-            ? Climb(ref frame, me, myFeet, target.Feet.y, towardTarget)
-            : Descend(ref frame, me, myFeet, towardTarget);
-        if (!routed) {
-            // no platform edge leads there: forget this enemy for a while and shoot whoever else is around
-            unreachableUntil[target] = Time.time + unreachableMemory;
-            currentTarget = null;
-            action = "Sem caminho, trocando de alvo";
+        if (targetPlatform != null && RequestRoute(myPlatform, targetPlatform, me.x)) {
+            return frame; // the hop drives the frame
         }
+
+        // no route there: forget this enemy for a while and fight whoever else is around
+        unreachableUntil[target] = Time.time + unreachableMemory;
+        currentTarget = null;
+        action = "Sem caminho, trocando de alvo";
         return frame;
     }
 
@@ -295,79 +366,187 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         return true;
     }
 
-    // Walks to a spot just outside the edge of the platform at `floorY` and jumps from there,
-    // never from underneath it (the ceiling blocked the jump and she hopped in place). A platform
-    // too high for one jump is reached through the one in between. False when no edge is found.
-    private bool Climb(ref PlayerInputFrame frame, Vector2 me, float myFeet, float floorY, float toward) {
-        float level = floorY;
-        float reach = maxJumpHeight + (FrenyProgress.HasDoubleJump ? 1.5f : 0f);
-        while (level - myFeet > reach && level - 2f > myFeet + 0.5f) {
-            level -= 2f; // platforms in the arena are about two units apart
-        }
+    // ---- hops between platforms ----
 
-        if (!FindJumpSpot(me.x, level, toward, out float standX, out float jumpDir)) {
+    // asks the map for the first hop towards `destination` and keeps (or starts) that hop
+    private bool RequestRoute(ArenaMap.Platform from, ArenaMap.Platform destination, float fromX) {
+        if (!map.FirstStep(from, destination, fromX, out ArenaMap.Step step)) {
             return false;
         }
-
-        float toSpot = standX - me.x;
-        if (Mathf.Abs(toSpot) <= 0.45f) {
-            // at the spot: jump towards the platform, pushing the stick that way
-            frame.move = jumpDir;
-            frame.jumpHeld = true;
-            action = "Subindo a plataforma";
-            if (player.IsGrounded) {
-                if (Time.time >= nextJumpTime) {
-                    frame.jumpPressed = true;
-                } else {
-                    // landed a moment ago: stand still until the jump is allowed again (walking on
-                    // took her under the ledge, then back to the spot, then under again...)
-                    frame.move = 0f;
-                    action = "Na beirada, esperando para pular";
-                }
-            } else if (player.CanAirJump && level - myFeet > maxJumpHeight) {
-                frame.jumpPressed = true;
-            }
-        } else {
-            frame.move = Mathf.Sign(toSpot);
-            action = "Indo até a beirada";
+        wantsRoute = true;
+        if (phase == Phase.None || !route.Same(step)) {
+            route = step;
+            attempts = 0;
+            SetPhase(Phase.Walk);
+            Debug.Log($"[Autopiloto {Time.time:0.0}s] Rota: {step}");
         }
+        action = route.kind == ArenaMap.StepKind.Climb
+            ? $"Indo até a beirada para subir em {route.to}"
+            : $"Indo até a beirada para descer para {route.to}";
         return true;
     }
 
-    // walks off the edge of the platform she is standing on, towards the target
-    private bool Descend(ref PlayerInputFrame frame, Vector2 me, float myFeet, float toward) {
-        if (FindDrop(me.x, myFeet, toward, out float edgeX) || FindDrop(me.x, myFeet, -toward, out edgeX)) {
-            float d = edgeX - me.x;
-            frame.move = Mathf.Sign(d == 0f ? toward : d);
-            action = "Descendo";
-            return true;
-        }
-        return false;
+    private void SetPhase(Phase next) {
+        phase = next;
+        phaseStart = Time.time;
+        lastProgressTime = Time.time;
     }
 
-    private bool GoToPickup(ref PlayerInputFrame frame, Vector2 me, float myFeet, float range) {
+    private void FinishRoute(string how) {
+        Debug.Log($"[Autopiloto {Time.time:0.0}s] {how} em {route.to}");
+        phase = Phase.None;
+        plan = default;
+        nextDecisionTime = Time.time; // think again right away
+    }
+
+    private void FailRoute(string why) {
+        Debug.Log($"[Autopiloto {Time.time:0.0}s] Rota abandonada ({why}): {route}");
+        if (currentTarget != null) {
+            unreachableUntil[currentTarget] = Time.time + unreachableMemory;
+        }
+        currentTarget = null;
+        phase = Phase.None;
+        plan = default;
+        nextDecisionTime = Time.time;
+    }
+
+    // one frame of the current hop. The jump is straight up beside the platform and she only moves
+    // onto it once her feet are above it: jumping diagonally at the edge bumped the body into the
+    // platform's side and the jump died there (the cause of the endless pacing under a platform)
+    private PlayerInputFrame ManeuverFrame() {
+        PlayerInputFrame frame = new PlayerInputFrame();
+        float x = transform.position.x;
+        float feet = FeetY;
+        bool grounded = player.IsGrounded;
+        float elapsed = Time.time - phaseStart;
+
+        switch (phase) {
+            case Phase.Walk: {
+                float dx = route.x - x;
+                if (route.kind == ArenaMap.StepKind.Climb) {
+                    if (Mathf.Abs(dx) > 0.08f) {
+                        frame.move = Mathf.Sign(dx); // no sprint here: it is saved for the move onto the platform
+                        action = $"Indo até a beirada para subir em {route.to}";
+                    } else if (grounded && Time.time >= nextJumpTime) {
+                        frame.jumpPressed = true;
+                        nextJumpTime = Time.time + jumpCooldown;
+                        SetPhase(Phase.Jump);
+                        action = $"Pulando reto ao lado de {route.to}";
+                    } else {
+                        action = "Na beirada, esperando para pular";
+                    }
+                } else {
+                    frame.move = route.direction;
+                    action = $"Indo até a beirada para descer para {route.to}";
+                    if (!grounded) {
+                        SetPhase(Phase.Fall);
+                        action = $"Caindo para {route.to}";
+                    }
+                }
+                if (elapsed > maneuverTimeout * 2f) {
+                    FailRoute("não chegou à beirada");
+                }
+                break;
+            }
+            case Phase.Jump: {
+                frame.move = 0f; // straight up
+                action = $"Pulando reto ao lado de {route.to}";
+                // move onto the platform as soon as the feet will be above it by the time the body's
+                // side reaches its edge (waiting until they are above it already lost too much of the
+                // jump: on the floor-to-platform step she landed on the very edge)
+                float edgeX = route.direction > 0f ? route.to.xMin : route.to.xMax;
+                float sideGap = Mathf.Max(0f, route.direction > 0f ? edgeX - (x + player.BodyHalfWidth) : (x - player.BodyHalfWidth) - edgeX);
+                float predictedFeet = feet + Mathf.Max(0f, player.VerticalSpeed) * (sideGap / Mathf.Max(0.1f, player.MaxSpeed));
+                if (predictedFeet > route.to.y + 0.03f) {
+                    SetPhase(Phase.Steer);
+                } else if (elapsed > 0.35f && grounded) {
+                    // the jump didn't happen (landed at the same moment, cooldown...): try again
+                    attempts++;
+                    if (attempts >= maneuverAttempts) {
+                        FailRoute("o pulo não saiu");
+                    } else {
+                        SetPhase(Phase.Walk);
+                    }
+                } else if (elapsed > 1.5f) {
+                    FailRoute("o pulo não chegou lá");
+                }
+                break;
+            }
+            case Phase.Steer: {
+                frame.move = route.direction;
+                frame.runHeld = true; // the sprint, when ready, buys room over the edge before she drops
+                action = $"Entrando em {route.to}";
+                // the feet circle touches the top a little before she rests on it, so landing also
+                // means the body stopped falling (else she could turn and walk off the edge in mid-air)
+                bool resting = grounded && Mathf.Abs(player.VerticalSpeed) < 0.5f;
+                ArenaMap.Platform landed = resting ? map.PlatformUnder(new Vector2(x, feet + 0.1f), 0.5f) : null;
+                if (landed != null && elapsed > 0.1f) {
+                    if (landed == route.to) {
+                        FinishRoute("Subiu");
+                    } else {
+                        attempts++;
+                        if (attempts >= maneuverAttempts) {
+                            FailRoute("não conseguiu entrar na plataforma");
+                        } else {
+                            SetPhase(Phase.Walk);
+                        }
+                    }
+                } else if (!grounded && player.VerticalSpeed < 0f && feet < route.to.y - 0.2f && player.CanAirJump) {
+                    frame.jumpPressed = true; // falling short: the double jump saves the climb
+                } else if (elapsed > maneuverTimeout) {
+                    FailRoute("demorou demais para entrar");
+                }
+                break;
+            }
+            case Phase.Fall: {
+                frame.move = 0f; // straight down, onto the platform the map promised
+                action = $"Caindo para {route.to}";
+                bool resting = grounded && Mathf.Abs(player.VerticalSpeed) < 0.5f;
+                ArenaMap.Platform landed = resting ? map.PlatformUnder(new Vector2(x, feet + 0.1f), 0.5f) : null;
+                if (landed != null && elapsed > 0.1f) {
+                    FinishRoute("Desceu");
+                } else if (elapsed > maneuverTimeout) {
+                    FailRoute("a queda não terminou");
+                }
+                break;
+            }
+        }
+
+        Announce();
+        return frame;
+    }
+
+    // the platform an enemy stands on (null for one in the air: a bat, or one still falling)
+    private ArenaMap.Platform PlatformOf(Enemy enemy) {
+        Vector3 feet = enemy.Feet;
+        return map.PlatformUnder(new Vector2(feet.x, feet.y + 0.1f), 1.5f);
+    }
+
+    private bool GoToPickup(ref PlayerInputFrame frame, Vector2 me, float myFeet, ArenaMap.Platform myPlatform, float range) {
         Vector2 best = Vector2.zero;
+        ArenaMap.Platform bestPlatform = null;
         float bestDist = float.MaxValue;
         string what = "";
         foreach (Coin coin in Coin.Active) {
-            Consider(coin ? coin.transform : null, me, myFeet, range, ref best, ref bestDist, ref what, "a moeda");
+            Consider(coin ? coin.transform : null, me, myPlatform, range, ref best, ref bestPlatform, ref bestDist, ref what, "a moeda");
         }
         foreach (ArenaChest chest in ArenaChest.Active) {
-            Consider(chest ? chest.transform : null, me, myFeet, range, ref best, ref bestDist, ref what, "o baú");
+            Consider(chest ? chest.transform : null, me, myPlatform, range, ref best, ref bestPlatform, ref bestDist, ref what, "o baú");
         }
         if (bestDist == float.MaxValue) {
             return false;
         }
         bool isChest = what == "o baú";
-
         float dx = best.x - me.x;
-        float dy = best.y - myFeet;
-        bool routed;
-        if (dy > jumpToReachHeight) {
-            routed = Climb(ref frame, me, myFeet, best.y, Mathf.Sign(dx));
-        } else if (dy < -verticalTolerance) {
-            routed = Descend(ref frame, me, myFeet, Mathf.Sign(dx));
-        } else if (isChest && Mathf.Abs(dx) <= Tuning.AutoMeleeRange.Value) {
+
+        if (bestPlatform != myPlatform) {
+            if (RequestRoute(myPlatform, bestPlatform, me.x)) {
+                action = "Pegando " + what + ": " + action;
+                return true;
+            }
+            return false;
+        }
+        if (isChest && Mathf.Abs(dx) <= Tuning.AutoMeleeRange.Value) {
             // the chest only opens when hit
             if ((dx > 0) != player.FacingRight) {
                 Turn(ref frame, Mathf.Sign(dx));
@@ -376,22 +555,19 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
             action = "Quebrando o baú";
             return true;
-        } else {
-            if (Mathf.Abs(dx) < 0.15f) {
-                return false;
-            }
-            frame.move = Mathf.Sign(dx);
-            routed = true;
         }
-        if (routed) {
-            action = "Pegando " + what;
+        if (Mathf.Abs(dx) < 0.15f) {
+            return false;
         }
-        return routed;
+        frame.move = Mathf.Sign(dx);
+        action = "Pegando " + what;
+        return true;
     }
 
     // Travelling towards the target without ever getting closer for stuckSeconds means the route is
     // blocked (a wall, a ledge she can't reach, pacing above it): forget that target for a while.
-    // Pacing moves her, so progress is measured as distance to the target, not as movement.
+    // Pacing moves her, so progress is measured as distance to the target, not as movement. A hop in
+    // progress has its own timeouts, so it never counts as being stuck.
     private void CheckStuck() {
         if (currentTarget != progressTarget) {
             progressTarget = currentTarget;
@@ -401,8 +577,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (currentTarget == null) {
             return;
         }
-        bool travelling = action.StartsWith("Indo") || action.StartsWith("Correndo") || action.StartsWith("Subindo")
-            || action.StartsWith("Descendo") || action.StartsWith("Na beirada");
+        if (phase != Phase.None) {
+            lastProgressTime = Time.time;
+            return;
+        }
+        bool travelling = action.StartsWith("Indo") || action.StartsWith("Correndo");
         float distance = Vector2.Distance(transform.position, currentTarget.transform.position);
         if (!travelling || distance < bestTargetDistance - 0.3f) {
             bestTargetDistance = Mathf.Min(bestTargetDistance, distance);
@@ -416,31 +595,47 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
     }
 
-    // "3 inimigos, alvo Golem (acima, 4 m à direita) · Indo até a beirada"
+    // "3 inimigos, alvo Golem (acima, 4 m à direita) · Indo até a beirada para subir em P3 (y 8,2, x 20,6 a 23,6)"
     private string Describe() {
         string status = enemies.Count == 1 ? "1 inimigo" : enemies.Count + " inimigos";
         if (currentTarget) {
             float dx = currentTarget.transform.position.x - transform.position.x;
-            float myFeet = player.feetPos ? player.feetPos.position.y : transform.position.y;
-            float dy = currentTarget.Feet.y - myFeet;
+            float dy = currentTarget.Feet.y - FeetY;
             string level = dy > jumpToReachHeight ? "acima" : dy < -verticalTolerance ? "abaixo" : "mesmo andar";
             string side = dx >= 0f ? "à direita" : "à esquerda";
             status += $", alvo {currentTarget.GetType().Name} ({level}, {Mathf.Abs(dx):0} m {side})";
         }
+        if (standingOn != null) {
+            status += $", em {standingOn}";
+        }
         return status + " · " + action;
     }
 
-    private void Consider(Transform item, Vector2 me, float myFeet, float range, ref Vector2 best, ref float bestDist, ref string what, string name) {
+    private void Consider(Transform item, Vector2 me, ArenaMap.Platform myPlatform, float range, ref Vector2 best,
+                          ref ArenaMap.Platform bestPlatform, ref float bestDist, ref string what, string name) {
         if (item == null) {
             return;
         }
         Vector2 pos = item.position;
-        float dist = Mathf.Abs(pos.x - me.x) + 2f * Mathf.Abs(pos.y - myFeet);
+        ArenaMap.Platform platform = map.PlatformUnder(pos, 3f);
+        if (platform == null) {
+            return; // still in the air (a tossed coin): wait for it to land
+        }
+        int hopCount = platform == myPlatform ? 0 : HopsTo(platform);
+        if (hopCount == int.MaxValue) {
+            return;
+        }
+        float dist = Mathf.Abs(pos.x - me.x) + routeHopCost * hopCount;
         if (dist <= range && dist < bestDist) {
             bestDist = dist;
             best = pos;
+            bestPlatform = platform;
             what = name;
         }
+    }
+
+    private int HopsTo(ArenaMap.Platform platform) {
+        return hops != null && platform != null && platform.index < hops.Length ? hops[platform.index] : int.MaxValue;
     }
 
     // ---- perception ----
@@ -500,10 +695,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         return count;
     }
 
-    // enemies on her own floor come first (another platform is expensive to reach). The current
-    // target is kept unless another is clearly better, so she doesn't flip-flop between two.
-    // Enemies recently found unreachable are skipped. Smart targeting also prefers enemies that
-    // are almost dead.
+    // Enemies on her own platform come first; each hop over the map to another platform costs
+    // routeHopCost metres, and a platform with no route is only a target when nothing else is
+    // around. The current target is kept unless another is clearly better, so she doesn't
+    // flip-flop between two. Enemies recently found unreachable are skipped. Smart targeting also
+    // prefers enemies that are almost dead.
     private Enemy PickTarget(Vector2 me, float myFeet) {
         Enemy best = null;
         float bestScore = float.MaxValue;
@@ -517,13 +713,19 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 continue;
             }
             Vector2 offset = (Vector2)enemy.transform.position - me;
-            float score = Mathf.Abs(offset.x) + 4f * Mathf.Abs(enemy.Feet.y - myFeet);
+            float dy = enemy.Feet.y - myFeet;
+            float score = Mathf.Abs(offset.x);
+            ArenaMap.Platform platform = PlatformOf(enemy);
+            if (platform == null) {
+                // in the air (a bat): worth it only at her height, it comes to her anyway
+                score += Mathf.Abs(dy) <= verticalTolerance ? 1f : 50f;
+            } else {
+                int hopCount = HopsTo(platform);
+                score += hopCount == int.MaxValue ? 50f : routeHopCost * hopCount;
+            }
 
             if (FrenyProgress.HasSmartTarget) {
                 score += 1.5f * enemy.Health; // prefers the ones that die fastest
-            }
-            if (enemy.Feet.y - myFeet > maxJumpHeight * 2f) {
-                score += 50f; // too high up, only when nothing else is around
             }
 
             if (enemy == currentTarget) {
@@ -540,79 +742,5 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
         currentTarget = best;
         return best;
-    }
-
-    // ---- platform probes (ground layer only) ----
-
-    private bool GroundAt(float x, float floorY) {
-        return Physics2D.OverlapBox(new Vector2(x, floorY - 0.3f), new Vector2(0.4f, 0.5f), 0f, ground) != null;
-    }
-
-    // Where to stand to jump onto the platform at `floorY`: just outside its nearest edge.
-    // Under the platform, the nearest edge in either direction is used; beside it, the edge is
-    // the first ground found going towards `direction` (then the other way).
-    private bool FindJumpSpot(float fromX, float floorY, float direction, out float standX, out float jumpDir) {
-        const float step = 0.5f;
-        const float reach = 10f;
-        const float outside = 0.8f; // how far from the edge she stands before jumping
-
-        if (GroundAt(fromX, floorY)) {
-            // underneath: walk out from under it
-            float bestD = float.MaxValue;
-            standX = fromX;
-            jumpDir = direction;
-            for (int pass = 0; pass < 2; pass++) {
-                float dir = pass == 0 ? direction : -direction;
-                for (float d = step; d <= reach; d += step) {
-                    float x = fromX + dir * d;
-                    if (!ArenaBounds.Inside(x, 0.3f)) {
-                        break; // the platform runs into the arena wall on this side
-                    }
-                    if (!GroundAt(x, floorY)) {
-                        if (d < bestD) {
-                            bestD = d;
-                            standX = fromX + dir * (d + outside);
-                            jumpDir = -dir;
-                        }
-                        break;
-                    }
-                }
-            }
-            return bestD < float.MaxValue;
-        }
-
-        for (int pass = 0; pass < 2; pass++) {
-            float dir = pass == 0 ? direction : -direction;
-            for (float d = step; d <= reach; d += step) {
-                float x = fromX + dir * d;
-                if (!ArenaBounds.Inside(x, 0.3f)) {
-                    break;
-                }
-                if (GroundAt(x, floorY)) {
-                    standX = fromX + dir * Mathf.Max(0f, d - outside);
-                    jumpDir = dir;
-                    return true;
-                }
-            }
-        }
-        standX = fromX;
-        jumpDir = direction;
-        return false;
-    }
-
-    // first x in `direction` where the platform under her ends
-    private bool FindDrop(float fromX, float myFeet, float direction, out float edgeX) {
-        for (float d = 0.5f; d <= 10f; d += 0.5f) {
-            float x = fromX + direction * d;
-            if (!ArenaBounds.Inside(x, 0.3f)) {
-                break; // this floor reaches the arena wall: no edge to drop from on this side
-            }
-            if (!GroundAt(x, myFeet)) {
-                edgeX = x + direction * 0.6f;
-                return true;
-            }
-        }
-        edgeX = fromX;
-        return false;
     }
 }
