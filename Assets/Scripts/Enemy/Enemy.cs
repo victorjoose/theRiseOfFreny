@@ -116,8 +116,14 @@ public abstract class Enemy : MonoBehaviour
             float dy = Mathf.Abs(player_t.position.y - transform.position.y);
 
             // chase when the player enters the (horizontal) sight, or after being hit (even enemies
-            // with radius 0 fight back instead of standing still)
+            // with radius 0 fight back instead of standing still). "Same level" means Freny's body
+            // overlaps the enemy's own height band, so a platform below or above is out of sight.
             bool sameLevel = dy <= sightHeight;
+            if (col != null && playerCol != null) {
+                Bounds mine = col.bounds;
+                Bounds theirs = playerCol.bounds;
+                sameLevel = theirs.max.y > mine.min.y + 0.2f && theirs.min.y < mine.max.y - 0.2f;
+            }
             bool provoked = isHit && distance <= provokedRadius;
             bool shouldChase = player.Health > 0 && sameLevel && (dx <= radius * Tuning.EnemyAggro.Value || provoked);
 
@@ -143,8 +149,10 @@ public abstract class Enemy : MonoBehaviour
         }
     }
 
-    protected Vector3 Feet => col ? new Vector3(col.bounds.center.x, col.bounds.min.y, 0f) : transform.position;
-    protected Vector3 Center => col ? col.bounds.center : transform.position;
+    public Vector3 Feet => col ? new Vector3(col.bounds.center.x, col.bounds.min.y, 0f) : transform.position;
+    public Vector3 Center => col ? col.bounds.center : transform.position;
+    // winding up or landing a hit right now (the autopilot steps out of the way)
+    public bool IsAttacking => attackRoutine != null;
 
     public virtual void Movement() {
         if (isPlayerInRange) {

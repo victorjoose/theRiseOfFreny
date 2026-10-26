@@ -24,7 +24,12 @@ public class Player : MonoBehaviour, IDamageable {
     private float move;
     private PlayerAnimation _playerAnim;
     
-    [SerializeField] private float jumpForce = 4.0f;
+    [SerializeField] private float jumpForce = 4.0f; // unused since jumpHeight; kept so old scenes still load
+    [SerializeField] private float jumpHeight = 2.6f;    // units; platforms in the arena are 2 apart
+    [SerializeField] private float gravityScale = 3f;    // heavier than Unity's default: a quick, snappy jump
+    [SerializeField] private float grenadeCooldown = 5f;
+    private float nextGrenadeTime;
+    public bool GrenadeReady => Time.time >= nextGrenadeTime;
     [SerializeField] public float fallMultiplier = 4.0f;
     [SerializeField] public float lowJumpMultiplier = 3.0f;
     private bool isGrounded;
@@ -85,6 +90,9 @@ public class Player : MonoBehaviour, IDamageable {
             UIManager.Instance.UpdateCoins(coins);
         }
         rg2d = GetComponent<Rigidbody2D>();
+        if (rg2d) {
+            rg2d.gravityScale = gravityScale;
+        }
         col2d = GetComponent<Collider2D>();
         _playerAnim = GetComponent<PlayerAnimation>();
         _dash = GetComponent<Dash>();
@@ -113,10 +121,11 @@ public class Player : MonoBehaviour, IDamageable {
             velocity.x = move * _speed;
         }
 
+        float gravity = Physics2D.gravity.y * gravityScale;
         if (velocity.y < 0) {
-            velocity += Vector2.up * (Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime);
+            velocity += Vector2.up * (gravity * (fallMultiplier - 1) * Time.fixedDeltaTime);
         } else if (velocity.y > 0 && !input.jumpHeld) {
-            velocity += Vector2.up * (Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime);
+            velocity += Vector2.up * (gravity * (lowJumpMultiplier - 1) * Time.fixedDeltaTime);
         }
 
         rg2d.velocity = velocity;
@@ -165,6 +174,7 @@ public class Player : MonoBehaviour, IDamageable {
         Jump();
         Attack();
         RangedAttack();
+        ThrowGrenade();
         UsePotion();
     }
 
@@ -234,7 +244,8 @@ public class Player : MonoBehaviour, IDamageable {
             isJumping = true;
             jumpStartTime = Time.time;
             // keep the horizontal speed; the old Vector2.up * jumpForce zeroed it for one physics step
-            rg2d.velocity = new Vector2(rg2d.velocity.x, jumpForce);
+            float jumpVelocity = Mathf.Sqrt(2f * Mathf.Abs(Physics2D.gravity.y) * gravityScale * jumpHeight);
+            rg2d.velocity = new Vector2(rg2d.velocity.x, jumpVelocity);
         }
 
         _playerAnim.Jump(!isGrounded || isJumping);
@@ -280,6 +291,61 @@ public class Player : MonoBehaviour, IDamageable {
             FireBullet(muzzle, forward);
         }
         StartCoroutine(ResetAttackRoutine());
+    }
+
+    // G (or the autopilot): lobs a grenade at the nearest enemy in front of her, or straight
+    // ahead when nobody is around. Needs the "Granada" upgrade.
+    void ThrowGrenade() {
+        if (!_input.Current.grenadePressed || !FrenyProgress.HasGrenade || !GrenadeReady) {
+            return;
+        }
+        nextGrenadeTime = Time.time + grenadeCooldown;
+
+        Vector3 from = transform.position + Vector3.up * 0.6f;
+        float facing = FacingRight ? 1f : -1f;
+        Vector2 velocity = new Vector2(facing * 5f, 8f);
+
+        Enemy aim = null;
+        float best = float.MaxValue;
+        foreach (Enemy enemy in Enemy.Active) {
+            if (!enemy || enemy.IsDead) {
+                continue;
+            }
+            Vector2 offset = enemy.Center - from;
+            if (Mathf.Sign(offset.x) != facing || Mathf.Abs(offset.x) > 8f || Mathf.Abs(offset.y) > 6f) {
+                continue;
+            }
+            float score = Mathf.Abs(offset.x) + Mathf.Abs(offset.y);
+            if (score < best) {
+                best = score;
+                aim = enemy;
+            }
+        }
+        if (aim) {
+            // fixed flight time: the launch speed follows from where the target is
+            const float flight = 0.8f;
+            const float grenadeGravity = 1.5f;
+            Vector2 offset = aim.Center - from;
+            float g = Mathf.Abs(Physics2D.gravity.y) * grenadeGravity;
+            velocity = new Vector2(offset.x / flight, (offset.y + 0.5f * g * flight * flight) / flight);
+            velocity = Vector2.ClampMagnitude(velocity, 16f);
+        }
+
+        GameObject grenade = new GameObject("Grenade");
+        grenade.transform.position = from;
+        grenade.transform.localScale = Vector3.one * 0.35f;
+        SpriteRenderer renderer = grenade.AddComponent<SpriteRenderer>();
+        renderer.sprite = ArenaAssets.Instance ? ArenaAssets.Instance.grenadeIcon : null;
+        renderer.sortingOrder = 50;
+        Rigidbody2D body = grenade.AddComponent<Rigidbody2D>();
+        body.gravityScale = 1.5f;
+        body.velocity = velocity;
+        body.angularVelocity = -facing * 360f;
+        CircleCollider2D trigger = grenade.AddComponent<CircleCollider2D>();
+        trigger.isTrigger = true;
+        trigger.radius = 0.4f;
+        grenade.AddComponent<Grenade>();
+        Fx.Spray(from, velocity, new Color(1f, 0.9f, 0.6f), 4, 2f, 0.4f);
     }
 
     private void FireBullet(Vector3 from, Vector3 direction) {

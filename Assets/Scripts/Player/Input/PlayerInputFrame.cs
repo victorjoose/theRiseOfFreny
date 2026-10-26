@@ -10,10 +10,11 @@ public struct PlayerInputFrame {
     public bool rangedPressed;
     public bool dashPressed;
     public bool potionPressed;
+    public bool grenadePressed;
 
     public bool IsEmpty =>
         Mathf.Approximately(move, 0f) && !jumpPressed && !jumpHeld && !meleePressed &&
-        !rangedPressed && !dashPressed && !potionPressed;
+        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed;
 }
 
 public interface IPlayerInputSource {

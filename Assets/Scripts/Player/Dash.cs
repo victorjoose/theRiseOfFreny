@@ -11,7 +11,7 @@ public class Dash : MonoBehaviour {
     // depended on the frame rate and was overwritten by Player.FixedUpdate every physics step
     public float dashVelocity = 12f;
     private float dashTime;
-    public float startDashTime;
+    public float startDashTime = 0.18f;
     private int direction;
     public float dashCooldown = 1.2f;
     private float nextDashTime;

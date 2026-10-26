@@ -13,6 +13,7 @@ public class KeyboardInputSource : IPlayerInputSource {
             rangedPressed = Input.GetKeyDown(KeyCode.R),
             dashPressed = Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.C),
             potionPressed = Input.GetKeyDown(KeyCode.Q),
+            grenadePressed = Input.GetKeyDown(KeyCode.G),
         };
     }
 }

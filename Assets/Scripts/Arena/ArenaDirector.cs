@@ -121,7 +121,7 @@ public class ArenaDirector : MonoBehaviour {
                 spawner.countEnemies++;
             }
         } else {
-            spawner.SpawnDirected(entry.prefab);
+            spawner.SpawnDirected(entry.prefab, position);
         }
     }
 

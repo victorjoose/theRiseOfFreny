@@ -45,7 +45,7 @@ public class ArenaHud : MonoBehaviour {
             boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, wordWrap = true };
         }
 
-        GUILayout.BeginArea(new Rect(10, Screen.height - 440, 300, 430));
+        GUILayout.BeginArea(new Rect(10, Screen.height - 520, 320, 510));
         GUILayout.BeginVertical(boxStyle);
 
         string who;
@@ -83,6 +83,15 @@ public class ArenaHud : MonoBehaviour {
             foreach (FrenyUpgrade upgrade in Upgrades) {
                 DrawUpgrade(upgrade);
             }
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Zerar progresso (XP, moedas e melhorias)")) {
+                FrenyProgress.ResetAll();
+                player.coins = FrenyProgress.Coins;
+            }
+            if (GUILayout.Button("+500 moedas (teste)", GUILayout.Width(130))) {
+                player.AddCoins(500);
+            }
+            GUILayout.EndHorizontal();
         }
         GUILayout.Label("U: melhorias   I: ajustes da IA");
 
@@ -92,6 +101,39 @@ public class ArenaHud : MonoBehaviour {
         if (showTuning) {
             DrawTuning();
         }
+        DrawWeapons();
+    }
+
+    // icons of what Freny carries, under the hearts (the HUD canvas is laid out for 1920x1080)
+    private void DrawWeapons() {
+        ArenaAssets assets = ArenaAssets.Instance;
+        if (assets == null) {
+            return;
+        }
+        float scale = Screen.width / 1920f;
+        float size = 56f * scale;
+        float x = 60f * scale;
+        float y = 175f * scale;
+
+        DrawIcon(FrenyProgress.HasGreatSword ? assets.greatSwordIcon : assets.swordIcon, ref x, y, size);
+        DrawIcon(FrenyProgress.HasShotgun ? assets.shotgunIcon : assets.revolverIcon, ref x, y, size);
+        if (FrenyProgress.HasGrenade) {
+            Color old = GUI.color;
+            GUI.color = player.GrenadeReady ? Color.white : new Color(1f, 1f, 1f, 0.35f);
+            DrawIcon(assets.grenadeIcon, ref x, y, size);
+            GUI.color = old;
+        }
+    }
+
+    private static void DrawIcon(Sprite sprite, ref float x, float y, float size) {
+        if (sprite == null) {
+            return;
+        }
+        Rect tr = sprite.textureRect;
+        Texture tex = sprite.texture;
+        Rect uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
+        GUI.DrawTextureWithTexCoords(new Rect(x, y, size, size), tex, uv);
+        x += size + 6f;
     }
 
     // balance sliders (Tuning), on the right side so they don't cover the main panel
@@ -123,10 +165,16 @@ public class ArenaHud : MonoBehaviour {
             ? "máx."
             : FrenyProgress.IsBrain(upgrade) ? $"{FrenyProgress.Cost(upgrade)} ponto" : $"{FrenyProgress.Cost(upgrade)} moedas";
 
+        GUILayout.BeginHorizontal();
         GUI.enabled = FrenyProgress.CanBuy(upgrade, player);
         if (GUILayout.Button($"{FrenyProgress.DisplayName(upgrade)}  [{current}/{max}]  {price}")) {
             FrenyProgress.TryBuy(upgrade, player);
         }
+        GUI.enabled = current > 0;
+        if (GUILayout.Button("-", GUILayout.Width(24))) {
+            FrenyProgress.Refund(upgrade, player);
+        }
         GUI.enabled = true;
+        GUILayout.EndHorizontal();
     }
 }

@@ -1,12 +1,12 @@
 using UnityEngine;
 
 // Global game speed (Time.timeScale), saved in PlayerPrefs so José can tune it with the arena
-// slider and keep the value between sessions. 1 = Unity default; the game felt too fast, so 0.8.
+// slider and keep the value between sessions. 1 = Unity default (the slider goes down to 0.3).
 public static class GameSpeed {
 
     public const float Min = 0.3f;
     public const float Max = 1.5f;
-    public const float Default = 0.8f;
+    public const float Default = 1f;
 
     private const string Key = "freny.gameSpeed";
 

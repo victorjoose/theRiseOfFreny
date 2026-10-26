@@ -9,6 +9,16 @@ public class ArenaChest : MonoBehaviour {
 
     private bool opened;
 
+    public static readonly System.Collections.Generic.List<ArenaChest> Active = new System.Collections.Generic.List<ArenaChest>();
+
+    private void OnEnable() {
+        Active.Add(this);
+    }
+
+    private void OnDisable() {
+        Active.Remove(this);
+    }
+
     private void Start() {
         Destroy(gameObject, lifetime);
     }

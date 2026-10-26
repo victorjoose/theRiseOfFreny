@@ -40,8 +40,8 @@ public class EnemySpawner : MonoBehaviour
         return new Vector2(UnityEngine.Random.Range(transform.position.x - x1SpawnOffset, transform.position.x + x2SpawnOffset), transform.position.y);
     }
 
-    public Enemy SpawnDirected(GameObject prefab) {
-        GameObject spawned = Instantiate(prefab, RandomSpawnPosition(), Quaternion.identity);
+    public Enemy SpawnDirected(GameObject prefab, Vector2 position) {
+        GameObject spawned = Instantiate(prefab, position, Quaternion.identity);
         Enemy enemy = spawned.GetComponent<Enemy>();
         if (enemy != null) {
             AssignPatrol(enemy);

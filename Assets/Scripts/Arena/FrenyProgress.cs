@@ -9,6 +9,7 @@ public enum FrenyUpgrade {
     DoubleJump,
     Shotgun,
     GreatSword,
+    Grenade,
     // the autopilot's brain: bought with points from levelling up, arena only
     Reaction,
     DashDodge,
@@ -114,6 +115,7 @@ public static class FrenyProgress {
             case FrenyUpgrade.DoubleJump: return 150;
             case FrenyUpgrade.Shotgun: return 300;
             case FrenyUpgrade.GreatSword: return 250;
+            case FrenyUpgrade.Grenade: return 200;
             default: return 100 + 50 * GetLevel(upgrade);
         }
     }
@@ -126,6 +128,7 @@ public static class FrenyProgress {
             case FrenyUpgrade.DoubleJump: return "Pulo duplo";
             case FrenyUpgrade.Shotgun: return "Escopeta (3 tiros)";
             case FrenyUpgrade.GreatSword: return "Espadão (golpe mais largo)";
+            case FrenyUpgrade.Grenade: return "Granada (G)";
             case FrenyUpgrade.Reaction: return "Reação mais rápida";
             case FrenyUpgrade.DashDodge: return "Esquiva com dash";
             case FrenyUpgrade.AutoPotion: return "Usar poção sozinho";
@@ -165,6 +168,25 @@ public static class FrenyProgress {
         return true;
     }
 
+    // gives one level back and refunds what it cost (for playtesting the shop)
+    public static bool Refund(FrenyUpgrade upgrade, Player player) {
+        int level = GetLevel(upgrade);
+        if (level <= 0) {
+            return false;
+        }
+        PlayerPrefs.SetInt(LevelKeyPrefix + upgrade, level - 1);
+        if (IsBrain(upgrade)) {
+            PlayerPrefs.SetInt(SpentPointsKey, Mathf.Max(0, PlayerPrefs.GetInt(SpentPointsKey, 0) - Cost(upgrade)));
+        } else if (player != null) {
+            player.AddCoins(Cost(upgrade)); // Cost() now reports the price of the level just removed
+        } else {
+            Coins += Cost(upgrade);
+        }
+        PlayerPrefs.Save();
+        Changed?.Invoke();
+        return true;
+    }
+
     // ---- effects ----
 
     public static int BonusMaxHealth => GetLevel(FrenyUpgrade.MaxHealth);
@@ -173,6 +195,7 @@ public static class FrenyProgress {
     public static bool HasDoubleJump => GetLevel(FrenyUpgrade.DoubleJump) > 0;
     public static bool HasShotgun => GetLevel(FrenyUpgrade.Shotgun) > 0;
     public static bool HasGreatSword => GetLevel(FrenyUpgrade.GreatSword) > 0;
+    public static bool HasGrenade => GetLevel(FrenyUpgrade.Grenade) > 0;
 
     // seconds between autopilot decisions: 0.6 s untrained, 0.1 s maxed
     public static float AutopilotReactionTime => 0.6f - 0.1f * GetLevel(FrenyUpgrade.Reaction);
