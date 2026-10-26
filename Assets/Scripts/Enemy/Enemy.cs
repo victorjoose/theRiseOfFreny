@@ -29,7 +29,10 @@ public abstract class Enemy : MonoBehaviour
     protected Player player;
     public string spawnerUuid;
     public float radius;
-    public float attackDistance;
+    // gap between the enemy's collider and the player's collider (edge to edge, not centre to centre)
+    public float attackDistance = 0.5f;
+    [SerializeField]
+    protected float attackWindup = 0.35f; // seconds between the Attack animation and the hit
     private bool isPlayerInRange = false;
     private float patrolPositionTolerance = 0.1f;
     public LayerMask ignoreLayer;
@@ -39,6 +42,9 @@ public abstract class Enemy : MonoBehaviour
     protected float attackCooldown = 1.5f;
     private float nextAttackTime;
     private bool hasAttackTrigger;
+    private Collider2D col;
+    private Collider2D playerCol;
+    private Coroutine attackRoutine;
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
@@ -49,6 +55,8 @@ public abstract class Enemy : MonoBehaviour
             player = playerObj.GetComponent<Player>();
         }
         rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<Collider2D>();
+        playerCol = player ? player.GetComponent<Collider2D>() : null;
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
     }
 
@@ -147,14 +155,11 @@ public abstract class Enemy : MonoBehaviour
     private void AttackMode() {
         FacePlayer();
 
-        if (distance <= attackDistance) {
-            // close enough: hit the player, respecting the cooldown
-            if (Time.time >= nextAttackTime) {
+        if (InAttackReach()) {
+            // close enough: wind up, then hit, respecting the cooldown
+            if (Time.time >= nextAttackTime && attackRoutine == null) {
                 nextAttackTime = Time.time + attackCooldown;
-                if (hasAttackTrigger) {
-                    anim.SetTrigger("Attack");
-                }
-                player.Damage();
+                attackRoutine = StartCoroutine(AttackRoutine());
             }
             return;
         }
@@ -166,6 +171,33 @@ public abstract class Enemy : MonoBehaviour
         }
         Vector2 target = new Vector2(targetX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+    }
+
+    // true when the colliders are within attackDistance of touching and roughly at the same height.
+    // Falls back to centre distance when a collider is missing (e.g. the player died and lost its collider).
+    protected bool InAttackReach() {
+        if (col == null || playerCol == null) {
+            return distance <= attackDistance + 1f;
+        }
+
+        Bounds mine = col.bounds;
+        Bounds theirs = playerCol.bounds;
+        float gapX = Mathf.Max(0f, Mathf.Max(theirs.min.x - mine.max.x, mine.min.x - theirs.max.x));
+        bool sameHeight = theirs.max.y > mine.min.y && theirs.min.y < mine.max.y;
+        return sameHeight && gapX <= attackDistance;
+    }
+
+    private IEnumerator AttackRoutine() {
+        if (hasAttackTrigger) {
+            anim.SetTrigger("Attack");
+        }
+        yield return new WaitForSeconds(attackWindup);
+
+        // the player can still step or dash out of the swing
+        if (!isDead && player != null && player.Health > 0 && InAttackReach()) {
+            player.Damage();
+        }
+        attackRoutine = null;
     }
 
     private void FacePlayer() {

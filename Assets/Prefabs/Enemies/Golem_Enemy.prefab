@@ -176,7 +176,7 @@ MonoBehaviour:
   currentTarget: {x: -78.24184, y: 9.01, z: 0}
   spawnerUuid: dad92a82-040e-4b18-b1d0-785b0baeb27b
   radius: 10
-  attackDistance: 5
+  attackDistance: 0.6
   ignoreLayer:
     serializedVersion: 2
     m_Bits: 1536
