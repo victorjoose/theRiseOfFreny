@@ -12,6 +12,12 @@ O Firebase Unity SDK só tem suporte oficial para Android e iOS. No Windows/Mac/
 
 Se um dia o jogo for para celular e precisar de Crashlytics ou push, dá para adicionar o SDK nessa hora.
 
+## Projeto atual
+
+O projeto já foi criado: **The Rise of Freny** (`the-rise-of-freny`), com login anônimo e email/senha ativos, Firestore em `southamerica-east1` (São Paulo) e as regras de `firebase/firestore.rules` publicadas. Para usar, basta ter o `Assets/Resources/FirebaseConfig.json` (passo 4). O `apiKey` está em Configurações do projeto > Seus apps > Unity game.
+
+Os passos abaixo servem para recriar tudo em outro projeto.
+
 ## Passo a passo (uns 10 minutos)
 
 ### 1. Criar o projeto
