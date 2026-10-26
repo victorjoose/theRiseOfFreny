@@ -1,6 +1,6 @@
 # Level builder (campaign stages without opening Unity)
 
-Python 3 + Pillow. Run from the repository root.
+Python 3 + Pillow.
 
 - `render.py <scene.unity> <out.png>`: draws a scene's tilemaps with markers for the start,
   enemies, exits, savepoints, coins and chests (env `PX` = pixels per tile, `BRIGHT` = brightness).
@@ -11,6 +11,12 @@ Python 3 + Pillow. Run from the repository root.
   background repeats a patch of the base stage's bricks, and enemies, coins, chests and torches
   are prefab instances. A new stage also needs a line in `CampaignLevels.cs` and an entry in
   the Build Settings.
+- `check_layout.py <layout module> [--map]`: checks that the exit, checkpoint and chest can be
+  reached with Freny's jump and that enemies stand on a floor; `--map` prints the layout with the
+  reachable cells marked `:`. Run it before building.
+- `levelkit.py`: `Grid` (carve, fill, pit, open_edge), `zigzag` (climbs), `hole_over`, and the
+  reachability check. Layout options: `TINT` (tilemap colour per dungeon), `SCENE_DIR`,
+  `EXIT_PRESS_UP` and `BOSS` (the exit stays shut while that enemy lives).
 - `openings.py <scene.unity>`: lists the openings at the edges of a stage (where exits go).
 
 Layout rules of thumb (Freny's jump is about 2.6 tiles high and short): steps and ledges at most
@@ -18,5 +24,7 @@ Layout rules of thumb (Freny's jump is about 2.6 tiles high and short): steps an
 
 Example:
 
-    python3 Tools/LevelBuilder/build_stage.py layout_1_6 1-2 1-6
-    python3 Tools/LevelBuilder/render.py Assets/Scenes/MaxLevels/1-6.unity /tmp/1-6.png
+    cd Tools/LevelBuilder
+    python3 check_layout.py layout_2_1 --map
+    python3 build_stage.py layout_2_1 1-2 2-1
+    python3 render.py ../../Assets/Scenes/Campaign/2-1.unity /tmp/2-1.png

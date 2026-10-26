@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The campaign in play order (GDD: 9 dungeons of 9 stages, then the final boss). Only dungeon 1
-// exists for now; a new stage is one line here plus its scene in the Build Settings.
+// The campaign in play order (GDD: 9 dungeons of 9 stages, then the final boss). Dungeons 1 and 2
+// exist for now; a new stage is one line here plus its scene in the Build Settings.
 public static class CampaignLevels {
 
     public struct Stage {
@@ -23,6 +23,15 @@ public static class CampaignLevels {
         new Stage { id = "1-7", dungeon = 1 },
         new Stage { id = "1-8", dungeon = 1 },
         new Stage { id = "1-9", dungeon = 1, boss = true },
+        new Stage { id = "2-1", dungeon = 2 },
+        new Stage { id = "2-2", dungeon = 2 },
+        new Stage { id = "2-3", dungeon = 2 },
+        new Stage { id = "2-4", dungeon = 2 },
+        new Stage { id = "2-5", dungeon = 2 },
+        new Stage { id = "2-6", dungeon = 2 },
+        new Stage { id = "2-7", dungeon = 2 },
+        new Stage { id = "2-8", dungeon = 2 },
+        new Stage { id = "2-9", dungeon = 2, boss = true },
     };
 
     public static int IndexOf(string sceneName) {

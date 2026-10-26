@@ -14,6 +14,22 @@ public class LevelDoor : MonoBehaviour {
     public string targetScene;       // Link only
     public string targetDoor;        // Link only
     public bool pressUp = true;
+    public string bossName;          // if set, the door stays shut while an enemy with this name is alive
+
+    // true while the stage's boss is still alive
+    public bool Locked {
+        get {
+            if (string.IsNullOrEmpty(bossName)) {
+                return false;
+            }
+            foreach (Enemy enemy in FindObjectsOfType<Enemy>()) {
+                if (enemy.name.StartsWith(bossName) && !enemy.IsDead) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 
     // the door Freny is standing in, for the HUD hint
     public static LevelDoor Current { get; private set; }
@@ -60,6 +76,9 @@ public class LevelDoor : MonoBehaviour {
     }
 
     private void Use() {
+        if (Locked) {
+            return;
+        }
         used = true;
         if (kind == Kind.Link && !string.IsNullOrEmpty(targetScene)) {
             CampaignRun.Travel(targetScene, targetDoor);

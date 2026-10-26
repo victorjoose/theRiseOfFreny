@@ -39,6 +39,33 @@ EditorBuildSettings:
     path: Assets/Scenes/MaxLevels/1-9.unity
     guid: eec56972ebd682c4da490ed8acbf5858
   - enabled: 1
+    path: Assets/Scenes/Campaign/2-1.unity
+    guid: 6b2049a7c97d4e64be764f1da882ec88
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-2.unity
+    guid: c71c99a9d17e43dc9fe96d5a5c8bc4f9
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-3.unity
+    guid: f9b904575fb449fab0e891a05d3c5bbf
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-4.unity
+    guid: c9bb34f2c06a40b4806985ab433abf2a
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-5.unity
+    guid: 3565fd0c683446288c532b36f2518f93
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-6.unity
+    guid: 43bc8e938ae34f84901c567d70487d39
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-7.unity
+    guid: 23f40f1f6d8e402ba7778e8513a85515
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-8.unity
+    guid: 306835b442354a64a59bc3c95be41aba
+  - enabled: 1
+    path: Assets/Scenes/Campaign/2-9.unity
+    guid: 4821f8c0cb324214981f5bd29dd89a92
+  - enabled: 1
     path: Assets/Scenes/ZE Arena.unity
     guid: 3778513a50514754fa9bce243a77923a
   m_configObjects: {}

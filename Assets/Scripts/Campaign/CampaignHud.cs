@@ -37,7 +37,8 @@ public class CampaignHud : MonoBehaviour {
         DrawStatus();
 
         if (LevelDoor.Current && LevelDoor.Current.pressUp && !run.Finished && !player.IsDead) {
-            string what = LevelDoor.Current.kind == LevelDoor.Kind.Exit ? "W: sair da fase" : "W: entrar";
+            string what = LevelDoor.Current.Locked ? "Derrote o chefe para abrir a porta"
+                : LevelDoor.Current.kind == LevelDoor.Kind.Exit ? "W: sair da fase" : "W: entrar";
             GUI.Label(new Rect(0, Screen.height * 0.7f, Screen.width, 40), what, bigStyle);
         }
 

@@ -134,6 +134,11 @@ for (x,y) in air|{(x+dx,y+dy) for x,y in air for dx in (-1,0,1) for dy in (-1,0,
     bg[(x,y)]=((t[0],t[1],2),(s[0],s[1],3),ident)
 write_tilemap('Background_Tilemap',bg,1073741825)
 write_tilemap('Foreground_Tilemap',{},1073741825)
+tint=getattr(L,'TINT',None)
+if tint:
+    for n in ('Ground_Tilemap','Background_Tilemap'):
+        d=doc_of_go(n,1839735485)
+        d[1]=re.sub(r'  m_Color: \{r: [\d.]+, g: [\d.]+, b: [\d.]+, a: [\d.]+\}\n  m_Origin',f'  m_Color: {{r: {tint[0]}, g: {tint[1]}, b: {tint[2]}, a: 1}}\n  m_Origin',d[1])
 for d in docs:   # the composite collider is rebuilt from the tiles
     if cls(d[0])==66:
         b=d[1]
@@ -145,7 +150,11 @@ ents=L.ENT
 def ent(kind): return [e for e in ents if e[0]==kind]
 px,py=world(*ent('player')[0][1:3]); set_pos('Player',px+0.5,py+1.02); set_pos('CM Follow Cam',px+0.5,py+2)
 cx,cy=world(*ent('checkpoint')[0][1:3]); set_pos('Savepoint',cx+0.5,cy+0.5)
-ex,ey=world(*ent('exit')[0][1:3]); set_pos('LevelExit',ex+0.3,ey+1.2)
+ex,ey=world(*ent('exit')[0][1:3])
+press=getattr(L,'EXIT_PRESS_UP',False); boss=getattr(L,'BOSS','')
+set_pos('LevelExit',ex+(0.5 if press else 0.3),ey+1.2)
+door=[d for d in docs if cls(d[0])==114 and go_of(d[1])==[g for g,n in names.items() if n=='LevelExit' and g in alive][0]][0]
+door[1]=re.sub(r'  pressUp: \d\n.*',f'  pressUp: {1 if press else 0}\n  bossName: {boss}\n',door[1],flags=re.S)
 xs=[c[0] for c in solid]; ys=[c[1] for c in solid]
 wb=doc_of_go('World Boundary',60)
 wb[1]=re.sub(r'm_Paths:\n(    - - .*\n(      - .*\n)*)',f'm_Paths:\n    - - {{x: {min(xs)}, y: {max(ys)+1}}}\n      - {{x: {min(xs)}, y: {min(ys)}}}\n      - {{x: {max(xs)+1}, y: {min(ys)}}}\n      - {{x: {max(xs)+1}, y: {max(ys)+1}}}\n',wb[1])
@@ -170,6 +179,8 @@ PREFABS={
  'chest':('b275f40a18a7d8442999d5655b1d037a','840620173825923865','6149968991823573760',None),
  'torch':('a49ca141e7943584390fcad0b1ccc4b2','2638542340515973895','2638542340515973894',None),
  'walltorch':('d96bb00201465194f9850d8ff78ac9fb','4869257856637464572','4869257856637464573',None),
+ 'bat':('9bbb006b562745c0a0aa7aa53edcac30','8274441830027215983','6101331372153397134','8871542281216455844'),
+ 'supreme':('1937232610ea4673b7e52f0b1ecd8845','4902039112802150574','6741818021595377839','1835722495582547347'),
 }
 def instance(kind,x,y,name,extra=()):
     guid,root_go,root_tr,mb=PREFABS[kind]
@@ -180,14 +191,14 @@ def instance(kind,x,y,name,extra=()):
         body+=f'    - target: {{fileID: {t}, guid: {guid}, type: 3}}\n      propertyPath: {p}\n      value: {v}\n      objectReference: {{fileID: {r}}}\n'
     body+=f'    m_RemovedComponents: []\n  m_SourcePrefab: {{fileID: 100100000, guid: {guid}, type: 3}}\n'
     new.append([f'--- !u!1001 &{newid()}\n',body])
-OFFSET={'torch':1.15,'walltorch':1.5,'coin':0.5,'chest':0.5}
+OFFSET={'torch':1.15,'walltorch':1.5,'coin':0.5,'chest':0.5,'bat':0.5,'supreme':0.8,'sorcerer':0.6}
 counts={}
 for e in ents:
     k=e[0]
     if k in ('player','exit','checkpoint'): continue
     counts[k]=counts.get(k,0)+1
     x,y=world(e[1],e[2])
-    label={'bug':'Bug_Enemy','golem':'Golem_Enemy','licker':'Licker_Enemy','sorcerer':'Sorcerer_Enemy','coin':'Coin','chest':'Chest','torch':'Standing Torch Point Light 2D','walltorch':'Torch Point Light 2D'}[k]
+    label={'bat':'Bat_Enemy','supreme':'Sorcerer_Supreme','bug':'Bug_Enemy','golem':'Golem_Enemy','licker':'Licker_Enemy','sorcerer':'Sorcerer_Enemy','coin':'Coin','chest':'Chest','torch':'Standing Torch Point Light 2D','walltorch':'Torch Point Light 2D'}[k]
     name=f'{label} ({counts[k]})'
     if len(e)==5:   # enemy with a patrol
         ax,_=world(e[3],e[2]); bx_,_=world(e[4],e[2])
@@ -202,7 +213,9 @@ for h,b in new:
     fixed.append([h,b])
 docs+=fixed
 out=pre+''.join(h+b for h,b in docs)
-path=f'{REPO}/Assets/Scenes/MaxLevels/{OUT}.unity'
+scene_dir=getattr(L,'SCENE_DIR','Assets/Scenes/MaxLevels')
+os.makedirs(f'{REPO}/{scene_dir}',exist_ok=True)
+path=f'{REPO}/{scene_dir}/{OUT}.unity'
 open(path,'w').write(out)
 if not os.path.exists(path+'.meta'):
     open(path+'.meta','w').write(f'fileFormatVersion: 2\nguid: {uuid.uuid4().hex}\nDefaultImporter:\n  externalObjects: {{}}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n')
