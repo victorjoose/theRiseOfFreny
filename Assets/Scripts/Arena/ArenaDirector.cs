@@ -98,9 +98,15 @@ public class ArenaDirector : MonoBehaviour {
         return null;
     }
 
+    // the spawners float above their platforms; the portal and the enemy go on the floor itself
+    private static Vector3 OnFloor(Vector2 position) {
+        RaycastHit2D hit = Physics2D.Raycast(position + Vector2.up * 0.5f, Vector2.down, 6f, LayerMask.GetMask("Ground"));
+        return hit.collider != null ? new Vector3(position.x, hit.point.y + 0.05f, 0f) : (Vector3)position;
+    }
+
     private IEnumerator SpawnWithPortal(Entry entry) {
         EnemySpawner spawner = spawners[Random.Range(0, spawners.Count)];
-        Vector3 position = spawner.RandomSpawnPosition();
+        Vector3 position = OnFloor(spawner.RandomSpawnPosition());
         if (entry.flying) {
             position += Vector3.up * Random.Range(1.5f, 2.5f);
         }
@@ -127,7 +133,7 @@ public class ArenaDirector : MonoBehaviour {
 
     private IEnumerator SpawnChest() {
         EnemySpawner spawner = spawners[Random.Range(0, spawners.Count)];
-        Vector3 position = spawner.RandomSpawnPosition();
+        Vector3 position = OnFloor(spawner.RandomSpawnPosition());
         Fx.Portal(position, portalSeconds, ChestPortalColor);
         yield return new WaitForSeconds(portalSeconds);
         Instantiate(chestPrefab, position, Quaternion.identity);

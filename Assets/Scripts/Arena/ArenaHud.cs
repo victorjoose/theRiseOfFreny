@@ -116,12 +116,25 @@ public class ArenaHud : MonoBehaviour {
         float y = 175f * scale;
 
         DrawIcon(FrenyProgress.HasGreatSword ? assets.greatSwordIcon : assets.swordIcon, ref x, y, size);
-        DrawIcon(FrenyProgress.HasShotgun ? assets.shotgunIcon : assets.revolverIcon, ref x, y, size);
+        if (player.UsingShotgun) {
+            DrawIcon(assets.shotgunIcon, ref x, y, size);
+            GUI.Label(new Rect(x - 6f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.ShotgunShells}");
+        } else {
+            DrawIcon(assets.revolverIcon, ref x, y, size);
+        }
         if (FrenyProgress.HasGrenade) {
             Color old = GUI.color;
             GUI.color = player.GrenadeReady ? Color.white : new Color(1f, 1f, 1f, 0.35f);
+            float gx = x;
             DrawIcon(assets.grenadeIcon, ref x, y, size);
             GUI.color = old;
+            if (player.ChargingGrenade) {
+                // power bar while G is held
+                GUI.Box(new Rect(gx, y + size + 2f, size, 6f * scale), GUIContent.none);
+                GUI.color = Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge);
+                GUI.DrawTexture(new Rect(gx, y + size + 2f, size * player.GrenadeCharge, 6f * scale), Texture2D.whiteTexture);
+                GUI.color = old;
+            }
         }
     }
 

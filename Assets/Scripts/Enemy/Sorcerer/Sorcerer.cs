@@ -78,7 +78,7 @@ public class Sorcerer : Enemy, IDamageable {
                 }
                 if (playerRb) {
                     float flightTime = Vector2.Distance(castPosition, target) / Mathf.Max(0.1f, effect.Speed);
-                    target += (Vector3)(playerRb.velocity * flightTime);
+                    target += (Vector3)(playerRb.Vel() * flightTime);
                 }
             }
             effect.SetDirection(target - castPosition);

@@ -53,7 +53,7 @@ public class Dash : MonoBehaviour {
                 direction = 0;
                 dashTime = startDashTime;
                 if (rb) {
-                    rb.velocity = new Vector2(0, rb.velocity.y);
+                    rb.SetVel(new Vector2(0, rb.Vel().y));
                 }
             }
             else {
@@ -65,7 +65,7 @@ public class Dash : MonoBehaviour {
     void FixedUpdate() {
         // rb is destroyed when the player dies
         if (IsDashing && rb) {
-            rb.velocity = new Vector2(direction * dashVelocity, rb.velocity.y);
+            rb.SetVel(new Vector2(direction * dashVelocity, rb.Vel().y));
         }
     }
 }

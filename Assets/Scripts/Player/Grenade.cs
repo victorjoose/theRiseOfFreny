@@ -6,8 +6,8 @@ using UnityEngine;
 public class Grenade : MonoBehaviour {
 
     public float fuse = 1.0f;
-    public float blastRadius = 1.6f;
-    public int damage = 2;
+    public float blastRadius = 1.5f;
+    public int damage = 1;
 
     private float explodeAt;
     private bool exploded;

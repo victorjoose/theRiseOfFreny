@@ -10,11 +10,13 @@ public struct PlayerInputFrame {
     public bool rangedPressed;
     public bool dashPressed;
     public bool potionPressed;
-    public bool grenadePressed;
+    public bool grenadePressed;  // release: throw now
+    public bool grenadeHeld;     // charging (the HUD shows the power bar)
+    public float grenadeCharge;  // 0..1 power of the throw when grenadePressed
 
     public bool IsEmpty =>
         Mathf.Approximately(move, 0f) && !jumpPressed && !jumpHeld && !meleePressed &&
-        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed;
+        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed && !grenadeHeld;
 }
 
 public interface IPlayerInputSource {

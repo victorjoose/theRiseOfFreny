@@ -27,9 +27,21 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private float jumpForce = 4.0f; // unused since jumpHeight; kept so old scenes still load
     [SerializeField] private float jumpHeight = 2.6f;    // units; platforms in the arena are 2 apart
     [SerializeField] private float gravityScale = 3f;    // heavier than Unity's default: a quick, snappy jump
-    [SerializeField] private float grenadeCooldown = 5f;
+    [SerializeField] private float grenadeCooldown = 8f;
+    [SerializeField] private float grenadeAngle = 55f;      // degrees above the horizontal
+    [SerializeField] private float grenadeMinSpeed = 5f;
+    [SerializeField] private float grenadeMaxSpeed = 13f;
+    public const float GrenadeGravity = 1.5f;
     private float nextGrenadeTime;
     public bool GrenadeReady => Time.time >= nextGrenadeTime;
+    public bool ChargingGrenade { get; private set; }
+    public float GrenadeCharge { get; private set; }
+
+    // shotgun shells for this run (the shotgun upgrade starts each run with some; chests add more).
+    // With no shells the revolver is used.
+    [SerializeField] private int shellsPerRun = 6;
+    public int ShotgunShells { get; private set; }
+    public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunShells > 0;
     [SerializeField] public float fallMultiplier = 4.0f;
     [SerializeField] public float lowJumpMultiplier = 3.0f;
     private bool isGrounded;
@@ -84,6 +96,7 @@ public class Player : MonoBehaviour, IDamageable {
 
         Health = MaxHealth;
         Energy = 100;
+        ShotgunShells = FrenyProgress.HasShotgun ? shellsPerRun : 0;
         // coins persist between runs and scenes (GDD: persistência)
         coins = FrenyProgress.Coins;
         if (UIManager.Instance) {
@@ -114,7 +127,7 @@ public class Player : MonoBehaviour, IDamageable {
 
         PlayerInputFrame input = _input.Current;
         move = input.move;
-        Vector2 velocity = rg2d.velocity;
+        Vector2 velocity = rg2d.Vel();
 
         // while dashing, Dash owns the horizontal velocity; while shoved, the knockback does
         if ((_dash == null || !_dash.IsDashing) && Time.time >= knockbackUntil) {
@@ -128,7 +141,7 @@ public class Player : MonoBehaviour, IDamageable {
             velocity += Vector2.up * (gravity * (lowJumpMultiplier - 1) * Time.fixedDeltaTime);
         }
 
-        rg2d.velocity = velocity;
+        rg2d.SetVel(velocity);
     }
 
     private Transform FindShootPosition() {
@@ -155,7 +168,7 @@ public class Player : MonoBehaviour, IDamageable {
         if (isDead || rg2d == null) {
             return;
         }
-        rg2d.velocity = velocity;
+        rg2d.SetVel(velocity);
         knockbackUntil = Time.time + 0.25f;
     }
 
@@ -245,7 +258,7 @@ public class Player : MonoBehaviour, IDamageable {
             jumpStartTime = Time.time;
             // keep the horizontal speed; the old Vector2.up * jumpForce zeroed it for one physics step
             float jumpVelocity = Mathf.Sqrt(2f * Mathf.Abs(Physics2D.gravity.y) * gravityScale * jumpHeight);
-            rg2d.velocity = new Vector2(rg2d.velocity.x, jumpVelocity);
+            rg2d.SetVel(new Vector2(rg2d.Vel().x, jumpVelocity));
         }
 
         _playerAnim.Jump(!isGrounded || isJumping);
@@ -282,8 +295,9 @@ public class Player : MonoBehaviour, IDamageable {
         Vector3 forward = FacingRight ? Vector3.right : Vector3.left;
         Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);
 
-        // the shotgun fires three bullets in a fan
-        if (FrenyProgress.HasShotgun) {
+        // the shotgun fires three bullets in a fan, one shell per shot
+        if (UsingShotgun) {
+            ShotgunShells--;
             FireBullet(muzzle, Quaternion.Euler(0f, 0f, 10f) * forward);
             FireBullet(muzzle, forward);
             FireBullet(muzzle, Quaternion.Euler(0f, 0f, -10f) * forward);
@@ -293,43 +307,30 @@ public class Player : MonoBehaviour, IDamageable {
         StartCoroutine(ResetAttackRoutine());
     }
 
-    // G (or the autopilot): lobs a grenade at the nearest enemy in front of her, or straight
-    // ahead when nobody is around. Needs the "Granada" upgrade.
+    public void AddShells(int amount) {
+        if (FrenyProgress.HasShotgun) {
+            ShotgunShells += amount;
+        }
+    }
+
+    // Worms style: hold G to charge, release to lob the grenade forward in an arc whose range
+    // depends on the charge. The autopilot sends the charge it wants directly.
     void ThrowGrenade() {
-        if (!_input.Current.grenadePressed || !FrenyProgress.HasGrenade || !GrenadeReady) {
+        PlayerInputFrame input = _input.Current;
+        ChargingGrenade = FrenyProgress.HasGrenade && GrenadeReady && input.grenadeHeld;
+        GrenadeCharge = ChargingGrenade ? input.grenadeCharge : 0f;
+
+        if (!input.grenadePressed || !FrenyProgress.HasGrenade || !GrenadeReady) {
             return;
         }
         nextGrenadeTime = Time.time + grenadeCooldown;
+        ChargingGrenade = false;
 
         Vector3 from = transform.position + Vector3.up * 0.6f;
         float facing = FacingRight ? 1f : -1f;
-        Vector2 velocity = new Vector2(facing * 5f, 8f);
-
-        Enemy aim = null;
-        float best = float.MaxValue;
-        foreach (Enemy enemy in Enemy.Active) {
-            if (!enemy || enemy.IsDead) {
-                continue;
-            }
-            Vector2 offset = enemy.Center - from;
-            if (Mathf.Sign(offset.x) != facing || Mathf.Abs(offset.x) > 8f || Mathf.Abs(offset.y) > 6f) {
-                continue;
-            }
-            float score = Mathf.Abs(offset.x) + Mathf.Abs(offset.y);
-            if (score < best) {
-                best = score;
-                aim = enemy;
-            }
-        }
-        if (aim) {
-            // fixed flight time: the launch speed follows from where the target is
-            const float flight = 0.8f;
-            const float grenadeGravity = 1.5f;
-            Vector2 offset = aim.Center - from;
-            float g = Mathf.Abs(Physics2D.gravity.y) * grenadeGravity;
-            velocity = new Vector2(offset.x / flight, (offset.y + 0.5f * g * flight * flight) / flight);
-            velocity = Vector2.ClampMagnitude(velocity, 16f);
-        }
+        float speed = Mathf.Lerp(grenadeMinSpeed, grenadeMaxSpeed, Mathf.Clamp01(input.grenadeCharge));
+        float rad = grenadeAngle * Mathf.Deg2Rad;
+        Vector2 velocity = new Vector2(facing * Mathf.Cos(rad), Mathf.Sin(rad)) * speed;
 
         GameObject grenade = new GameObject("Grenade");
         grenade.transform.position = from;
@@ -338,14 +339,31 @@ public class Player : MonoBehaviour, IDamageable {
         renderer.sprite = ArenaAssets.Instance ? ArenaAssets.Instance.grenadeIcon : null;
         renderer.sortingOrder = 50;
         Rigidbody2D body = grenade.AddComponent<Rigidbody2D>();
-        body.gravityScale = 1.5f;
-        body.velocity = velocity;
+        body.gravityScale = GrenadeGravity;
+        body.SetVel(velocity);
         body.angularVelocity = -facing * 360f;
         CircleCollider2D trigger = grenade.AddComponent<CircleCollider2D>();
         trigger.isTrigger = true;
         trigger.radius = 0.4f;
         grenade.AddComponent<Grenade>();
         Fx.Spray(from, velocity, new Color(1f, 0.9f, 0.6f), 4, 2f, 0.4f);
+    }
+
+    // the charge (0..1) that lands a grenade `dx` away horizontally and `dy` higher, on the
+    // fixed throw angle; -1 when it is out of range
+    public float GrenadeChargeFor(float dx, float dy) {
+        float rad = grenadeAngle * Mathf.Deg2Rad;
+        float g = Mathf.Abs(Physics2D.gravity.y) * GrenadeGravity;
+        float x = Mathf.Abs(dx);
+        float denom = 2f * Mathf.Cos(rad) * Mathf.Cos(rad) * (x * Mathf.Tan(rad) - dy);
+        if (denom <= 0.01f) {
+            return -1f;
+        }
+        float speed = Mathf.Sqrt(g * x * x / denom);
+        if (speed > grenadeMaxSpeed + 1f) {
+            return -1f;
+        }
+        return Mathf.Clamp01(Mathf.InverseLerp(grenadeMinSpeed, grenadeMaxSpeed, speed));
     }
 
     private void FireBullet(Vector3 from, Vector3 direction) {

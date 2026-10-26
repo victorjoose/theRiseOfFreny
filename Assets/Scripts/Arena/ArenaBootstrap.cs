@@ -32,6 +32,7 @@ public static class ArenaBootstrap {
 
         FrenyInput input = GetOrAdd<FrenyInput>(playerObj);
         GetOrAdd<Dash>(playerObj); // the arena Player never had the Dash component, so nobody could dash
+        GetOrAdd<ArenaWrap>(playerObj);
         GetOrAdd<ArenaAutopilot>(playerObj);
         GetOrAdd<ArenaRunManager>(playerObj);
         GetOrAdd<ArenaHud>(playerObj);

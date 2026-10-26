@@ -73,6 +73,8 @@ public abstract class Enemy : MonoBehaviour
     [SerializeField]
     protected float provokedRadius = 10f; // how far a hit enemy keeps chasing
     private float nextDustTime;
+    private static int groundMask = -1;
+    protected static int GroundMask => groundMask >= 0 ? groundMask : (groundMask = LayerMask.GetMask("Ground"));
 
     // colour of the particles when this enemy is hit or dies
     protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
@@ -138,6 +140,9 @@ public abstract class Enemy : MonoBehaviour
 
         Vector3 before = transform.position;
         Movement();
+        if (rb == null) {
+            SnapToGround();
+        }
         bool moving = Mathf.Abs(transform.position.x - before.x) > 0.0001f;
         if (hasMovingParam) {
             // Walk/Idle follow real movement, so the walk cycle never plays while standing still
@@ -146,6 +151,21 @@ public abstract class Enemy : MonoBehaviour
         if (moving && Time.time >= nextDustTime) {
             Fx.Dust(Feet, 1);
             nextDustTime = Time.time + 0.2f;
+        }
+    }
+
+    // enemies moved by their transform (no Rigidbody) keep their feet on the floor below them
+    protected void SnapToGround() {
+        if (col == null) {
+            return;
+        }
+        Vector2 feet = Feet;
+        RaycastHit2D hit = Physics2D.Raycast(feet + Vector2.up * 0.3f, Vector2.down, 3f, GroundMask);
+        if (hit.collider != null) {
+            float delta = hit.point.y - feet.y;
+            if (Mathf.Abs(delta) > 0.005f) {
+                transform.position += Vector3.up * delta;
+            }
         }
     }
 
@@ -167,17 +187,19 @@ public abstract class Enemy : MonoBehaviour
             return;
         }
 
-        if (Vector2.Distance(transform.position, pointA.position) <= patrolPositionTolerance) {
+        // only x matters: the patrol points sit at the spawner's height, not on the floor
+        if (Mathf.Abs(transform.position.x - pointA.position.x) <= patrolPositionTolerance) {
             currentTarget = pointB.position;
             patrolPauseUntil = Time.time + patrolPause;
-        } else if (Vector2.Distance(transform.position, pointB.position) <= patrolPositionTolerance) {
+        } else if (Mathf.Abs(transform.position.x - pointB.position.x) <= patrolPositionTolerance) {
             currentTarget = pointA.position;
             patrolPauseUntil = Time.time + patrolPause;
         }
 
         // sprites face left by default, so scale.x = -1 means looking right
         transform.localScale = new Vector3(currentTarget.x > transform.position.x ? -1 : 1, 1, 1);
-        transform.position = Vector2.MoveTowards(transform.position, currentTarget, MoveSpeed * Time.deltaTime);
+        Vector2 goal = new Vector2(currentTarget.x, transform.position.y);
+        transform.position = Vector2.MoveTowards(transform.position, goal, MoveSpeed * Time.deltaTime);
     }
 
     protected float MoveSpeed => speed * Tuning.EnemySpeed.Value;
