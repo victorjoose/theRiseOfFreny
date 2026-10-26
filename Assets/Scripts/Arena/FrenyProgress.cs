@@ -21,6 +21,24 @@ public static class FrenyProgress {
     private const string XpKey = "freny.xp";
     private const string SpentPointsKey = "freny.spentPoints";
     private const string LevelKeyPrefix = "freny.upgrade.";
+    private const string CoinsKey = "freny.coins";
+    private const string BestWaveKey = "freny.arena.bestRunSeconds";
+
+    // ---- coins (shared by arena, shop and campaign) ----
+
+    public static int Coins {
+        get => PlayerPrefs.GetInt(CoinsKey, 0);
+        set {
+            PlayerPrefs.SetInt(CoinsKey, Mathf.Max(0, value));
+            Changed?.Invoke();
+        }
+    }
+
+    // longest arena run so far, in seconds
+    public static float BestRunSeconds {
+        get => PlayerPrefs.GetFloat(BestWaveKey, 0f);
+        set => PlayerPrefs.SetFloat(BestWaveKey, value);
+    }
 
     // ---- XP and levels ----
 
@@ -151,6 +169,8 @@ public static class FrenyProgress {
     // for testing in the Editor
     public static void ResetAll() {
         PlayerPrefs.DeleteKey(XpKey);
+        PlayerPrefs.DeleteKey(CoinsKey);
+        PlayerPrefs.DeleteKey(BestWaveKey);
         PlayerPrefs.DeleteKey(SpentPointsKey);
         foreach (FrenyUpgrade upgrade in Enum.GetValues(typeof(FrenyUpgrade))) {
             PlayerPrefs.DeleteKey(LevelKeyPrefix + upgrade);
