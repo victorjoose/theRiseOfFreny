@@ -33,6 +33,13 @@ public static class CampaignBootstrap {
         GetOrAdd<CampaignRun>(playerObj);
         GetOrAdd<CampaignHud>(playerObj);
 
+        // stages generated outside the Editor (1-6) are saved without the merged collider shape
+        foreach (CompositeCollider2D composite in Object.FindObjectsOfType<CompositeCollider2D>()) {
+            if (composite.pathCount == 0) {
+                composite.GenerateGeometry();
+            }
+        }
+
         foreach (GameObject root in scene.GetRootGameObjects()) {
             foreach (Transform child in root.GetComponentsInChildren<Transform>(true)) {
                 if (child.name.StartsWith("Savepoint") && child.GetComponent<Checkpoint>() == null) {
