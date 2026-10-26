@@ -52,7 +52,7 @@ public static class Tuning {
 
     // difficulty curve (ArenaDirector)
     public static readonly Knob RampSeconds = new Knob("rampSeconds", "Arena: segundos até o pico", 60f, 600f, 300f);
-    public static readonly Knob PeakEnemies = new Knob("peakEnemies", "Arena: inimigos no pico", 2f, 10f, 6f);
+    public static readonly Knob PeakEnemies = new Knob("peakEnemies", "Arena: inimigos no pico", 2f, 15f, 10f);
 
     public static readonly Knob[] All = {
         EnemyCooldown, EnemyWindup, EnemySpeed, EnemyAggro,

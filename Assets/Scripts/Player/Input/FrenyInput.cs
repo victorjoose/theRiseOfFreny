@@ -17,6 +17,7 @@ public class FrenyInput : MonoBehaviour {
 
     public PlayerInputFrame Current { get; private set; }
     public bool IsAutopilotDriving { get; private set; }
+    public float RawHumanMove => human.RawMove; // for the HUD: shows a drifting stick
     public bool AutoEnabled => autoEnabled;
     public bool HasAutopilot => autopilot != null;
 
