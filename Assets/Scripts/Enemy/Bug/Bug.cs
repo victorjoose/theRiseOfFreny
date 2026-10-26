@@ -17,7 +17,6 @@ public class Bug : Enemy, IDamageable {
             return;
         }
 
-        Debug.Log("Bug::Damage()");
         Health--;
         anim.SetTrigger("Hit");
         isHit = true;

@@ -40,6 +40,15 @@ public class Player : MonoBehaviour, IDamageable {
     public int Health { get; set; }
     public int Energy { get; set; }
     private Dash _dash;
+    private SpriteRenderer _sprite;
+    private GameManager _gameManager;
+
+    // after a hit Freny blinks and can't be hit again for a moment, so two enemies (or a swing
+    // and a hexball) landing together don't take two hearts at once
+    [SerializeField] private float invulnerableTime = 0.8f;
+    private float invulnerableUntil;
+    private float jumpStartTime;
+    public bool IsInvulnerable => Time.time < invulnerableUntil;
 
     // read by the arena autopilot so it decides with the same information a person sees
     public bool IsGrounded => isGrounded;
@@ -72,24 +81,57 @@ public class Player : MonoBehaviour, IDamageable {
         col2d = GetComponent<Collider2D>();
         _playerAnim = GetComponent<PlayerAnimation>();
         _dash = GetComponent<Dash>();
-        playerRevolverShootPosition = GameObject.FindGameObjectWithTag("RevolverShootPosition").GetComponent<Transform>();
+        _sprite = GetComponentInChildren<SpriteRenderer>();
+        _gameManager = FindObjectOfType<GameManager>();
+        if (playerRevolverShootPosition == null) {
+            playerRevolverShootPosition = FindShootPosition();
+        }
     }
 
+    // all physics in FixedUpdate: horizontal speed and the "better jump" gravity. Changing the
+    // velocity in Update made the jump height depend on the frame rate.
     private void FixedUpdate() {
-        move = _input.Current.move;
-        // while dashing, Dash owns the horizontal velocity
-        if (isDead == false && (_dash == null || !_dash.IsDashing)){
-            rg2d.velocity = new Vector2(move * _speed, rg2d.velocity.y);
+        if (isDead || rg2d == null) {
+            return;
         }
+
+        PlayerInputFrame input = _input.Current;
+        move = input.move;
+        Vector2 velocity = rg2d.velocity;
+
+        // while dashing, Dash owns the horizontal velocity
+        if (_dash == null || !_dash.IsDashing) {
+            velocity.x = move * _speed;
+        }
+
+        if (velocity.y < 0) {
+            velocity += Vector2.up * (Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime);
+        } else if (velocity.y > 0 && !input.jumpHeld) {
+            velocity += Vector2.up * (Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime);
+        }
+
+        rg2d.velocity = velocity;
+    }
+
+    private Transform FindShootPosition() {
+        foreach (Transform child in GetComponentsInChildren<Transform>()) {
+            if (child.CompareTag("RevolverShootPosition")) {
+                return child;
+            }
+        }
+        GameObject tagged = GameObject.FindGameObjectWithTag("RevolverShootPosition");
+        return tagged ? tagged.transform : transform;
     }
 
     // Update is called once per frame
     void Update() {
         if (isDead) {
-            if (gameOver) {
-                gameOver.SetActive(true);
-            }
             return;
+        }
+
+        if (_sprite) {
+            // blink while invulnerable
+            _sprite.enabled = !IsInvulnerable || Mathf.Repeat(Time.time, 0.16f) < 0.08f;
         }
 
         Movement();
@@ -120,11 +162,8 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     void Movement() {
-        if (move == 0 && isDead == false) {
-            _playerAnim.Move(false);
-        } else {
-            _playerAnim.Move(true);
-        }
+        float move = _input.Current.move;
+        _playerAnim.Move(move != 0);
 
         if (move > 0) {
             Util.Flip(true, transform);
@@ -136,21 +175,18 @@ public class Player : MonoBehaviour, IDamageable {
     void Jump() {
         isGrounded = Physics2D.OverlapCircle(feetPos.position, checkRadius, whatIsGround);
 
-        PlayerInputFrame input = _input.Current;
-        if (input.jumpPressed && isGrounded && !isJumping) {
+        if (_input.Current.jumpPressed && isGrounded && !isJumping) {
             isJumping = true;
-            rg2d.velocity = Vector2.up * jumpForce;
-            _playerAnim.Jump(true);
-        }
-        
-        if (rg2d.velocity.y < 0) {
-            rg2d.velocity += Vector2.up * (Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime);
-        } else if (rg2d.velocity.y > 0 && !input.jumpHeld) {
-            rg2d.velocity += Vector2.up * (Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime);
+            jumpStartTime = Time.time;
+            // keep the horizontal speed; the old Vector2.up * jumpForce zeroed it for one physics step
+            rg2d.velocity = new Vector2(rg2d.velocity.x, jumpForce);
         }
 
-        _playerAnim.Jump(isGrounded != true);
-        isJumping = !isGrounded;
+        _playerAnim.Jump(!isGrounded || isJumping);
+        // the feet circle still touches the ground for a moment after take-off
+        if (isGrounded && Time.time - jumpStartTime > 0.15f) {
+            isJumping = false;
+        }
     }
 
     void Attack() {
@@ -176,7 +212,11 @@ public class Player : MonoBehaviour, IDamageable {
         } else {
             _playerAnim.Ranged();
         }
-        Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
+        GameObject bullet = Instantiate(revolverBulletPrefab, playerRevolverShootPosition.position, Quaternion.identity);
+        RangedAttack shot = bullet.GetComponent<RangedAttack>();
+        if (shot) {
+            shot.SetDirection(FacingRight ? Vector3.right : Vector3.left);
+        }
         StartCoroutine(ResetAttackRoutine());
     }
 
@@ -187,7 +227,8 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void Damage() {
-        if (isDead) return;
+        if (isDead || IsInvulnerable) return;
+        invulnerableUntil = Time.time + invulnerableTime;
         Health = Mathf.Max(Health - 1, 0);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, true);
@@ -200,6 +241,12 @@ public class Player : MonoBehaviour, IDamageable {
         
         _playerAnim.Death();
         isDead = true;
+        if (_sprite) {
+            _sprite.enabled = true;
+        }
+        if (gameOver) {
+            gameOver.SetActive(true);
+        }
 
         //Temporary solution for being able to move after death
         Destroy(rg2d);
@@ -212,24 +259,20 @@ public class Player : MonoBehaviour, IDamageable {
             return;
         }
 
-        GameManager gameManager = FindObjectOfType<GameManager>();
-        if (gameManager == null || !gameManager.HasPotion) {
+        if (!HasPotion) {
             return;
         }
 
-        gameManager.HasPotion = false;
+        _gameManager.HasPotion = false;
         Health = Mathf.Min(Health + 1, MaxHealth);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, false);
         }
     }
 
-    public bool HasPotion {
-        get {
-            GameManager gameManager = FindObjectOfType<GameManager>();
-            return gameManager != null && gameManager.HasPotion;
-        }
-    }
+    // the GameManager is looked up once in Start (FindObjectOfType searches the whole scene,
+    // and the autopilot asks this on every decision)
+    public bool HasPotion => _gameManager != null && _gameManager.HasPotion;
 
     public void AddCoins(int amount) {
         coins = Mathf.Max(0, coins + amount);

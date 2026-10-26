@@ -20,7 +20,6 @@ public class Golem : Enemy, IDamageable
         if (!Util.IsAlive(isDead, gameObject)) {
             return;
         }
-        Debug.Log("Golem::Damage()");
         Health--;
         anim.SetTrigger("Hit");
         isHit = true;

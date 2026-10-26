@@ -15,18 +15,6 @@ public class ChangeGroundArea : MonoBehaviour
     public LayerMask playerLayer;
     public float detectionRadius = 11f;
     public float resetCollisionTimer = 1f;
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
     public string enemyTag = "Enemy"; // Set this to the tag of the enemy GameObject
 
     private void OnCollisionEnter2D(Collision2D collision)

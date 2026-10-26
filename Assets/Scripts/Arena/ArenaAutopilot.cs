@@ -65,14 +65,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private void Scan() {
         enemies.Clear();
-        foreach (Enemy enemy in FindObjectsOfType<Enemy>()) {
-            if (!enemy.IsDead) {
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy && !enemy.IsDead) {
                 enemies.Add(enemy);
             }
         }
 
         projectiles.Clear();
-        projectiles.AddRange(FindObjectsOfType<HexballEffect>());
+        projectiles.AddRange(HexballEffect.Active);
     }
 
     private PlayerInputFrame Decide() {

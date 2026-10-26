@@ -16,7 +16,6 @@ public class Licker : Enemy, IDamageable {
             return;
         }
         
-        Debug.Log("Licker::Damage()");
         Health--;
         anim.SetTrigger("Hit");
         isHit = true;

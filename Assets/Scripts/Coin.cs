@@ -11,11 +11,6 @@ public class Coin : MonoBehaviour {
     public GameObject coinCount;
     // private bool coroutineCoinShow = true;
 
-    private void Update() {
-        // if(gotCoin)
-        //     StartCoroutine(ActiveAndDeactivate());
-    }
-
     // private IEnumerator ActiveAndDeactivate() {
     //
     //     coinCount.SetActive(true);

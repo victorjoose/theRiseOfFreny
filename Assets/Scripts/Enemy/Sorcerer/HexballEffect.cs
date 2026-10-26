@@ -10,6 +10,19 @@ public class HexballEffect : MonoBehaviour
 
     public Vector3 Direction => direction;
 
+    // live hexballs, read by the autopilot to dodge (instead of FindObjectsOfType)
+    public static readonly List<HexballEffect> Active = new List<HexballEffect>();
+
+    private void OnEnable()
+    {
+        Active.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        Active.Remove(this);
+    }
+
     public void SetDirection(Vector3 newDirection)
     {
         direction = newDirection;

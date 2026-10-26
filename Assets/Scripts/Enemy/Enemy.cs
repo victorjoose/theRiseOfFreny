@@ -4,6 +4,18 @@ using UnityEngine;
 
 public abstract class Enemy : MonoBehaviour
 {
+    // every enemy in the scene, kept up to date by OnEnable/OnDisable, so the autopilot
+    // doesn't need FindObjectsOfType (which walks the whole scene) to find them
+    public static readonly List<Enemy> Active = new List<Enemy>();
+
+    protected virtual void OnEnable() {
+        Active.Add(this);
+    }
+
+    protected virtual void OnDisable() {
+        Active.Remove(this);
+    }
+
     public GameObject coinPrefab;
     
     [SerializeField]

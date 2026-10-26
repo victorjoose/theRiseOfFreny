@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class PlayerAnimation : MonoBehaviour
 {
-    public static Animator _anim;
+    private Animator _anim;
 
-    void Start()
+    void Awake()
     {
         _anim = GetComponentInChildren<Animator>();
     }
