@@ -1,0 +1,43 @@
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+// Turns the arena scene into idle mode without editing the scene file: when it loads, the player
+// gets the input layer, the autopilot and the temporary HUD. Components already placed by hand
+// in the scene are kept, so this can be removed once ZE Arena is set up in the Editor.
+public static class ArenaBootstrap {
+
+    private const string ArenaSceneName = "ZE Arena";
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void Init() {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        // the first scene is already loaded when this runs
+        SetUp(SceneManager.GetActiveScene());
+    }
+
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
+        SetUp(scene);
+    }
+
+    private static void SetUp(Scene scene) {
+        if (scene.name != ArenaSceneName) {
+            return;
+        }
+
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj == null || playerObj.GetComponent<Player>() == null) {
+            return;
+        }
+
+        FrenyInput input = GetOrAdd<FrenyInput>(playerObj);
+        GetOrAdd<ArenaAutopilot>(playerObj);
+        GetOrAdd<ArenaHud>(playerObj);
+        input.FindAutopilot();
+    }
+
+    private static T GetOrAdd<T>(GameObject obj) where T : Component {
+        T component = obj.GetComponent<T>();
+        return component ? component : obj.AddComponent<T>();
+    }
+}

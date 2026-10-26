@@ -1,0 +1,17 @@
+name: Compile check
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+
+jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Compile game scripts against UnityEngine
+        run: dotnet build .ci/CompileCheck

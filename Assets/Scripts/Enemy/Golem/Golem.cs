@@ -29,6 +29,7 @@ public class Golem : Enemy, IDamageable
         if (Util.ShouldBeDead(Health))
         {
             isDead = Util.Dies(anim, gameObject);
+            Util.DropCoin(coins, coinPrefab, transform);
         }
     }
 }

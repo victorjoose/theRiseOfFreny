@@ -28,14 +28,19 @@ namespace Utility {
         public static Boolean Dies(Animator anim, GameObject gameObject) {
             anim.SetTrigger("Death");
             Enemy enemy = gameObject.GetComponent<Enemy>();
-            updateSpawnerCountEnemies(enemy, false);
-            UIManager.Instance.HandleComboManager(enemy);
+            if (enemy != null) {
+                FrenyProgress.AddXp(Mathf.Max(enemy.scoreToAdd, 10));
+                updateSpawnerCountEnemies(enemy, false);
+                if (UIManager.Instance) {
+                    UIManager.Instance.HandleComboManager(enemy);
+                }
+            }
             Object.Destroy(gameObject, 3f);
             return true;
         }
 
         public static GameObject DropCoin(int coins, Object coinPrefab, Transform transform) {
-            if (coins > 0) {
+            if (coins > 0 && coinPrefab != null) {
                 GameObject coin = (GameObject) Object.Instantiate(coinPrefab, transform.position, Quaternion.identity);
                 coin.GetComponent<Coin>().coins = coins;
 
@@ -54,14 +59,14 @@ namespace Utility {
             if (!add) {
                 foreach (GameObject spawnerObj in spawners){
                     EnemySpawner spawner = spawnerObj.GetComponent<EnemySpawner>();
-                    if (spawner.uuid == enemy.spawnerUuid) {
+                    if (spawner != null && spawner.uuid == enemy.spawnerUuid) {
                         spawner.countEnemies--;
                     }
                 }
             } else {
                foreach (GameObject spawnerObj in spawners){
                 EnemySpawner spawner = spawnerObj.GetComponent<EnemySpawner>();
-                    if (spawner.uuid == enemy.spawnerUuid) {
+                    if (spawner != null && spawner.uuid == enemy.spawnerUuid) {
                         spawner.countEnemies++;
                     }
                 } 
