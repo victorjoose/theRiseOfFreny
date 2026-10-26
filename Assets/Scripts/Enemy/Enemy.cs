@@ -61,7 +61,6 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private float patrolPositionTolerance = 0.1f;
     public LayerMask ignoreLayer;
     protected Rigidbody2D rb;
-    public float jumpForce = 5f;
     [SerializeField]
     protected float attackCooldown = 1.5f;
     private float nextAttackTime;
@@ -78,9 +77,24 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     [SerializeField]
     protected float provokedRadius = 10f; // how far a hit enemy keeps chasing
     private float nextDustTime;
-    private float fallVelocity;      // enemies without a Rigidbody fall through StickToGround
+    private float fallVelocity;      // walkers fall through StickToGround (there is no physics gravity on them)
     private static int groundMask = -1;
     protected static int GroundMask => groundMask >= 0 ? groundMask : (groundMask = LayerMask.GetMask("Ground"));
+    private static readonly RaycastHit2D[] groundHits = new RaycastHit2D[8];
+    private const float FallGravity = 20f;
+    private const float MaxFallSpeed = 12f;
+    private const float StepUp = 0.35f;      // a floor this little above the feet is a step, anything higher is a wall
+
+    // the collider's shape relative to the root, cached once. Feet and Center are computed from the
+    // transform with it, not read from col.bounds: the bounds lag one physics step behind a transform
+    // move, so at high frame rates an enemy was already past the floor before its bounds said so
+    private Vector2 colOffset;
+    private float colHalfWidth = 0.3f;
+    private float colHalfHeight = 0.5f;
+    private bool geometryCached;
+
+    // ground enemies are moved by their transform and kept on the floor by StickToGround; the Bat flies
+    protected virtual bool WalksOnGround => true;
 
     // colour of the particles when this enemy is hit or dies
     protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
@@ -95,6 +109,14 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
+        CacheGeometry();
+        if (rb && WalksOnGround) {
+            // a walker's body is kinematic: StickToGround is its gravity and nothing pushes it around
+            // (the Golem was a dynamic body on top of that, and the campaign's ChangeGroundArea made it jump)
+            rb.bodyType = RigidbodyType2D.Kinematic;
+            rb.gravityScale = 0f;
+            rb.SetVel(Vector2.zero);
+        }
         playerCol = player ? player.GetComponent<Collider2D>() : null;
         Health = health; // the inspector value
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
@@ -153,7 +175,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
         Vector3 before = transform.position;
         Movement();
-        if (rb == null) {
+        if (WalksOnGround) {
             StickToGround();
         }
         ClampToArena();
@@ -168,25 +190,56 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
     }
 
-    // enemies moved by their transform (no Rigidbody, like the Bug) keep their feet on the floor
-    // under them, and fall when there is none (before, one spawned over a gap walked on air)
+    // Keeps the feet on the floor under the body and lets the enemy fall when there is none. The ray
+    // starts at the top of the body, never at the feet: a ray that starts inside a collider reports
+    // nothing (the project's "queries start in colliders" is off), so feet that had sunk a little into
+    // a thin platform saw no floor at all and the enemy fell through it. Floors between the body's top
+    // and the feet that are higher than a step are ignored (a ledge beside the head is not a floor).
     protected void StickToGround() {
         if (col == null) {
             return;
         }
-        Vector2 feet = Feet;
-        float probe = 0.3f + Mathf.Max(0.15f, fallVelocity * Time.deltaTime + 0.05f);
-        RaycastHit2D hit = Physics2D.Raycast(feet + Vector2.up * 0.3f, Vector2.down, probe, GroundMask);
-        if (hit.collider != null) {
-            fallVelocity = 0f;
-            float delta = hit.point.y - feet.y;
-            if (Mathf.Abs(delta) > 0.005f) {
-                transform.position += Vector3.up * delta;
+        Vector3 feet = Feet;
+        float height = Mathf.Max(0.2f, HalfHeight * 2f);
+        float dt = Time.deltaTime;
+        float fallStep = fallVelocity * dt;
+        float probe = height + Mathf.Max(0.3f, fallStep + 0.1f);
+
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.useTriggers = false;
+        filter.SetLayerMask(GroundMask);
+        int count = Physics2D.Raycast(new Vector2(feet.x, feet.y + height), Vector2.down, filter, groundHits, probe);
+        float floorY = float.NegativeInfinity;
+        for (int i = 0; i < count; i++) {
+            float y = groundHits[i].point.y;
+            if (y <= feet.y + StepUp && y > floorY) {
+                floorY = y;
             }
-        } else {
-            fallVelocity = Mathf.Min(fallVelocity + 20f * Time.deltaTime, 12f);
-            transform.position += Vector3.down * (fallVelocity * Time.deltaTime);
         }
+
+        if (floorY > float.NegativeInfinity) {
+            float delta = floorY - feet.y; // > 0: sank in or a small step up, < 0: the floor is below
+            if (delta >= -0.02f) {
+                fallVelocity = 0f;
+                if (Mathf.Abs(delta) > 0.002f) {
+                    transform.position += Vector3.up * delta;
+                }
+                return;
+            }
+            // a floor within reach below: fall onto it, never past it
+            fallVelocity = Mathf.Min(fallVelocity + FallGravity * dt, MaxFallSpeed);
+            float step = fallVelocity * dt;
+            if (step >= -delta) {
+                transform.position += Vector3.up * delta;
+                fallVelocity = 0f;
+            } else {
+                transform.position += Vector3.down * step;
+            }
+            return;
+        }
+
+        fallVelocity = Mathf.Min(fallVelocity + FallGravity * dt, MaxFallSpeed);
+        transform.position += Vector3.down * (fallVelocity * dt);
     }
 
     // is there floor to step on just ahead (within one unit below the feet)? Ground enemies stop
@@ -195,10 +248,54 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (col == null) {
             return true;
         }
-        Vector2 feet = Feet;
-        float ahead = col.bounds.extents.x + 0.15f;
+        Vector3 feet = Feet;
+        float ahead = HalfWidth + 0.15f;
         Vector2 from = new Vector2(feet.x + direction * ahead, feet.y + 0.3f);
         return Physics2D.Raycast(from, Vector2.down, 1.3f, GroundMask).collider != null;
+    }
+
+    // puts the feet (the collider's bottom edge) on `floorPoint`. Spawners call this right after
+    // Instantiate, before Start: the root sits above the feet by the collider's offset, so placing the
+    // root on the floor left the Bug's feet 0.46 inside it
+    public void PlaceFeetAt(Vector2 floorPoint) {
+        if (!geometryCached) {
+            CacheGeometry();
+        }
+        Vector3 feet = Feet;
+        transform.position += new Vector3(floorPoint.x - feet.x, floorPoint.y + 0.01f - feet.y, 0f);
+        fallVelocity = 0f;
+    }
+
+    private void CacheGeometry() {
+        if (col == null) {
+            col = GetComponent<Collider2D>();
+        }
+        geometryCached = true;
+        if (col is BoxCollider2D box) {
+            colOffset = box.offset;
+            colHalfWidth = box.size.x * 0.5f;
+            colHalfHeight = box.size.y * 0.5f;
+        } else if (col is CapsuleCollider2D capsule) {
+            colOffset = capsule.offset;
+            colHalfWidth = capsule.size.x * 0.5f;
+            colHalfHeight = capsule.size.y * 0.5f;
+        } else if (col is CircleCollider2D circle) {
+            colOffset = circle.offset;
+            colHalfWidth = circle.radius;
+            colHalfHeight = circle.radius;
+        } else if (col != null) {
+            Vector3 scale = transform.lossyScale;
+            float sx = Mathf.Abs(scale.x) > 0.001f ? scale.x : 1f;
+            float sy = Mathf.Abs(scale.y) > 0.001f ? scale.y : 1f;
+            Bounds bounds = col.bounds;
+            colOffset = new Vector2((bounds.center.x - transform.position.x) / sx, (bounds.center.y - transform.position.y) / sy);
+            colHalfWidth = bounds.extents.x / Mathf.Abs(sx);
+            colHalfHeight = bounds.extents.y / Mathf.Abs(sy);
+        } else {
+            colOffset = Vector2.zero;
+            colHalfWidth = 0.3f;
+            colHalfHeight = 0.5f;
+        }
     }
 
     // an enemy that somehow ended up under the arena (a hole, a bad spawn) is removed quietly, so
@@ -249,8 +346,25 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // sprites face left by default, so scale.x = -1 means looking right
     protected bool FacingRight => transform.localScale.x < 0f;
 
-    public Vector3 Feet => col ? new Vector3(col.bounds.center.x, col.bounds.min.y, 0f) : transform.position;
-    public Vector3 Center => col ? col.bounds.center : transform.position;
+    // collider centre in world space, from the transform (the facing flip is in scale.x)
+    private Vector2 ColliderCenter {
+        get {
+            if (!geometryCached) {
+                CacheGeometry();
+            }
+            Vector3 scale = transform.lossyScale;
+            return (Vector2)transform.position + new Vector2(colOffset.x * scale.x, colOffset.y * scale.y);
+        }
+    }
+    public float HalfWidth => colHalfWidth * Mathf.Abs(transform.lossyScale.x);
+    public float HalfHeight => colHalfHeight * Mathf.Abs(transform.lossyScale.y);
+    public Vector3 Feet {
+        get {
+            Vector2 center = ColliderCenter;
+            return new Vector3(center.x, center.y - HalfHeight, 0f);
+        }
+    }
+    public Vector3 Center => ColliderCenter;
     // winding up or landing a hit right now (the autopilot steps out of the way)
     public bool IsAttacking => attackRoutine != null;
 
@@ -471,13 +585,5 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             Physics2D.IgnoreCollision(collision.collider, GetComponent<Collider2D>());
         }
 
-    }
-
-    public void Jump()
-    {
-        if (rb == null || isDead) {
-            return;
-        }
-        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 }

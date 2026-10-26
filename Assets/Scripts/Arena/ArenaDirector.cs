@@ -98,8 +98,9 @@ public class ArenaDirector : MonoBehaviour {
         return null;
     }
 
-    // the spawners float above their platforms; the portal and the enemy go on the floor itself.
-    // A random x over a gap (or past the screen edge) is rolled again, so nothing spawns in the air.
+    // the spawners float above their platforms; the portal and the enemy go on the floor itself. The
+    // point returned is ON the floor (the enemy's feet are placed there, see Enemy.PlaceFeetAt). A random
+    // x over a gap (or past the screen edge) is rolled again, so nothing spawns in the air.
     private static Vector3 SpawnPoint(EnemySpawner spawner) {
         int ground = LayerMask.GetMask("Ground");
         for (int attempt = 0; attempt < 8; attempt++) {
@@ -107,7 +108,7 @@ public class ArenaDirector : MonoBehaviour {
             position.x = ArenaBounds.ClampX(position.x, 1f);
             RaycastHit2D hit = Physics2D.Raycast(position + Vector2.up * 0.5f, Vector2.down, 6f, ground);
             if (hit.collider != null) {
-                return new Vector3(position.x, hit.point.y + 0.05f, 0f);
+                return new Vector3(position.x, hit.point.y, 0f);
             }
         }
         return spawner.transform.position;
@@ -136,7 +137,7 @@ public class ArenaDirector : MonoBehaviour {
                 spawner.countEnemies++;
             }
         } else {
-            spawner.SpawnDirected(entry.prefab, position);
+            spawner.SpawnDirected(entry.prefab, position); // feet on the floor point
         }
     }
 
@@ -145,6 +146,7 @@ public class ArenaDirector : MonoBehaviour {
         Vector3 position = SpawnPoint(spawner);
         Fx.Portal(position, portalSeconds, ChestPortalColor);
         yield return new WaitForSeconds(portalSeconds);
-        Instantiate(chestPrefab, position, Quaternion.identity);
+        // the chest sprite is centred on its root: lift it so it sits on the floor instead of sinking in
+        Instantiate(chestPrefab, position + Vector3.up * 0.3f, Quaternion.identity);
     }
 }

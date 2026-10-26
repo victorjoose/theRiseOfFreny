@@ -20,12 +20,27 @@ public static class ArenaBootstrap {
         SetUp(scene);
     }
 
+    private static bool collisionSaved;
+    private static bool heroEnemyIgnoredByDefault;
+
     private static void SetUp(Scene scene) {
         if (scene.name != ArenaSceneName) {
             ArenaBounds.Disable();
+            IgnoreHeroEnemyCollision(false);
             return;
         }
         ArenaBounds.Enable(Camera.main); // the screen is the whole arena
+
+        // the campaign's invisible posts at platform edges turned (and made jump) the enemies walking
+        // into them and blocked Freny; arena enemies turn at edges by themselves
+        foreach (ChangeGroundArea area in Object.FindObjectsOfType<ChangeGroundArea>(true)) {
+            if (area.gameObject.scene == scene) {
+                area.gameObject.SetActive(false);
+            }
+        }
+        // enemies are kinematic bodies: colliding with them would shove Freny around, so in the arena
+        // she walks through them and the fight happens with the sword and the guns
+        IgnoreHeroEnemyCollision(true);
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {
@@ -44,5 +59,20 @@ public static class ArenaBootstrap {
     private static T GetOrAdd<T>(GameObject obj) where T : Component {
         T component = obj.GetComponent<T>();
         return component ? component : obj.AddComponent<T>();
+    }
+
+    // Physics2D settings outlive the scene, so the project's own value is kept and put back
+    // whenever a non-arena scene loads
+    private static void IgnoreHeroEnemyCollision(bool ignore) {
+        int hero = LayerMask.NameToLayer("Good Guy");
+        int enemy = LayerMask.NameToLayer("Enemy");
+        if (hero < 0 || enemy < 0) {
+            return;
+        }
+        if (!collisionSaved) {
+            heroEnemyIgnoredByDefault = Physics2D.GetIgnoreLayerCollision(hero, enemy);
+            collisionSaved = true;
+        }
+        Physics2D.IgnoreLayerCollision(hero, enemy, ignore || heroEnemyIgnoredByDefault);
     }
 }

@@ -23,7 +23,12 @@ public class Sorcerer : Enemy {
     // the sorcerer stands still and casts on a steady rhythm; the Fire animation event calls Attack()
     // (before, the animator looped the cast forever, even with nobody around)
     public override void Update() {
-        if (isDead || player_t == null || player == null || player.Health <= 0) {
+        if (isDead || FellOutOfArena()) {
+            return;
+        }
+        StickToGround(); // stands still, but on the floor (one spawned over a gap floated there)
+        ClampToArena();
+        if (player_t == null || player == null || player.Health <= 0) {
             return;
         }
 
