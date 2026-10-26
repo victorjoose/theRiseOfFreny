@@ -6,6 +6,7 @@ public class Dash : MonoBehaviour {
     private Rigidbody2D rb;
     private Player pl;
     private FrenyInput input;
+    private PlayerAnimation playerAnim;
     // horizontal speed (units/s) kept for the whole dash; replaces the old per-frame AddForce, which
     // depended on the frame rate and was overwritten by Player.FixedUpdate every physics step
     public float dashVelocity = 12f;
@@ -19,6 +20,7 @@ public class Dash : MonoBehaviour {
         rb = GetComponent<Rigidbody2D>();
         pl = GetComponent<Player>();
         input = GetComponent<FrenyInput>();
+        playerAnim = GetComponent<PlayerAnimation>();
         dashTime = startDashTime;
     }
     
@@ -35,7 +37,10 @@ public class Dash : MonoBehaviour {
                 }
                 else {
                     direction = -1;
-                }    
+                }
+                if (playerAnim) {
+                    playerAnim.Dash();
+                }
             }
         }
         else {

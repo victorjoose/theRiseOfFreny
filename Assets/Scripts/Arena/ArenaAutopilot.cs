@@ -11,10 +11,8 @@ using UnityEngine;
 [RequireComponent(typeof(Player))]
 public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
-    [SerializeField] private float meleeRange = 1.6f;
-    [SerializeField] private float shootRange = 9f;
+    // sword, gun and dodge distances come from the tuning sliders (Tuning.Auto*), so they can be tried live
     [SerializeField] private float verticalTolerance = 1.2f;   // "same height" for sword and gun
-    [SerializeField] private float dodgeRange = 3.5f;
     [SerializeField] private float jumpToReachHeight = 1.5f;   // target this much higher -> jump
     [SerializeField] private int lowHealth = 1;
     [SerializeField] private float scanInterval = 0.25f;
@@ -49,7 +47,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (Time.time >= nextDecisionTime) {
             plan = Decide();
             planIsFresh = true;
-            nextDecisionTime = Time.time + FrenyProgress.AutopilotReactionTime;
+            nextDecisionTime = Time.time + FrenyProgress.AutopilotReactionTime * Tuning.AutoReaction.Value;
         }
 
         PlayerInputFrame frame = plan;
@@ -118,8 +116,12 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         bool sameHeight = Mathf.Abs(dy) <= verticalTolerance;
 
         // 2. sword
-        if (sameHeight && Mathf.Abs(dx) <= meleeRange) {
-            if (!facingTarget) {
+        if (sameHeight && Mathf.Abs(dx) <= Tuning.AutoMeleeRange.Value) {
+            if (!player.AttackReady && Random.value < Tuning.AutoKeepDistance.Value) {
+                // step back while the sword recharges instead of trading hits
+                frame.move = -towardTarget;
+                CurrentAction = "Recuando na recarga";
+            } else if (!facingTarget) {
                 frame.move = towardTarget; // a short step turns Freny around
                 CurrentAction = "Virando para o inimigo";
             } else if (player.IsGrounded && player.AttackReady) {
@@ -132,7 +134,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         // 3. gun
-        if (sameHeight && Mathf.Abs(dx) <= shootRange && player.AttackReady) {
+        if (sameHeight && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && player.AttackReady) {
             if (!facingTarget) {
                 frame.move = towardTarget;
                 CurrentAction = "Mirando";
@@ -170,7 +172,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             Vector2 pos = projectile.transform.position;
             float dx = me.x - pos.x;
             bool headingAtMe = Mathf.Sign(dx) == Mathf.Sign(projectile.Direction.x);
-            if (headingAtMe && Mathf.Abs(dx) <= dodgeRange && Mathf.Abs(me.y - pos.y) <= verticalTolerance) {
+            if (headingAtMe && Mathf.Abs(dx) <= Tuning.AutoDodgeRange.Value && Mathf.Abs(me.y - pos.y) <= verticalTolerance) {
                 return projectile;
             }
         }

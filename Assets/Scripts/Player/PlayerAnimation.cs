@@ -44,6 +44,11 @@ public class PlayerAnimation : MonoBehaviour
         _anim.SetTrigger("RangedJump");
     }
 
+    public void Dash()
+    {
+        _anim.SetTrigger("Dash");
+    }
+
     public void Hit()
     {
         _anim.SetTrigger("Hit");

@@ -7,6 +7,8 @@ public class ArenaHud : MonoBehaviour {
 
     [SerializeField] private KeyCode togglePanelKey = KeyCode.U;
     [SerializeField] private bool showUpgrades = true;
+    [SerializeField] private KeyCode toggleTuningKey = KeyCode.I;
+    [SerializeField] private bool showTuning = false;
 
     private Player player;
     private FrenyInput input;
@@ -26,6 +28,9 @@ public class ArenaHud : MonoBehaviour {
     private void Update() {
         if (Input.GetKeyDown(togglePanelKey)) {
             showUpgrades = !showUpgrades;
+        }
+        if (Input.GetKeyDown(toggleTuningKey)) {
+            showTuning = !showTuning;
         }
     }
 
@@ -73,7 +78,33 @@ public class ArenaHud : MonoBehaviour {
                 DrawUpgrade(upgrade);
             }
         }
-        GUILayout.Label("U: mostrar/esconder melhorias");
+        GUILayout.Label("U: melhorias   I: ajustes da IA");
+
+        GUILayout.EndVertical();
+        GUILayout.EndArea();
+
+        if (showTuning) {
+            DrawTuning();
+        }
+    }
+
+    // balance sliders (Tuning), on the right side so they don't cover the main panel
+    private void DrawTuning() {
+        GUILayout.BeginArea(new Rect(Screen.width - 330, 10, 320, 40 + 42 * Tuning.All.Length));
+        GUILayout.BeginVertical(boxStyle);
+        GUILayout.Label("Ajustes da IA (salvos automaticamente)");
+
+        foreach (Tuning.Knob knob in Tuning.All) {
+            GUILayout.Label($"{knob.Label}: {knob.Value:0.00}");
+            float value = GUILayout.HorizontalSlider(knob.Value, knob.Min, knob.Max);
+            if (!Mathf.Approximately(value, knob.Value)) {
+                knob.Value = value;
+            }
+        }
+
+        if (GUILayout.Button("Restaurar padrões")) {
+            Tuning.ResetAll();
+        }
 
         GUILayout.EndVertical();
         GUILayout.EndArea();

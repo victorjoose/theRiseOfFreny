@@ -15,18 +15,39 @@ public class Sorcerer : Enemy, IDamageable {
         SorcererCastPosition = FindCastPosition();
     }
 
-    public override void Update() { }
+    [SerializeField] private float castRange = 9f;          // how far the sorcerer sees the player
+    [SerializeField] private float castHeightTolerance = 1.2f; // the hexball flies straight, so only cast at the same height
+    [SerializeField] private float castCooldown = 2.5f;
+    private float nextCastTime;
+
+    // the sorcerer stands still and casts on a steady rhythm; the Fire animation event calls Attack()
+    // (before, the animator looped the cast forever, even with nobody around)
+    public override void Update() {
+        if (isDead || player_t == null || player == null || player.Health <= 0) {
+            return;
+        }
+
+        Vector2 offset = player_t.position - transform.position;
+        if (Mathf.Abs(offset.x) > castRange * Tuning.EnemyAggro.Value || Mathf.Abs(offset.y) > castHeightTolerance) {
+            return;
+        }
+
+        // sprites face left by default, so scale.x = -1 means looking right
+        transform.localScale = new Vector3(offset.x > 0 ? -1 : 1, 1, 1);
+
+        if (Time.time >= nextCastTime) {
+            anim.SetTrigger("Attack");
+            nextCastTime = Time.time + castCooldown * Tuning.EnemyCooldown.Value;
+        }
+    }
 
     public void Damage() {
         if (!Util.IsAlive(isDead, gameObject)) {
             return;
         }
 
-        Debug.Log("Sorcerer::Damage()");
         Health--;
-
         anim.SetTrigger("Hit");
-        Debug.Log("Health " + Health);
 
         if (Util.ShouldBeDead(Health)) {
             isDead = Util.Dies(anim, gameObject);

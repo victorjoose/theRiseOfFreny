@@ -45,6 +45,12 @@ public abstract class Enemy : MonoBehaviour
     private Collider2D col;
     private Collider2D playerCol;
     private Coroutine attackRoutine;
+    private bool hasMovingParam;
+    [SerializeField]
+    protected float patrolPause = 0.8f; // seconds standing at each end of the patrol
+    private float patrolPauseUntil;
+    [SerializeField]
+    protected float provokedRadius = 10f; // how far a hit enemy keeps chasing
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
@@ -58,6 +64,7 @@ public abstract class Enemy : MonoBehaviour
         col = GetComponent<Collider2D>();
         playerCol = player ? player.GetComponent<Collider2D>() : null;
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
+        hasMovingParam = anim && HasParameter(anim, "Moving");
     }
 
     private void Start() {
@@ -69,96 +76,78 @@ public abstract class Enemy : MonoBehaviour
             return;
         }
 
-        // aggro check runs before the idle check below, so a sleeping/idle enemy can notice the player
         if (player_t && player != null) {
             distance = Vector2.Distance(transform.position, player_t.position);
 
-            if (distance <= radius && player.Health > 0) {
-                if (!isPlayerInRange) {
-                    // enters the radius
-                    isPlayerInRange = true;
-                    anim.SetBool("InCombat", true);
-                }
-            } else if (isPlayerInRange) {
+            // chase when the player enters the aggro radius, or after being hit (even enemies
+            // with radius 0, like the Licker, fight back instead of standing still)
+            bool provoked = isHit && distance <= provokedRadius;
+            bool shouldChase = player.Health > 0 && (distance <= radius * Tuning.EnemyAggro.Value || provoked);
+
+            if (shouldChase && !isPlayerInRange) {
+                isPlayerInRange = true;
+                anim.SetBool("InCombat", true);
+            } else if (!shouldChase && isPlayerInRange) {
                 isPlayerInRange = false;
                 ResetAttackMode();
             }
         }
 
-        if (anim.GetCurrentAnimatorStateInfo(0).IsName("Idle") && anim.GetBool("InCombat") == false) {
-            return;
-        }
-
+        Vector3 before = transform.position;
         Movement();
+        if (hasMovingParam) {
+            // Walk/Idle follow real movement, so the walk cycle never plays while standing still
+            anim.SetBool("Moving", Mathf.Abs(transform.position.x - before.x) > 0.0001f);
+        }
     }
 
     public virtual void Movement() {
         if (isPlayerInRange) {
             AttackMode();
-            return;
-        }
-
-        if (isHit == false) {
+        } else {
             Patrol();
-        }
-        
-        if(player == null || distance > 10.0f || player.Health <= 0) {
-            isHit = false;
-            anim.SetBool("InCombat", false);
-            return;
-        }
-
-        if (player_t && player != null) {
-            Vector3 direction = player_t.position - transform.position;
-
-            if (direction.x > 0 && anim.GetBool("InCombat")) {
-                transform.localScale = new Vector3(-1, 1, 1);
-                currentTarget = pointA.position;
-            } else if (direction.x < 0 && anim.GetBool("InCombat")) {
-                transform.localScale = new Vector3(1, 1, 1);
-                currentTarget = pointB.position;
-            }
         }
     }
 
     private void Patrol() {
-        if (currentTarget.x == pointB.position.x) {
-            transform.localScale = new Vector3(-1, 1, 1);
-        } else {
-            transform.localScale = new Vector3(1, 1, 1);;
+        if (pointA == null || pointB == null || Time.time < patrolPauseUntil) {
+            return;
         }
-        
+
         if (Vector2.Distance(transform.position, pointA.position) <= patrolPositionTolerance) {
             currentTarget = pointB.position;
-            anim.SetTrigger("Idle");
+            patrolPauseUntil = Time.time + patrolPause;
         } else if (Vector2.Distance(transform.position, pointB.position) <= patrolPositionTolerance) {
             currentTarget = pointA.position;
-            anim.SetTrigger("Idle");
+            patrolPauseUntil = Time.time + patrolPause;
         }
-        
-        transform.position = Vector2.MoveTowards(transform.position, currentTarget, speed * Time.deltaTime);
+
+        // sprites face left by default, so scale.x = -1 means looking right
+        transform.localScale = new Vector3(currentTarget.x > transform.position.x ? -1 : 1, 1, 1);
+        transform.position = Vector2.MoveTowards(transform.position, currentTarget, MoveSpeed * Time.deltaTime);
     }
-    
+
+    protected float MoveSpeed => speed * Tuning.EnemySpeed.Value;
 
     public void ChangeDirection() {
-        if (currentTarget.x == pointB.position.x) {
-            transform.localScale = new Vector3(-1, 1, 1);
-            currentTarget = pointA.position;
-            anim.SetTrigger("Idle");
-        } else {
-            transform.localScale = new Vector3(1, 1, 1);
-            currentTarget = pointB.position;
-            anim.SetTrigger("Idle");
+        if (pointA == null || pointB == null) {
+            return;
         }
+        currentTarget = currentTarget.x == pointB.position.x ? pointA.position : pointB.position;
+        patrolPauseUntil = Time.time + patrolPause;
     }
 
     private void AttackMode() {
+        // mid-swing: hold position and facing until the hit resolves
+        if (attackRoutine != null) {
+            return;
+        }
+
         FacePlayer();
 
         if (InAttackReach()) {
-            // close enough: wind up, then hit, respecting the cooldown
-            if (Time.time >= nextAttackTime && attackRoutine == null) {
-                nextAttackTime = Time.time + attackCooldown;
+            // close enough: wind up, then hit; the cooldown starts after the hit, so the rhythm is steady
+            if (Time.time >= nextAttackTime) {
                 attackRoutine = StartCoroutine(AttackRoutine());
             }
             return;
@@ -170,7 +159,7 @@ public abstract class Enemy : MonoBehaviour
             targetX = Mathf.Clamp(targetX, Mathf.Min(pointA.position.x, pointB.position.x), Mathf.Max(pointA.position.x, pointB.position.x));
         }
         Vector2 target = new Vector2(targetX, transform.position.y);
-        transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+        transform.position = Vector2.MoveTowards(transform.position, target, MoveSpeed * Time.deltaTime);
     }
 
     // true when the colliders are within attackDistance of touching and roughly at the same height.
@@ -191,12 +180,13 @@ public abstract class Enemy : MonoBehaviour
         if (hasAttackTrigger) {
             anim.SetTrigger("Attack");
         }
-        yield return new WaitForSeconds(attackWindup);
+        yield return new WaitForSeconds(attackWindup * Tuning.EnemyWindup.Value);
 
         // the player can still step or dash out of the swing
         if (!isDead && player != null && player.Health > 0 && InAttackReach()) {
             player.Damage();
         }
+        nextAttackTime = Time.time + attackCooldown * Tuning.EnemyCooldown.Value;
         attackRoutine = null;
     }
 
@@ -212,6 +202,11 @@ public abstract class Enemy : MonoBehaviour
     private void ResetAttackMode() {
         isHit = false;
         anim.SetBool("InCombat", false);
+        // go back to patrolling towards the nearest end
+        if (pointA && pointB) {
+            currentTarget = Mathf.Abs(transform.position.x - pointA.position.x) < Mathf.Abs(transform.position.x - pointB.position.x)
+                ? pointA.position : pointB.position;
+        }
     }
 
     private static bool HasParameter(Animator animator, string paramName) {
