@@ -8,6 +8,8 @@ public class HexballEffect : MonoBehaviour
     [SerializeField] private float speed = 3f;
     private Vector3 direction = Vector3.right;
 
+    public Vector3 Direction => direction;
+
     public void SetDirection(Vector3 newDirection)
     {
         direction = newDirection;

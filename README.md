@@ -41,6 +41,20 @@ Jogo 2D de ação / RPG / plataforma feito na Unity.
 | Falar com o mercador / fechar loja | E / Esc |
 | Entrar numa porta | W |
 | Reiniciar depois de morrer | Espaço |
+| Beber poção comprada | Q |
+| Ligar/desligar o autopiloto (Arena) | T |
+| Mostrar/esconder melhorias (Arena) | U |
+
+## Arena idle
+
+Na `ZE Arena` um autopiloto (`ArenaAutopilot`) joga por Freny usando as mesmas ações de uma pessoa: o `Player`
+lê tudo de `FrenyInput`, que escolhe entre o teclado e o autopiloto. Qualquer tecla assume o controle na hora, e
+depois de 3 s sem tocar em nada o autopiloto volta. Matar inimigos dá XP; cada nível dá 1 ponto para o "cérebro"
+do autopiloto (reação, esquiva com dash, poção, escolha de alvo), e moedas compram atributos da Freny (vida,
+velocidade, recarga), que valem também na campanha. O progresso fica no `PlayerPrefs` (`FrenyProgress`).
+
+Por enquanto a `ArenaBootstrap` adiciona esses componentes ao player quando a `ZE Arena` carrega, e o painel é IMGUI
+provisório (`ArenaHud`). Quando a cena for montada no Editor, os componentes colocados à mão são respeitados.
 
 ## Checagem de compilação
 

@@ -29,6 +29,7 @@ namespace Utility {
             anim.SetTrigger("Death");
             Enemy enemy = gameObject.GetComponent<Enemy>();
             if (enemy != null) {
+                FrenyProgress.AddXp(Mathf.Max(enemy.scoreToAdd, 10));
                 updateSpawnerCountEnemies(enemy, false);
                 if (UIManager.Instance) {
                     UIManager.Instance.HandleComboManager(enemy);

@@ -16,6 +16,11 @@ public class Player : MonoBehaviour, IDamageable {
     private bool _resetAttack = false;
 
     [SerializeField] private float _speed = 3.0f;
+    [SerializeField] private float attackCooldown = 1.5f;
+    private float _baseSpeed;
+    private float _baseAttackCooldown;
+    private int _baseMaxHealth;
+    private FrenyInput _input;
     private float move;
     private PlayerAnimation _playerAnim;
     
@@ -36,8 +41,26 @@ public class Player : MonoBehaviour, IDamageable {
     public int Energy { get; set; }
     private Dash _dash;
 
+    // read by the arena autopilot so it decides with the same information a person sees
+    public bool IsGrounded => isGrounded;
+    public bool IsDead => isDead;
+    public bool AttackReady => !_resetAttack;
+    public bool FacingRight => transform.localScale.x > 0;
+
     // Start is called before the first frame update
     void Start() {
+        _input = GetComponent<FrenyInput>();
+        if (_input == null) {
+            // scenes made before the input layer still get keyboard control
+            _input = gameObject.AddComponent<FrenyInput>();
+        }
+
+        _baseSpeed = _speed;
+        _baseAttackCooldown = attackCooldown;
+        _baseMaxHealth = MaxHealth;
+        ApplyUpgrades();
+        FrenyProgress.Changed += ApplyUpgrades;
+
         Health = MaxHealth;
         Energy = 100;
         rg2d = GetComponent<Rigidbody2D>();
@@ -48,7 +71,7 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     private void FixedUpdate() {
-        move = Input.GetAxisRaw("Horizontal");
+        move = _input.Current.move;
         // while dashing, Dash owns the horizontal velocity
         if (isDead == false && (_dash == null || !_dash.IsDashing)){
             rg2d.velocity = new Vector2(move * _speed, rg2d.velocity.y);
@@ -68,6 +91,27 @@ public class Player : MonoBehaviour, IDamageable {
         Jump();
         Attack();
         RangedAttack();
+        UsePotion();
+    }
+
+    private void OnDestroy() {
+        FrenyProgress.Changed -= ApplyUpgrades;
+    }
+
+    // Freny's attribute track (FrenyProgress): applies in the arena, by hand and in the campaign
+    public void ApplyUpgrades() {
+        int oldMax = MaxHealth;
+        MaxHealth = _baseMaxHealth + FrenyProgress.BonusMaxHealth;
+        _speed = _baseSpeed * FrenyProgress.SpeedMultiplier;
+        attackCooldown = _baseAttackCooldown * FrenyProgress.AttackCooldownMultiplier;
+
+        // a bought heart arrives full
+        if (Health > 0 && MaxHealth > oldMax) {
+            Health += MaxHealth - oldMax;
+            if (UIManager.Instance) {
+                UIManager.Instance.UpdateLives(Health, false);
+            }
+        }
     }
 
     void Movement() {
@@ -87,7 +131,8 @@ public class Player : MonoBehaviour, IDamageable {
     void Jump() {
         isGrounded = Physics2D.OverlapCircle(feetPos.position, checkRadius, whatIsGround);
 
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isJumping) {
+        PlayerInputFrame input = _input.Current;
+        if (input.jumpPressed && isGrounded && !isJumping) {
             isJumping = true;
             rg2d.velocity = Vector2.up * jumpForce;
             _playerAnim.Jump(true);
@@ -95,7 +140,7 @@ public class Player : MonoBehaviour, IDamageable {
         
         if (rg2d.velocity.y < 0) {
             rg2d.velocity += Vector2.up * (Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime);
-        } else if (rg2d.velocity.y > 0 && !Input.GetKey(KeyCode.Space)) {
+        } else if (rg2d.velocity.y > 0 && !input.jumpHeld) {
             rg2d.velocity += Vector2.up * (Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime);
         }
 
@@ -104,7 +149,7 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     void Attack() {
-        if (Input.GetMouseButtonDown(0) && isGrounded) {
+        if (_input.Current.meleePressed && isGrounded) {
             if (_resetAttack == false) {
                 _playerAnim.Melee();
                 StartCoroutine(ResetAttackRoutine());
@@ -113,7 +158,7 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void RangedAttack() {
-        if (!Input.GetKeyDown(KeyCode.R)) {
+        if (!_input || !_input.Current.rangedPressed) {
             return;
         }
 
@@ -132,7 +177,7 @@ public class Player : MonoBehaviour, IDamageable {
 
     IEnumerator ResetAttackRoutine() {
         _resetAttack = true;
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(attackCooldown);
         _resetAttack = false;
     }
 
@@ -154,6 +199,31 @@ public class Player : MonoBehaviour, IDamageable {
         //Temporary solution for being able to move after death
         Destroy(rg2d);
         Destroy(col2d);
+    }
+
+    // drinks the potion bought at the shop (Q, or the autopilot when it has the upgrade)
+    void UsePotion() {
+        if (!_input.Current.potionPressed || Health >= MaxHealth) {
+            return;
+        }
+
+        GameManager gameManager = FindObjectOfType<GameManager>();
+        if (gameManager == null || !gameManager.HasPotion) {
+            return;
+        }
+
+        gameManager.HasPotion = false;
+        Health = Mathf.Min(Health + 1, MaxHealth);
+        if (UIManager.Instance) {
+            UIManager.Instance.UpdateLives(Health, false);
+        }
+    }
+
+    public bool HasPotion {
+        get {
+            GameManager gameManager = FindObjectOfType<GameManager>();
+            return gameManager != null && gameManager.HasPotion;
+        }
     }
 
     public void AddCoins(int amount) {

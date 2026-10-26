@@ -5,6 +5,7 @@ using UnityEngine;
 public class Dash : MonoBehaviour {
     private Rigidbody2D rb;
     private Player pl;
+    private FrenyInput input;
     // horizontal speed (units/s) kept for the whole dash; replaces the old per-frame AddForce, which
     // depended on the frame rate and was overwritten by Player.FixedUpdate every physics step
     public float dashVelocity = 12f;
@@ -17,12 +18,18 @@ public class Dash : MonoBehaviour {
     void Start() {
         rb = GetComponent<Rigidbody2D>();
         pl = GetComponent<Player>();
+        input = GetComponent<FrenyInput>();
         dashTime = startDashTime;
     }
     
     void Update() {
+        if (!input) {
+            // Player adds FrenyInput in its Start when the scene doesn't have one yet
+            input = GetComponent<FrenyInput>();
+        }
+
         if (direction == 0) {
-            if (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.C)) {
+            if (input && input.Current.dashPressed) {
                 if (pl.transform.localScale.x > 0) {
                     direction = 1;
                 }

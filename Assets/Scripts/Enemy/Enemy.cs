@@ -21,6 +21,7 @@ public abstract class Enemy : MonoBehaviour
     protected Animator anim;
     protected SpriteRenderer sprite;
     protected bool isDead = false;
+    public bool IsDead => isDead;
 
     protected bool isHit;
     protected float distance;
