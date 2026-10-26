@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -24,8 +23,8 @@ namespace Online {
         public PlayerSave Save { get; private set; }
         public List<LeaderboardEntry> Top { get; private set; } = new List<LeaderboardEntry>();
 
-        // score, isNewBest
-        public event Action<long, bool> RunReported;
+        // score, isNewBest, assisted (the arena autopilot played part of the run)
+        public event Action<long, bool, bool> RunReported;
 
         private FirestoreClient _db;
         private LeaderboardService _leaderboard;
@@ -33,11 +32,14 @@ namespace Online {
 
         // Run tracking for the current scene.
         private Player _player;
+        private FrenyInput _input;
         private RPlayer _runnerPlayer;
         private UIManager _ui;
         private ScoreManager _runnerScore;
         private bool _sawAlive;
         private bool _reported;
+        private bool _assisted;
+        private int _coinsAtStart;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap() {
@@ -166,12 +168,14 @@ namespace Online {
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
-            _player = FindObjectOfType<Player>();
-            _runnerPlayer = FindObjectOfType<RPlayer>();
-            _ui = FindObjectOfType<UIManager>();
-            _runnerScore = FindObjectOfType<ScoreManager>();
+            _player = FindFirstObjectByType<Player>();
+            _input = _player != null ? _player.GetComponent<FrenyInput>() : null;
+            _runnerPlayer = FindFirstObjectByType<RPlayer>();
+            _ui = FindFirstObjectByType<UIManager>();
+            _runnerScore = FindFirstObjectByType<ScoreManager>();
             _sawAlive = false;
             _reported = false;
+            _assisted = false;
         }
 
         private void Update() {
@@ -188,33 +192,37 @@ namespace Online {
 
             // Player.Health is only set in Start, so wait until we have seen it alive.
             if (health > 0) {
+                if (!_sawAlive && _player != null) {
+                    // Player.coins is the persistent total (FrenyProgress), so count this run's share.
+                    _coinsAtStart = _player.coins;
+                }
                 _sawAlive = true;
+                if (_input != null && _input.IsAutopilotDriving) {
+                    _assisted = true;
+                }
             } else if (_sawAlive) {
                 _reported = true;
-                ReportRun(CurrentScore(), _player != null ? _player.coins : 0);
+                long coins = _player != null ? Math.Max(0, _player.coins - _coinsAtStart) : 0;
+                ReportRun(CurrentScore(), coins, _assisted);
             }
         }
 
         private long CurrentScore() {
-            if (_ui != null && _ui.scoreCountHUD != null) {
-                string text = _ui.scoreCountHUD.text;
-                if (float.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out float value) ||
-                    float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)) {
-                    return Math.Max(0, Mathf.RoundToInt(value));
-                }
-            }
+            if (_ui != null) return Math.Max(0, _ui.Score);
             if (_runnerScore != null) return _runnerScore.score;
             return 0;
         }
 
-        private void ReportRun(long score, long coins) {
-            bool newBest = score > Save.bestScore;
+        // Runs the autopilot helped with still count for stats, but not for the leaderboard
+        // (the GDD keeps idle play out of the manual "Freny Arena Online" ranking).
+        private void ReportRun(long score, long coins, bool assisted) {
+            bool newBest = !assisted && score > Save.bestScore;
             Save.runsPlayed++;
             Save.totalCoins += coins;
             if (newBest) Save.bestScore = score;
             SaveLocal();
 
-            RunReported?.Invoke(score, newBest);
+            RunReported?.Invoke(score, newBest, assisted);
             if (State == Status.Online) StartCoroutine(PushRun(newBest));
         }
 

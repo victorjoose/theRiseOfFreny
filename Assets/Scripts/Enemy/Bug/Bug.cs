@@ -25,6 +25,7 @@ public class Bug : Enemy, IDamageable {
 
         if (Util.ShouldBeDead(Health)) {
             isDead = Util.Dies(anim, gameObject);
+            Util.DropCoin(coins, coinPrefab, transform);
         }
     }
 }

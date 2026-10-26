@@ -15,7 +15,8 @@ public class Merchant : MonoBehaviour {
     private Player _player;
 
     public void Update() {
-        if (Input.GetKey(KeyCode.Escape)) {
+        // only close a store that is actually open (before, Escape anywhere threw a NullReferenceException)
+        if (Input.GetKeyDown(KeyCode.Escape) && shopPanel.activeSelf) {
             CloseStore();
         }
     }
@@ -25,9 +26,12 @@ public class Merchant : MonoBehaviour {
             interaction.SetActive(true);
             if (Input.GetKey(KeyCode.E)) {
                 _player = other.GetComponent<Player>();
-                _player.GetComponent<Player>().enabled = false;
+                if (_player == null) {
+                    return;
+                }
+                _player.enabled = false;
                 
-                if (_player) {
+                if (UIManager.Instance) {
                     UIManager.Instance.UpdateCoins(_player.coins);
                 }
                 
@@ -86,13 +90,16 @@ public class Merchant : MonoBehaviour {
     }
 
     public void BuyItem() {
+        if (_player == null) {
+            return;
+        }
         
         if (_player.coins >= itemCost) {
             if (selectedItem == 5) {
                 GameManager.Instance.HasPotion = true;
             }
             
-            _player.coins -= itemCost;
+            _player.AddCoins(-itemCost);
             Debug.Log("Bought");
         } else {
             Debug.Log("Didnt buy");
@@ -103,6 +110,8 @@ public class Merchant : MonoBehaviour {
     public void CloseStore() {
         shopPanel.SetActive(false);
         hud.SetActive(true);
-        _player.GetComponent<Player>().enabled = true;
+        if (_player) {
+            _player.enabled = true;
+        }
     }
 }

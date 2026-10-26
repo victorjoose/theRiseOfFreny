@@ -53,7 +53,13 @@ namespace Online {
             }
         }
 
-        private void OnRunReported(long score, bool newBest) {
+        private void OnRunReported(long score, bool newBest, bool assisted) {
+            if (assisted) {
+                // Idle arena runs restart on their own; don't pop the board over them.
+                _toast = "Score: " + score + "  (autopilot runs don't go to the leaderboard)";
+                _toastUntil = Time.unscaledTime + 3f;
+                return;
+            }
             _toast = newBest ? "New best: " + score + "!" : "Score: " + score + "  (best " + _online.Save.bestScore + ")";
             _toastUntil = Time.unscaledTime + 4f;
             _openAt = Time.unscaledTime + AutoOpenDelay;

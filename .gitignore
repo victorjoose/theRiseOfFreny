@@ -34,6 +34,7 @@
 ExportedObj/
 .consulo/
 *.csproj
+!/.ci/**/*.csproj
 *.unityproj
 *.sln
 *.suo
@@ -74,3 +75,7 @@ crashlytics-build.properties
 # Firebase config for the online features (see docs/firebase/SETUP.md)
 /[Aa]ssets/[Rr]esources/FirebaseConfig.json
 /[Aa]ssets/[Rr]esources/FirebaseConfig.json.meta
+
+# compile-check build output
+/.ci/**/bin/
+/.ci/**/obj/
