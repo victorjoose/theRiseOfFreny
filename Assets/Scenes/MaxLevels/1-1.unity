@@ -29841,7 +29841,7 @@ GameObject:
   - component: {fileID: 1171003820}
   - component: {fileID: 1171003819}
   m_Layer: 0
-  m_Name: LevelExit 1-2
+  m_Name: LevelExit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -29856,10 +29856,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1171003818}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ac8725a28250fe3459964bd5feb03405, type: 3}
+  m_Script: {fileID: 11500000, guid: cb990cd1f1d74402b4d463c4e7cb7010, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  newLevel: 1-2
+  doorId: exit
+  kind: 0
+  targetScene: 
+  targetDoor: 
+  pressUp: 0
 --- !u!61 &1171003820
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -29981,7 +29985,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96584dd20e54cc54d9c26b826479c76f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  revolverBulletPrefab: {fileID: 0}
+  revolverBulletPrefab: {fileID: 1069408044333808961, guid: 59ba4dfa8eb692f4da5f1daafb238005,
+    type: 3}
   playerRevolverShootPosition: {fileID: 0}
   coins: 0
   _jumpForce: 4
