@@ -34,13 +34,21 @@ public abstract class Enemy : MonoBehaviour
     public LayerMask ignoreLayer;
     private Rigidbody2D rb;
     public float jumpForce = 5f;
+    [SerializeField]
+    protected float attackCooldown = 1.5f;
+    private float nextAttackTime;
+    private bool hasAttackTrigger;
 
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
         sprite = GetComponentInChildren<SpriteRenderer>();
-        player_t = GameObject.FindGameObjectWithTag("Player").GetComponent<Transform>();
-        player = GameObject.FindGameObjectWithTag("Player").GetComponent<Player>();
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+        if (playerObj) {
+            player_t = playerObj.transform;
+            player = playerObj.GetComponent<Player>();
+        }
         rb = GetComponent<Rigidbody2D>();
+        hasAttackTrigger = anim && HasParameter(anim, "Attack");
     }
 
     private void Start() {
@@ -48,48 +56,51 @@ public abstract class Enemy : MonoBehaviour
     }
 
     public virtual void Update() {
+        if (isDead) {
+            return;
+        }
+
+        // aggro check runs before the idle check below, so a sleeping/idle enemy can notice the player
+        if (player_t && player != null) {
+            distance = Vector2.Distance(transform.position, player_t.position);
+
+            if (distance <= radius && player.Health > 0) {
+                if (!isPlayerInRange) {
+                    // enters the radius
+                    isPlayerInRange = true;
+                    anim.SetBool("InCombat", true);
+                }
+            } else if (isPlayerInRange) {
+                isPlayerInRange = false;
+                ResetAttackMode();
+            }
+        }
+
         if (anim.GetCurrentAnimatorStateInfo(0).IsName("Idle") && anim.GetBool("InCombat") == false) {
             return;
         }
 
-        if (player_t) {
-            distance = Vector2.Distance(transform.localPosition, player_t.transform.localPosition);
-
-            if (distance <= radius) {
-                if (!isPlayerInRange) {
-                    // enters the radius
-                    Debug.Log("in agro range");
-                    isPlayerInRange = true;
-                    AttackMode();
-                }
-            } else {
-                if (isPlayerInRange) {
-                    Debug.Log("out of agro range");
-                    isPlayerInRange = false;
-                    ResetAttackMode();
-                }
-            }
-        }
-        
-        if (isDead == false){
-            Movement();
-        }
+        Movement();
     }
 
     public virtual void Movement() {
-        
+        if (isPlayerInRange) {
+            AttackMode();
+            return;
+        }
+
         if (isHit == false) {
             Patrol();
         }
         
-        if(distance > 10.0f || player.Health <= 0) {
+        if(player == null || distance > 10.0f || player.Health <= 0) {
             isHit = false;
             anim.SetBool("InCombat", false);
             return;
         }
 
-        if (player_t) {
-            Vector3 direction = player_t.transform.localPosition - transform.localPosition;
+        if (player_t && player != null) {
+            Vector3 direction = player_t.position - transform.position;
 
             if (direction.x > 0 && anim.GetBool("InCombat")) {
                 transform.localScale = new Vector3(-1, 1, 1);
@@ -132,29 +143,51 @@ public abstract class Enemy : MonoBehaviour
         }
     }
 
-    private void AttackMode()
-    {
-        // Code to trigger the enemy's attacking behavior
-        if (distance <= attackDistance)
-        {
-            //vira pro player
-            // ataca
+    private void AttackMode() {
+        FacePlayer();
 
-            // Enemy is close enough to attack the player
-            Debug.Log("Attacking the player!");
+        if (distance <= attackDistance) {
+            // close enough: hit the player, respecting the cooldown
+            if (Time.time >= nextAttackTime) {
+                nextAttackTime = Time.time + attackCooldown;
+                if (hasAttackTrigger) {
+                    anim.SetTrigger("Attack");
+                }
+                player.Damage();
+            }
+            return;
         }
-        else
-        {
-            // AI pathfinding
-            // Enemy is within the radius but not close enough to attack yet
-            Debug.Log("Approaching the player!");
+
+        // inside the radius but too far to attack: walk towards the player, never leaving the patrol area
+        float targetX = player_t.position.x;
+        if (pointA && pointB) {
+            targetX = Mathf.Clamp(targetX, Mathf.Min(pointA.position.x, pointB.position.x), Mathf.Max(pointA.position.x, pointB.position.x));
+        }
+        Vector2 target = new Vector2(targetX, transform.position.y);
+        transform.position = Vector2.MoveTowards(transform.position, target, speed * Time.deltaTime);
+    }
+
+    private void FacePlayer() {
+        // sprites face left by default, so scale.x = -1 means looking right
+        if (player_t.position.x > transform.position.x) {
+            transform.localScale = new Vector3(-1, 1, 1);
+        } else {
+            transform.localScale = new Vector3(1, 1, 1);
         }
     }
 
-    private void ResetAttackMode()
-    {
-        // Code to reset the enemy's attacking behavior
-        Debug.Log("Exiting attack mode!");
+    private void ResetAttackMode() {
+        isHit = false;
+        anim.SetBool("InCombat", false);
+    }
+
+    private static bool HasParameter(Animator animator, string paramName) {
+        foreach (AnimatorControllerParameter param in animator.parameters) {
+            if (param.name == paramName) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -168,9 +201,9 @@ public abstract class Enemy : MonoBehaviour
 
     public void Jump()
     {
-        // if (isGrounded)
-        // {
-            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-        // }
+        if (rb == null || isDead) {
+            return;
+        }
+        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 }

@@ -13,45 +13,52 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private float x2PatrolOffset = 0f;
     [SerializeField] public int countEnemies = 0;
     public string uuid;
+
+    // shared by every enemy of this spawner (before, two new GameObjects were created per spawn)
+    private Transform pointA, pointB;
+
     // Start is called before the first frame update
     void Start()
     {
         uuid = Guid.NewGuid().ToString();
+        CreatePatrolPoints();
         StartCoroutine(Spawner());
     }
 
    private IEnumerator Spawner () {
     WaitForSeconds wait = new WaitForSeconds(spawnRate);
     while (canSpawn) {
-        if (countEnemies >= maxEnemies) {
-            yield return wait;
-        } else {
-
         yield return wait;
-        GameObject enemyToSpawn = enemyPrefab;
 
-        Enemy enemy = enemyToSpawn.GetComponent<Enemy>();
-        AssignPatrol(enemy);
+        if (countEnemies >= maxEnemies || enemyPrefab == null) {
+            continue;
+        }
 
         Vector2 spawnPos = new Vector2(UnityEngine.Random.Range(transform.position.x - x1SpawnOffset, transform.position.x + x2SpawnOffset), transform.position.y);
-        Instantiate(enemyToSpawn, spawnPos, Quaternion.identity);
-        countEnemies++;
+        // configure the spawned instance, never the prefab asset (editing the prefab changed it on disk in the Editor)
+        GameObject spawned = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        Enemy enemy = spawned.GetComponent<Enemy>();
+        if (enemy != null) {
+            AssignPatrol(enemy);
         }
+        countEnemies++;
     }
    }
 
-   private void AssignPatrol(Enemy enemy) {
-    Vector3 pointAPos = new Vector3(transform.position.x - x1PatrolOffset, transform.position.y, transform.position.z);
-    GameObject pointAGameObj = new GameObject("PointA");
-    pointAGameObj.transform.position = pointAPos;
-    enemy.pointA = pointAGameObj.transform;
-    
-    Vector3 pointBPos = new Vector3(transform.position.x + x2PatrolOffset, transform.position.y, transform.position.z);
-    GameObject pointBGameObj = new GameObject("PointB");
-    pointBGameObj.transform.position = pointBPos;
-    enemy.pointB = pointBGameObj.transform;
+   private void CreatePatrolPoints() {
+    pointA = new GameObject("PointA").transform;
+    pointA.SetParent(transform);
+    pointA.position = new Vector3(transform.position.x - x1PatrolOffset, transform.position.y, transform.position.z);
 
+    pointB = new GameObject("PointB").transform;
+    pointB.SetParent(transform);
+    pointB.position = new Vector3(transform.position.x + x2PatrolOffset, transform.position.y, transform.position.z);
+   }
+
+   private void AssignPatrol(Enemy enemy) {
+    enemy.pointA = pointA;
+    enemy.pointB = pointB;
     enemy.spawnerUuid = uuid;
-    enemy.currentTarget = pointAPos; // starts moving left
+    enemy.currentTarget = pointA.position; // starts moving left
    }
 }
