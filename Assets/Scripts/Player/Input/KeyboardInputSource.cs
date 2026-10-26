@@ -5,7 +5,12 @@ using UnityEngine;
 public class KeyboardInputSource : IPlayerInputSource {
 
     public const float MaxChargeSeconds = 1.2f; // hold G this long for a full-power throw (Worms style)
+    // the Horizontal axis also reads a gamepad stick; a stick resting slightly off centre must not
+    // count as walking (it kept taking control away from the autopilot)
+    public const float Deadzone = 0.3f;
     private float grenadeHoldStart = -1f;
+
+    public float RawMove { get; private set; }
 
     public PlayerInputFrame ReadInput() {
         bool held = Input.GetKey(KeyCode.G);
@@ -18,8 +23,11 @@ public class KeyboardInputSource : IPlayerInputSource {
             grenadeHoldStart = -1f;
         }
 
+        RawMove = Input.GetAxisRaw("Horizontal");
+        float move = Mathf.Abs(RawMove) < Deadzone ? 0f : Mathf.Sign(RawMove);
+
         return new PlayerInputFrame {
-            move = Input.GetAxisRaw("Horizontal"),
+            move = move,
             jumpPressed = Input.GetKeyDown(KeyCode.Space),
             jumpHeld = Input.GetKey(KeyCode.Space),
             meleePressed = Input.GetMouseButtonDown(0),

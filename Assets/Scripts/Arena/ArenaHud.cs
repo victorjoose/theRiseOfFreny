@@ -47,16 +47,18 @@ public class ArenaHud : MonoBehaviour {
             boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, wordWrap = true };
         }
 
-        GUILayout.BeginArea(new Rect(10, Screen.height - 520, 320, 510));
+        // the panel hugs the bottom-left corner and only grows when the upgrade list is shown (U)
+        float panelHeight = showUpgrades ? 560f : 250f;
+        GUILayout.BeginArea(new Rect(10, Screen.height - panelHeight - 10f, 340, panelHeight));
         GUILayout.BeginVertical(boxStyle);
 
         string who;
         if (run && run.RunOver) {
             who = $"Freny caiu após {run.RunSeconds:0}s (recorde {FrenyProgress.BestRunSeconds:0}s). Nova corrida em {run.SecondsUntilRestart:0}s";
         } else if (input.IsAutopilotDriving) {
-            who = "Autopiloto: " + (autopilot ? autopilot.CurrentAction : "");
+            who = "Autopiloto no controle (decisões no console)";
         } else if (input.AutoEnabled && input.HasAutopilot) {
-            who = $"Você no controle (Auto volta em {input.SecondsUntilAutopilot:0.0} s)";
+            who = $"Você no controle (Auto volta em {input.SecondsUntilAutopilot:0.0} s, eixo {input.RawHumanMove:0.00})";
         } else {
             who = "Você no controle";
         }
@@ -65,6 +67,7 @@ public class ArenaHud : MonoBehaviour {
         if (GUILayout.Button(input.AutoEnabled ? "Auto: LIGADO (T)" : "Auto: DESLIGADO (T)")) {
             input.ToggleAuto();
         }
+        DrawCooldownRow();
 
         if (director) {
             GUILayout.Label($"Tempo {director.Elapsed:0}s  Dificuldade {director.Difficulty * 100f:0}%  Inimigos até {director.MaxAlive}");
@@ -127,7 +130,9 @@ public class ArenaHud : MonoBehaviour {
         DrawIcon(FrenyProgress.HasGreatSword ? assets.greatSwordIcon : assets.swordIcon, ref x, y, size);
         float swordReady = player.AttackReadiness;
         DrawMeter(new Rect(swordX, y + size + 2f, size, 6f * scale), swordReady, swordReady >= 1f ? ReadyColor : ChargingColor);
+        float revolverX = x;
         DrawIcon(assets.revolverIcon, ref x, y, size, !player.UsingShotgun);
+        DrawBullets(revolverX, y + size + 2f, size, scale);
         if (FrenyProgress.HasShotgun) {
             float sx = x;
             DrawIcon(assets.shotgunIcon, ref x, y, size, player.UsingShotgun);
@@ -145,20 +150,48 @@ public class ArenaHud : MonoBehaviour {
             }
         }
 
-        // sprint and dash, in two rows under the icons: stamina while running, recovery afterwards
-        float meterW = 120f * scale;
-        float rowY = y + size + 14f * scale;
+    }
+
+    // sword, sprint and dash readiness inside the panel, so a key that does nothing shows why
+    private void DrawCooldownRow() {
+        GUILayout.Space(8f);
+        GUILayout.BeginHorizontal();
+        DrawLabeledMeter("Espada", player.AttackReadiness, ReadyColor);
+        GUILayout.Space(10f);
         float runMeter = player.RunMeter;
-        DrawMeter(new Rect(swordX, rowY + 5f * scale, meterW, 8f * scale), runMeter, player.IsRunning ? ActiveColor : runMeter >= 1f ? ReadyColor : ChargingColor);
-        GUI.Label(new Rect(swordX + meterW + 8f * scale, rowY - 2f * scale, 260f * scale, 22f * scale),
-            player.IsRunning ? "Corrida (Shift)" : runMeter >= 1f ? "Corrida pronta (Shift)" : "Corrida recarregando");
+        DrawLabeledMeter(player.IsRunning ? "Corrida" : "Corrida (Shift)", runMeter, player.IsRunning ? ActiveColor : ReadyColor);
         if (dash) {
-            rowY += 22f * scale;
-            float dashReady = dash.Readiness;
-            DrawMeter(new Rect(swordX, rowY + 5f * scale, meterW, 8f * scale), dashReady, dashReady >= 1f ? ReadyColor : ChargingColor);
-            GUI.Label(new Rect(swordX + meterW + 8f * scale, rowY - 2f * scale, 260f * scale, 22f * scale),
-                dashReady >= 1f ? "Dash pronto (C)" : "Dash recarregando");
+            GUILayout.Space(10f);
+            DrawLabeledMeter("Dash (C)", dash.Readiness, ReadyColor);
         }
+        GUILayout.EndHorizontal();
+        GUILayout.Space(8f);
+    }
+
+    private static void DrawLabeledMeter(string label, float fill, Color readyColor) {
+        GUILayout.BeginVertical(GUILayout.Width(96));
+        GUILayout.Label(fill >= 1f ? label : label + " ...", GUILayout.Width(96));
+        GUILayout.Space(2f);
+        Rect rect = GUILayoutUtility.GetRect(90, 9);
+        DrawMeter(rect, fill, fill >= 1f ? readyColor : ChargingColor);
+        GUILayout.EndVertical();
+    }
+
+    // one dot per bullet left in the revolver; while reloading, the dots fill back up as a bar
+    private void DrawBullets(float x, float y, float width, float scale) {
+        int capacity = Mathf.Max(1, player.RevolverCapacity);
+        if (player.Reloading) {
+            DrawMeter(new Rect(x, y, width, 6f * scale), player.ReloadProgress, ChargingColor);
+            return;
+        }
+        float gap = 3f * scale;
+        float dot = (width - gap * (capacity - 1)) / capacity;
+        Color old = GUI.color;
+        for (int i = 0; i < capacity; i++) {
+            GUI.color = i < player.RevolverBullets ? new Color(1f, 0.85f, 0.3f) : new Color(1f, 1f, 1f, 0.2f);
+            GUI.DrawTexture(new Rect(x + i * (dot + gap), y, dot, 6f * scale), Texture2D.whiteTexture);
+        }
+        GUI.color = old;
     }
 
     private static void DrawMeter(Rect rect, float fill, Color color) {

@@ -38,6 +38,8 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private float stunTime = 0.5f;        // crouched and helpless after a knockback
     [SerializeField] private float knockbackDrag = 14f;    // how fast the shove dies out (units/s²)
     [SerializeField] private int shellsPerRun = 6;         // shotgun shells at the start of a run; chests add more
+    [SerializeField] private int revolverCapacity = 4;     // shots before the revolver has to be reloaded
+    [SerializeField] private float revolverReloadTime = 1.6f;
 
     [Header("Grenade (G)")]
     [SerializeField] private float grenadeCooldown = 8f;
@@ -50,6 +52,8 @@ public class Player : MonoBehaviour, IDamageable {
     public int coins;
     public int Health { get; set; }
     public int ShotgunShells { get; private set; }
+    public int RevolverBullets { get; private set; }
+    public int RevolverCapacity => revolverCapacity;
     public bool ShotgunEquipped { get; private set; } = true; // 1 = pistol, 2 = shotgun
     public bool IsRunning { get; private set; }
     public bool ChargingGrenade { get; private set; }
@@ -65,6 +69,7 @@ public class Player : MonoBehaviour, IDamageable {
     private float jumpPressedTime = -10f;
     private float jumpStartTime = -10f;
     private float attackReadyAt;
+    private float reloadReadyAt = -1f;  // -1: not reloading
     private float invulnerableUntil;
     private float stunnedUntil;
     private float runUntil;
@@ -96,6 +101,10 @@ public class Player : MonoBehaviour, IDamageable {
     public bool RunReady => !IsRunning && Time.time >= runReadyAt;
     public bool GrenadeReady => Time.time >= nextGrenadeTime;
     public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunEquipped && ShotgunShells > 0;
+    public bool Reloading => reloadReadyAt > 0f;
+    // the gun can fire: not on the sword/gun cooldown and, for the revolver, not reloading
+    public bool GunReady => AttackReady && (UsingShotgun || !Reloading);
+    public float ReloadProgress => Reloading ? Mathf.Clamp01(1f - (reloadReadyAt - Time.time) / revolverReloadTime) : 1f;
     // meters for the HUD: 1 = ready / full, 0 = just used / empty
     public float AttackReadiness => attackCooldown > 0f ? 1f - Mathf.Clamp01((attackReadyAt - Time.time) / attackCooldown) : 1f;
     public float RunMeter => IsRunning
@@ -138,6 +147,7 @@ public class Player : MonoBehaviour, IDamageable {
 
         Health = MaxHealth;
         ShotgunShells = FrenyProgress.HasShotgun ? shellsPerRun : 0;
+        RevolverBullets = revolverCapacity;
         // coins persist between runs and scenes (GDD: persistência)
         coins = FrenyProgress.Coins;
         if (UIManager.Instance) {
@@ -169,6 +179,7 @@ public class Player : MonoBehaviour, IDamageable {
         Jump();
         SelectWeapon();
         Attack();
+        Reload();
         Shoot();
         ThrowGrenade();
         UsePotion();
@@ -359,8 +370,21 @@ public class Player : MonoBehaviour, IDamageable {
         attackReadyAt = Time.time + attackCooldown;
     }
 
+    // the revolver holds revolverCapacity shots; empty, it reloads by itself over revolverReloadTime
+    private void Reload() {
+        if (Reloading) {
+            if (Time.time >= reloadReadyAt) {
+                reloadReadyAt = -1f;
+                RevolverBullets = revolverCapacity;
+                Fx.Spray(transform.position + Vector3.up * 0.6f, Vector3.up, new Color(1f, 0.9f, 0.5f), 4, 1.5f, 0.3f);
+            }
+        } else if (RevolverBullets <= 0) {
+            reloadReadyAt = Time.time + revolverReloadTime;
+        }
+    }
+
     private void Shoot() {
-        if (!_input.Current.rangedPressed || !AttackReady || !isGrounded) {
+        if (!_input.Current.rangedPressed || !GunReady || !isGrounded) {
             return; // no shooting in the air (it made her too strong)
         }
 
@@ -376,6 +400,7 @@ public class Player : MonoBehaviour, IDamageable {
             FireBullet(muzzle, forward);
             FireBullet(muzzle, Quaternion.Euler(0f, 0f, -10f) * forward);
         } else {
+            RevolverBullets--;
             FireBullet(muzzle, forward);
         }
         attackReadyAt = Time.time + attackCooldown;

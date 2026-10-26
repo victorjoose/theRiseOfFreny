@@ -49,8 +49,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private Enemy progressTarget;
     private LayerMask ground;
 
-    public string CurrentAction { get; private set; } = "";  // shown in the HUD: enemies, target and what she is doing
+    public string CurrentAction { get; private set; } = "";  // enemies, target and what she is doing (logged to the console)
     private string action = "";
+    private string lastLogged = "";
 
     private void Awake() {
         player = GetComponent<Player>();
@@ -84,6 +85,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             plan = Decide();
             CheckStuck();
             CurrentAction = Describe();
+            if (CurrentAction != lastLogged) {
+                // the console keeps a readable history of every decision change (the HUD line was too small)
+                Debug.Log($"[Autopiloto {Time.time:0.0}s] {CurrentAction}");
+                lastLogged = CurrentAction;
+            }
             if (plan.jumpPressed) {
                 if (Time.time < nextJumpTime) {
                     plan.jumpPressed = false; // landed a moment ago: walk this tick, jump on the next
@@ -212,7 +218,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         // 4. gun (only from the ground)
-        if (sameFloor && player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && player.AttackReady) {
+        if (sameFloor && player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && player.GunReady) {
             if (!facingTarget) {
                 Turn(ref frame, towardTarget);
             } else {
