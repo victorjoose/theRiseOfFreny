@@ -40,10 +40,11 @@ public class FrenyMotion : MonoBehaviour {
     private Transform swordBox;
     private BoxCollider2D swordCollider;
 
-    // "Player slash.png": the arm held out, the long blade drawn from 70 degrees down to -45
-    private static readonly Vector2 Hand = new Vector2(0.5f, -0.3f);  // grip, in the Sprite's space
+    // "Player slash.png": her own sword held straight out (melee frame 3, blade lengthened)
+    private static readonly Vector2 Hand = new Vector2(0.34f, -0.5f);        // grip, in the Sprite's space
+    private static readonly Vector2 CrouchHand = new Vector2(0.38f, -0.66f); // the same, crouched
     // the cut: a crescent in front of the blade, swept from above her shoulder to below her hips
-    private const float ArcAhead = 0.42f, ArcRadius = 0.5f;
+    private const float ArcAhead = 0.42f, ArcRadius = 0.5f, ArcLift = 0.1f;
     private const float ArcFrom = 80f, ArcTo = -80f;
     private const float GreatSwordScale = 1.8f;  // the great sword's cut and hitbox, "bem maior"
 
@@ -59,6 +60,7 @@ public class FrenyMotion : MonoBehaviour {
     private bool wasFacingRight = true;
     private float flipStart = -10f;
     private float slashStart = -10f;
+    private float shotStart = -10f;
     private bool arcPending;
     private float frozenUntil;
     private float nextGhost;
@@ -69,6 +71,10 @@ public class FrenyMotion : MonoBehaviour {
     private SpriteRenderer head;
     private Dictionary<string, Sprite> rageHeads, berserkerHeads;
     public SpriteRenderer HeadRenderer => head;
+
+    // poses the Animator has no state for, drawn over its frame: crouching (and slashing or
+    // shooting crouched) and shooting in the air. Tools/ArtGen/freny_poses.py builds them.
+    private Dictionary<string, Sprite> poses;
 
     private void Start() {
         player = GetComponent<Player>();
@@ -99,6 +105,7 @@ public class FrenyMotion : MonoBehaviour {
     private void BuildHead() {
         rageHeads = LoadHeads("FrenyHeads/rage");
         berserkerHeads = LoadHeads("FrenyHeads/berserker");
+        poses = LoadHeads("FrenyPoses/poses");
         head = new GameObject("Head").AddComponent<SpriteRenderer>();
         head.transform.SetParent(body.transform, false);
         head.sharedMaterial = body.sharedMaterial;
@@ -158,6 +165,10 @@ public class FrenyMotion : MonoBehaviour {
         arcPending = true;
     }
 
+    public void Shot() {
+        shotStart = Time.time;
+    }
+
     public void DashStart() {
         squash.v -= 4f;
         angle.v -= 160f;
@@ -211,6 +222,8 @@ public class FrenyMotion : MonoBehaviour {
         bool grounded = player == null || player.IsGrounded;
         bool dashing = dash && dash.IsDashing;
         float sinceSlash = Time.time - slashStart;
+        bool crouching = player && player.IsCrouching;
+        Vector2 hand = crouching ? CrouchHand : Hand;
 
         // ---- events read from the body's motion
         if (wasGrounded && !grounded && vy > 2f) {
@@ -265,7 +278,7 @@ public class FrenyMotion : MonoBehaviour {
         if (arcPending && sinceSlash >= windup) {
             arcPending = false;
             float scale = GreatSword ? GreatSwordScale : 1f;
-            SlashArc.Spawn(transform, body, Hand + new Vector2(ArcAhead * scale, 0f), ArcRadius * scale, ArcFrom, ArcTo, GreatSword);
+            SlashArc.Spawn(transform, body, hand + new Vector2(ArcAhead * scale, ArcLift), ArcRadius * scale, ArcFrom, ArcTo, GreatSword);
         }
 
         // ---- springs (frozen during the hit-stop)
@@ -299,21 +312,37 @@ public class FrenyMotion : MonoBehaviour {
         // on), so its shape is set here, after the Animator, every frame; the great sword reaches 1.8x.
         if (swordBox) {
             float reach = swordReach * (GreatSword ? GreatSwordScale : 1f);
-            swordBox.localPosition = Hand;
+            swordBox.localPosition = hand;
             swordBox.localRotation = Quaternion.identity;
             swordBox.localScale = Vector3.one;
             if (swordCollider) {
-                swordCollider.offset = new Vector2(reach * 0.5f, 0.07f);
+                swordCollider.offset = new Vector2(reach * 0.5f, 0.2f);
                 swordCollider.size = new Vector2(reach, 1.05f);
             }
         }
 
+        UpdatePose(crouching, grounded, sinceSlash);
         UpdateHead();
 
         lastVx = vx;
         lastVy = vy;
         wasGrounded = grounded;
         wasFacingRight = facingRight;
+    }
+
+    private void UpdatePose(bool crouching, bool grounded, float sinceSlash) {
+        float sinceShot = Time.time - shotStart;
+        string pose = null;
+        if (crouching) {
+            pose = sinceSlash < 0.25f ? (sinceSlash < 0.035f ? "Freny crouch slash_0" : "Freny crouch slash_1")
+                : sinceShot < 0.3f ? "Freny crouch ranged_" + Mathf.Min(2, (int)(sinceShot * 10f))
+                : "Freny crouch_0";
+        } else if (!grounded && sinceShot < 0.33f) {
+            pose = "Freny air ranged_" + Mathf.Min(4, (int)(sinceShot * 15f));
+        }
+        if (pose != null && poses.TryGetValue(pose, out Sprite sprite)) {
+            body.sprite = sprite;
+        }
     }
 
     private struct Spring {
