@@ -1,10 +1,10 @@
 using UnityEngine;
 
-// The human side, on the old Input Manager. When the project moves to the new Input System
-// (keyboard, gamepad and touch), only this class needs to change.
+// The human side, on the old Input Manager: keyboard, mouse and gamepad through InputBindings
+// (remappable in Settings > Controls). Walking reads the Horizontal axis (keys, stick, d-pad).
 public class KeyboardInputSource : IPlayerInputSource {
 
-    public const float MaxChargeSeconds = 1.2f; // hold G this long for a full-power throw (Worms style)
+    public const float MaxChargeSeconds = 1.2f; // hold the grenade button this long for a full-power throw (Worms style)
     // the Horizontal axis also reads a gamepad stick; a stick resting slightly off centre must not
     // count as walking (it kept taking control away from the autopilot)
     public const float Deadzone = 0.3f;
@@ -13,8 +13,14 @@ public class KeyboardInputSource : IPlayerInputSource {
     public float RawMove { get; private set; }
 
     public PlayerInputFrame ReadInput() {
-        bool held = Input.GetKey(KeyCode.G);
-        bool released = Input.GetKeyUp(KeyCode.G);
+        if (InputBindings.GameplayBlocked) {
+            grenadeHoldStart = -1f;
+            RawMove = 0f;
+            return new PlayerInputFrame();
+        }
+
+        bool held = InputBindings.Get(GameAction.Grenade);
+        bool released = InputBindings.GetUp(GameAction.Grenade);
         if (held && grenadeHoldStart < 0f) {
             grenadeHoldStart = Time.time;
         }
@@ -28,15 +34,15 @@ public class KeyboardInputSource : IPlayerInputSource {
 
         return new PlayerInputFrame {
             move = move,
-            jumpPressed = Input.GetKeyDown(KeyCode.Space),
-            jumpHeld = Input.GetKey(KeyCode.Space),
-            meleePressed = Input.GetMouseButtonDown(0),
-            rangedPressed = Input.GetKeyDown(KeyCode.R),
-            dashPressed = Input.GetKeyDown(KeyCode.C),
-            runHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift),
-            selectPistol = Input.GetKeyDown(KeyCode.Alpha1),
-            selectShotgun = Input.GetKeyDown(KeyCode.Alpha2),
-            potionPressed = Input.GetKeyDown(KeyCode.Q),
+            jumpPressed = InputBindings.GetDown(GameAction.Jump),
+            jumpHeld = InputBindings.Get(GameAction.Jump),
+            meleePressed = InputBindings.GetDown(GameAction.Melee),
+            rangedPressed = InputBindings.GetDown(GameAction.Ranged),
+            dashPressed = InputBindings.GetDown(GameAction.Dash),
+            runHeld = InputBindings.Get(GameAction.Run),
+            selectPistol = InputBindings.GetDown(GameAction.Pistol),
+            selectShotgun = InputBindings.GetDown(GameAction.Shotgun),
+            potionPressed = InputBindings.GetDown(GameAction.Potion),
             grenadePressed = released,
             grenadeHeld = held,
             grenadeCharge = charge,

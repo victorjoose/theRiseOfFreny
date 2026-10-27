@@ -1,0 +1,159 @@
+using System;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+// The main menu, built over the art of the "UI - Main Menu" scene (background, title, Freny);
+// the scene's old Start / Options / Quit images are hidden. Added by GameMenus.
+public class MainMenu : MonoBehaviour {
+
+    private static readonly string[] OldButtons = { "Start", "Options", "Quit" };
+
+    private MenuStack stack;
+    private bool onlineWasOpen;
+
+    private void Start() {
+        foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects()) {
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true)) {
+                if (Array.IndexOf(OldButtons, child.name) >= 0 && child.GetComponent<Button>() != null) {
+                    child.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        Canvas canvas = MenuKit.CreateCanvas("Main Menu", 10, transform);
+        stack = canvas.gameObject.AddComponent<MenuStack>();
+        stack.OnRootCancel = () => { };
+        stack.ResetTo(MainPage());
+    }
+
+    private void OnEnable() {
+        Online.CloudProgressSync.Pulled += OnPulled;
+    }
+
+    private void OnDisable() {
+        Online.CloudProgressSync.Pulled -= OnPulled;
+    }
+
+    // progress came down from the cloud: redraw "Continue" with it
+    private void OnPulled() {
+        if (stack != null && stack.Depth == 1) {
+            stack.ResetTo(MainPage());
+        }
+    }
+
+    private void Update() {
+        // the online panel is still IMGUI: hide the menu under it so clicks don't reach both
+        bool onlineOpen = Online.OnlineHUD.Instance != null && Online.OnlineHUD.Instance.IsOpen;
+        if (stack != null && stack.Top != null && onlineOpen != onlineWasOpen) {
+            stack.Top.Visible = !onlineOpen;
+            stack.enabled = !onlineOpen;
+            if (!onlineOpen) {
+                stack.ResetTo(MainPage());
+            }
+        }
+        if (onlineOpen && Input.GetButtonDown("Cancel")) {
+            Online.OnlineHUD.Instance.SetOpen(false);
+        }
+        onlineWasOpen = onlineOpen;
+    }
+
+    private MenuPage MainPage() {
+        MenuPage page = new MenuPage(stack.transform, "", 460f, new Vector2(1f, 0.5f));
+        SaveData save = SaveSystem.Current;
+
+        if (save.HasProgress) {
+            page.BigButton("Continuar", "Espaço " + (SaveSystem.ActiveSlot + 1) + ": " + save.Summary, GameMenus.Continue);
+        } else {
+            page.Button("Começar", () => GameMenus.StartStage(CampaignLevels.All[0].id));
+        }
+        page.Button("Novo jogo", () => stack.Push(SlotsPage(true)));
+        page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)));
+        page.Button("Fases", () => stack.Push(StagesPage()));
+        page.Button("Arena", GameMenus.StartArena, Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene));
+        page.Button("Configurações", () => stack.Push(SettingsScreens.Settings(stack)));
+        if (Online.OnlineServices.Instance != null && Online.OnlineServices.Instance.State != Online.OnlineServices.Status.Disabled) {
+            page.Button("Online e ranking", () => Online.OnlineHUD.Instance?.SetOpen(true));
+        }
+        if (GameMenus.CanQuit) {
+            page.Button("Sair", GameMenus.Quit);
+        }
+        return page;
+    }
+
+    // newGame: pick a slot to start over in; otherwise pick a slot to continue
+    private MenuPage SlotsPage(bool newGame) {
+        MenuPage page = new MenuPage(stack.transform, newGame ? "Novo jogo" : "Carregar jogo", 640f, new Vector2(0.5f, 0.5f));
+        for (int i = 0; i < SaveSystem.SlotCount; i++) {
+            int slot = i;
+            SaveData data = slot == SaveSystem.ActiveSlot ? SaveSystem.Current : SaveSystem.Load(slot);
+            bool used = data != null && data.HasProgress;
+            string title = "Espaço " + (slot + 1) + (slot == SaveSystem.ActiveSlot ? " (atual)" : "");
+            string detail = used ? data.Summary : "vazio";
+
+            if (newGame) {
+                page.BigButton(title, detail, () => {
+                    if (used) {
+                        stack.Push(ConfirmPage("Apagar o espaço " + (slot + 1) + " e começar do zero?", "Sim, apagar", () => StartNew(slot)));
+                    } else {
+                        StartNew(slot);
+                    }
+                });
+            } else {
+                page.BigButton(title, detail, () => {
+                    SaveSystem.SwitchTo(slot);
+                    stack.ResetTo(MainPage());
+                }, used);
+            }
+        }
+        page.Button("Voltar", stack.Back);
+        return page;
+    }
+
+    private static void StartNew(int slot) {
+        SaveSystem.NewGame(slot);
+        GameMenus.StartStage(CampaignLevels.All[0].id);
+    }
+
+    private MenuPage ConfirmPage(string question, string yes, Action onYes) {
+        MenuPage page = new MenuPage(stack.transform, "Tem certeza?", 560f, new Vector2(0.5f, 0.5f));
+        page.Label(question, MenuKit.TextSize);
+        page.Space();
+        page.Button("Não", stack.Back);
+        page.Button(yes, onYes);
+        return page;
+    }
+
+    // stages in rows of three, one block per dungeon
+    private MenuPage StagesPage() {
+        MenuPage page = new MenuPage(stack.transform, "Fases", 720f, new Vector2(0.5f, 0.5f), 6f);
+        var stages = CampaignLevels.All;
+        float[] widths = { 150f, 150f, 150f };
+        for (int start = 0; start < stages.Count; start += 3) {
+            int count = Mathf.Min(3, stages.Count - start);
+            string[] labels = new string[count];
+            float[] rowWidths = new float[count];
+            bool[] open = new bool[count];
+            for (int i = 0; i < count; i++) {
+                CampaignLevels.Stage stage = stages[start + i];
+                // in the Editor every stage is open, to test without playing through
+                open[i] = (Application.isEditor || CampaignProgress.IsUnlocked(stage.id)) &&
+                          Application.CanStreamedLevelBeLoaded(stage.id);
+                labels[i] = open[i] ? (stage.boss ? stage.id + " Chefe" : stage.id) : "fechada";
+                rowWidths[i] = widths[i];
+            }
+            string rowLabel = start % 9 == 0 ? "Masmorra " + stages[start].dungeon : "";
+            int first = start;
+            Button[] buttons = page.ButtonRow(rowLabel, rowWidths, labels, i => {
+                if (open[i]) {
+                    GameMenus.StartStage(stages[first + i].id);
+                }
+            });
+            for (int i = 0; i < count; i++) {
+                buttons[i].interactable = open[i];
+            }
+        }
+        page.Button("Voltar", stack.Back);
+        return page;
+    }
+}

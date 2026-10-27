@@ -10,6 +10,8 @@ namespace Online {
         private const float ReferenceHeight = 720f;
         private const float AutoOpenDelay = 1.5f;
 
+        public static OnlineHUD Instance { get; private set; }
+
         private OnlineServices _online;
         private bool _open;
         private string _nameField;
@@ -25,6 +27,12 @@ namespace Online {
         private GUIStyle _title;
         private GUIStyle _row;
         private GUIStyle _rowSelf;
+
+        public bool IsOpen => _open;
+
+        private void Awake() {
+            Instance = this;
+        }
 
         private void Start() {
             _online = GetComponent<OnlineServices>();
@@ -54,7 +62,7 @@ namespace Online {
             }
         }
 
-        private void SetOpen(bool open) {
+        public void SetOpen(bool open) {
             _open = open;
             if (open) {
                 _nameField = _online.Save.playerName;

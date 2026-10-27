@@ -4,8 +4,8 @@ using UnityEngine;
 // are open and the best time of each. Coins and upgrades stay in FrenyProgress.
 public static class CampaignProgress {
 
-    private const string UnlockedKey = "freny.campaign.unlocked";   // index of the furthest open stage
-    private const string BestTimeKeyPrefix = "freny.campaign.best.";
+    public const string UnlockedKey = "freny.campaign.unlocked";   // index of the furthest open stage
+    public const string BestTimeKeyPrefix = "freny.campaign.best.";
 
     public static int UnlockedIndex => Mathf.Clamp(PlayerPrefs.GetInt(UnlockedKey, 0), 0, CampaignLevels.All.Count - 1);
 

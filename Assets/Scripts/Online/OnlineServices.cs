@@ -20,6 +20,7 @@ namespace Online {
         public Status State { get; private set; } = Status.Disabled;
         public string LastError { get; private set; }
         public FirebaseAuthService Auth { get; private set; }
+        public FirestoreClient Db => _db;   // for CloudProgressSync (save slots)
         public PlayerSave Save { get; private set; }
         public List<LeaderboardEntry> Top { get; private set; } = new List<LeaderboardEntry>();
 

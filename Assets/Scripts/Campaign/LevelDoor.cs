@@ -70,7 +70,7 @@ public class LevelDoor : MonoBehaviour {
         if (!playerInside || used) {
             return;
         }
-        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) {
+        if (!InputBindings.GameplayBlocked && InputBindings.GetDown(GameAction.Interact)) {
             Use();
         }
     }
