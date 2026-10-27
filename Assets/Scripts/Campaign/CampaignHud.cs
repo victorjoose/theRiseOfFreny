@@ -3,7 +3,8 @@ using UnityEngine.SceneManagement;
 
 // Temporary campaign HUD drawn with IMGUI, like ArenaHud: stage, time, deaths, the door hint,
 // the "stage clear" panel and a stage list (Tab) to jump between open stages while testing.
-// Hearts and coins are drawn here only in scenes without the uGUI HUD (UIManager).
+// Hearts, coins, score, combo, weapons and cooldowns come from the arena's HUD (the FrenyHud
+// prefab), added here to stages that have no uGUI HUD (UIManager) of their own.
 public class CampaignHud : MonoBehaviour {
 
     [SerializeField] private KeyCode stageListKey = KeyCode.Tab;
@@ -13,6 +14,27 @@ public class CampaignHud : MonoBehaviour {
     private bool showStageList;
     private GUIStyle boxStyle;
     private GUIStyle bigStyle;
+
+    private void Awake() {
+        // runs from CampaignBootstrap at scene load, before the Player's Start, so the Player
+        // finds the UIManager and fills in its hearts and coins
+        GameObject hud = Resources.Load<GameObject>("FrenyHud");
+        if (hud == null) {
+            return;
+        }
+        if (UIManager.Instance == null) {
+            Instantiate(hud).name = hud.name;
+        } else if (FindObjectOfType<CombatHud>() == null) {
+            // older stages carry their own hearts and coins HUD: add the weapons and cooldowns to it
+            CombatHud icons = hud.GetComponent<CombatHud>();
+            CombatHud combat = UIManager.Instance.gameObject.AddComponent<CombatHud>();
+            combat.revolverIcon = icons.revolverIcon;
+            combat.shotgunIcon = icons.shotgunIcon;
+            combat.swordIcon = icons.swordIcon;
+            combat.greatSwordIcon = icons.greatSwordIcon;
+            combat.grenadeIcon = icons.grenadeIcon;
+        }
+    }
 
     private void Start() {
         player = GetComponent<Player>();
@@ -57,7 +79,8 @@ public class CampaignHud : MonoBehaviour {
     }
 
     private void DrawStatus() {
-        GUILayout.BeginArea(new Rect(Screen.width - 230, 10, 220, 120));
+        // bottom right: the HUD has hearts and weapons top left, score and combo top center, coins top right
+        GUILayout.BeginArea(new Rect(Screen.width - 290, Screen.height - 110, 280, 100));
         GUILayout.BeginVertical(boxStyle);
         int index = CampaignLevels.IndexOf(run.StageId);
         CampaignLevels.Stage stage = CampaignLevels.All[index];

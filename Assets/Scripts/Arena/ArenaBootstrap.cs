@@ -48,6 +48,7 @@ public static class ArenaBootstrap {
         GetOrAdd<ArenaAutopilot>(playerObj);
         GetOrAdd<ArenaRunManager>(playerObj);
         GetOrAdd<ArenaHud>(playerObj);
+        GetOrAdd<CombatHud>(playerObj); // weapons and cooldowns, same as in the campaign
         input.FindAutopilot();
     }
 
