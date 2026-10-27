@@ -223,6 +223,7 @@ public class FrenyMotion : MonoBehaviour {
         bool dashing = dash && dash.IsDashing;
         float sinceSlash = Time.time - slashStart;
         bool crouching = player && player.IsCrouching;
+        bool climbing = OnLadder();
         Vector2 hand = crouching ? CrouchHand : Hand;
 
         // ---- events read from the body's motion
@@ -270,8 +271,9 @@ public class FrenyMotion : MonoBehaviour {
         if (player && player.IsStunned) {
             angleTarget = 8f;
         }
-        // the body stays planted and upright while she swings: only the arm and the arc move
-        if (sinceSlash < 0.3f && grounded) {
+        // the body stays planted and upright while she swings (only the arm and the arc move),
+        // and while she climbs (the climbing frames do the moving)
+        if ((sinceSlash < 0.3f && grounded) || climbing) {
             angleTarget = 0f;
             squashTarget = 0f;
         }
@@ -321,7 +323,7 @@ public class FrenyMotion : MonoBehaviour {
             }
         }
 
-        UpdatePose(crouching, grounded, sinceSlash);
+        UpdatePose(crouching, climbing, grounded, sinceSlash, vy, dt);
         UpdateHead();
 
         lastVx = vx;
@@ -330,10 +332,14 @@ public class FrenyMotion : MonoBehaviour {
         wasFacingRight = facingRight;
     }
 
-    private void UpdatePose(bool crouching, bool grounded, float sinceSlash) {
+    private void UpdatePose(bool crouching, bool climbing, bool grounded, float sinceSlash, float vy, float dt) {
         float sinceShot = Time.time - shotStart;
         string pose = null;
-        if (crouching) {
+        if (climbing) {
+            // hand over hand: the next frame every ClimbStride climbed, held while she stays put
+            climbed += Mathf.Abs(vy) * dt;
+            pose = "Freny climb_" + (int)(climbed / ClimbStride) % 2;
+        } else if (crouching) {
             pose = sinceSlash < 0.25f ? (sinceSlash < 0.035f ? "Freny crouch slash_0" : "Freny crouch slash_1")
                 : sinceShot < 0.3f ? "Freny crouch ranged_" + Mathf.Min(2, (int)(sinceShot * 10f))
                 : "Freny crouch_0";
@@ -343,6 +349,25 @@ public class FrenyMotion : MonoBehaviour {
         if (pose != null && poses.TryGetValue(pose, out Sprite sprite)) {
             body.sprite = sprite;
         }
+    }
+
+    // LadderClimber (campaign) holds her on a ladder; it is looked up by name so this file doesn't
+    // depend on the campaign scripts, and again now and then since it can be added after Start
+    private const float ClimbStride = 0.35f;
+    private System.Func<bool> climbingProbe;
+    private float climbed;
+    private float nextClimberLookup;
+
+    private bool OnLadder() {
+        if (climbingProbe == null && Time.time >= nextClimberLookup) {
+            nextClimberLookup = Time.time + 1f;
+            Component climber = GetComponent("LadderClimber");
+            var property = climber ? climber.GetType().GetProperty("Climbing") : null;
+            if (property != null && property.PropertyType == typeof(bool)) {
+                climbingProbe = (System.Func<bool>)System.Delegate.CreateDelegate(typeof(System.Func<bool>), climber, property.GetGetMethod());
+            }
+        }
+        return climbingProbe != null && climbingProbe();
     }
 
     private struct Spring {
