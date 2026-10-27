@@ -35,6 +35,12 @@ TextureImporter:
   - first:
       213: 1184892067255185169
     second: Freny air ranged_4
+  - first:
+      213: 2715681764597123200
+    second: Freny climb_0
+  - first:
+      213: 1801469302619187644
+    second: Freny climb_1
   externalObjects: {}
   serializedVersion: 12
   mipmaps:
@@ -183,7 +189,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 68904897d7e4476baa7903161a1b50ca
+      spriteID: a7810c06c64c494885e12e16c67bbf18
       internalID: 1281762758697591833
       vertices: []
       indices: 
@@ -204,7 +210,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3f6dd161c9414c7295050767c4838918
+      spriteID: 024dab3d219f4ff2ba0ed21b918c1b44
       internalID: 3147290335399028457
       vertices: []
       indices: 
@@ -225,7 +231,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 4b2b42eeff41439e8426b80613ac4475
+      spriteID: d102ed8b1c814472a7f5df777b36c011
       internalID: 4443901822933087423
       vertices: []
       indices: 
@@ -246,7 +252,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 2db743d535ba46f18559dd2199cce990
+      spriteID: ac6cdaf6743a48b69e8a1a94ead53720
       internalID: 3525080503606983398
       vertices: []
       indices: 
@@ -267,7 +273,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 5bda80db45e7471f9dbf5094eb2ecd62
+      spriteID: 720fca9ae96f4d86956efd9dbf4d4df9
       internalID: -4564926455042256413
       vertices: []
       indices: 
@@ -288,7 +294,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: fedf91f63f254c6495c76c6fad2adbdd
+      spriteID: 70945b4c6ad94ccf9963820e1e2f8043
       internalID: -3122597141751759380
       vertices: []
       indices: 
@@ -309,7 +315,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e7ffca516fc7427d91757b52bc625959
+      spriteID: da92b827e421476dad9e27c89c3880cc
       internalID: 686960640578370293
       vertices: []
       indices: 
@@ -330,7 +336,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 68859660a2884426ab36e1729be845ac
+      spriteID: 9ae275e0692d4661b34e11dfe6cb7ad3
       internalID: -2802952854236084819
       vertices: []
       indices: 
@@ -351,7 +357,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ddc77053fefc4eb48b14cccd53426353
+      spriteID: 3bedcbb724a0464baff5a9f919be4cb8
       internalID: -4399754493112314798
       vertices: []
       indices: 
@@ -372,7 +378,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3add8175ef4446e8a2055c4ca81f4780
+      spriteID: 64fc53c387bd4d8f94eb832486cb7744
       internalID: 4432507918585680993
       vertices: []
       indices: 
@@ -393,8 +399,50 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: d598f92fa8a142bf8938316c491a3f14
+      spriteID: 8bc1d81b4a85405f99d5ff7abfad5a5e
       internalID: 1184892067255185169
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny climb_0
+      rect:
+        serializedVersion: 2
+        x: 3080
+        y: 0
+        width: 280
+        height: 200
+      alignment: 9
+      pivot: {x: 0.357143, y: 0.500000}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fb5823e39cd54e2297b51fecba0c2051
+      internalID: 2715681764597123200
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny climb_1
+      rect:
+        serializedVersion: 2
+        x: 3360
+        y: 0
+        width: 280
+        height: 200
+      alignment: 9
+      pivot: {x: 0.357143, y: 0.500000}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 41b912667ccb4b9e9a7db7fabdf32b8d
+      internalID: 1801469302619187644
       vertices: []
       indices: 
       edges: []
@@ -421,6 +469,8 @@ TextureImporter:
       Freny air ranged_2: -4399754493112314798
       Freny air ranged_3: 4432507918585680993
       Freny air ranged_4: 1184892067255185169
+      Freny climb_0: 2715681764597123200
+      Freny climb_1: 1801469302619187644
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

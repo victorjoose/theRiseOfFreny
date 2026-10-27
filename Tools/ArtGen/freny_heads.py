@@ -94,6 +94,12 @@ def helmet(cell):
             if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in seen and inside(nx, ny):
                 seen.add((nx, ny))
                 stack.append((nx, ny))
+    # a raised arm (climbing) can touch the helmet: keep the 9 columns holding most of its light
+    # paint, the helmet's own width
+    light = lambda x, y: px(x, y)[:3] in (LIGHT, WHITE)
+    left = max(range(min(x for x, _ in seen), max(x for x, _ in seen) + 1),
+               key=lambda l: sum(1 for x, y in seen if l <= x < l + 9 and light(x, y)))
+    seen = {(x, y) for x, y in seen if left <= x < left + 9}
     return seen if len(seen) >= 12 else None
 
 
@@ -140,7 +146,10 @@ def main():
             per = {}
             for kind, pal in PALETTES.items():
                 pix = {p: repaint(cell.getpixel((p[0] * PX, p[1] * PX))[:3], pal) for p in head}
-                pix.update(put_icon(head, icons[kind]))
+                icon = put_icon(head, icons[kind])
+                if 'climb' in name:     # seen from behind: the helmet's colours, only the horns stick out
+                    icon = {p: c for p, c in icon.items() if p not in head}
+                pix.update(icon)
                 per[kind] = pix
             entries.append((name, per, r, pivot))
 
