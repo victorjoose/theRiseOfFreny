@@ -145,8 +145,10 @@ public class ArenaHud : MonoBehaviour {
     private void DrawUpgrade(FrenyUpgrade upgrade) {
         int current = FrenyProgress.GetLevel(upgrade);
         int max = FrenyProgress.MaxLevel(upgrade);
-        string price = FrenyProgress.IsMaxed(upgrade)
-            ? "máx."
+        // bought but left at home in the menu's Inventário
+        bool stored = current > 0 && FrenyProgress.IsEquipment(upgrade) && !FrenyProgress.IsEquipped(upgrade);
+        string price = stored ? "guardado no Inventário"
+            : FrenyProgress.IsMaxed(upgrade) ? "máx."
             : FrenyProgress.IsBrain(upgrade) ? $"{FrenyProgress.Cost(upgrade)} ponto" : $"{FrenyProgress.Cost(upgrade)} moedas";
 
         GUILayout.BeginHorizontal();
