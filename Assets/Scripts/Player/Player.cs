@@ -158,7 +158,7 @@ public class Player : MonoBehaviour, IDamageable {
         _playerAnim = GetComponent<PlayerAnimation>();
         _dash = GetComponent<Dash>();
         _sprite = GetComponentInChildren<SpriteRenderer>();
-        _gameManager = FindObjectOfType<GameManager>();
+        _gameManager = FindAnyObjectByType<GameManager>();
         swordBox = FindChild("Sword_Hit_Box");
         if (playerRevolverShootPosition == null) {
             playerRevolverShootPosition = FindShootPosition();

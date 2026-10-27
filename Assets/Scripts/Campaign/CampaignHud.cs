@@ -24,7 +24,7 @@ public class CampaignHud : MonoBehaviour {
         }
         if (UIManager.Instance == null) {
             Instantiate(hud).name = hud.name;
-        } else if (FindObjectOfType<CombatHud>() == null) {
+        } else if (FindAnyObjectByType<CombatHud>() == null) {
             // older stages carry their own hearts and coins HUD: add the weapons and cooldowns to it
             CombatHud icons = hud.GetComponent<CombatHud>();
             CombatHud combat = UIManager.Instance.gameObject.AddComponent<CombatHud>();

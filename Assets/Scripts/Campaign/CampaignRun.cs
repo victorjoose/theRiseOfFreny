@@ -160,7 +160,7 @@ public class CampaignRun : MonoBehaviour {
         if (string.IsNullOrEmpty(doorId)) {
             return null;
         }
-        foreach (LevelDoor door in FindObjectsOfType<LevelDoor>()) {
+        foreach (LevelDoor door in FindCompat.All<LevelDoor>()) {
             if (door.doorId == doorId) {
                 return door.transform.position;
             }
@@ -172,7 +172,7 @@ public class CampaignRun : MonoBehaviour {
     // Uses the tiles themselves: a collider merged into a CompositeCollider2D reports empty bounds.
     private static float LowestGround() {
         float lowest = float.PositiveInfinity;
-        foreach (TilemapCollider2D tiles in FindObjectsOfType<TilemapCollider2D>()) {
+        foreach (TilemapCollider2D tiles in FindCompat.All<TilemapCollider2D>()) {
             Tilemap map = tiles.GetComponent<Tilemap>();
             if (tiles.enabled && map != null) {
                 map.CompressBounds();

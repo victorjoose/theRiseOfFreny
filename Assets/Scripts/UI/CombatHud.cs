@@ -22,7 +22,7 @@ public class CombatHud : MonoBehaviour {
 
     private void OnGUI() {
         if (player == null) {
-            player = GetComponent<Player>() ? GetComponent<Player>() : FindObjectOfType<Player>();
+            player = GetComponent<Player>() ? GetComponent<Player>() : FindAnyObjectByType<Player>();
             dash = player ? player.GetComponent<Dash>() : null;
             if (player == null) {
                 return;

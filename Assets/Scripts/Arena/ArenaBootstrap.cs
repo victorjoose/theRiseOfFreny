@@ -29,7 +29,7 @@ public static class ArenaBootstrap {
 
         // the campaign's invisible posts at platform edges turned (and made jump) the enemies walking
         // into them and blocked Freny; arena enemies turn at edges by themselves
-        foreach (ChangeGroundArea area in Object.FindObjectsOfType<ChangeGroundArea>(true)) {
+        foreach (ChangeGroundArea area in FindCompat.All<ChangeGroundArea>(true)) {
             if (area.gameObject.scene == scene) {
                 area.gameObject.SetActive(false);
             }

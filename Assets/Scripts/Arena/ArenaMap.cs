@@ -70,13 +70,13 @@ public class ArenaMap {
 
     // one map per arena scene, shared by the autopilot and the director (built the first time either asks)
     private static ArenaMap shared;
-    private static int sharedScene = -1;
+    private static UnityEngine.SceneManagement.Scene sharedScene;
 
     public static ArenaMap Shared(Player player) {
         if (!ArenaBounds.Active || player == null) {
             return null;
         }
-        int scene = player.gameObject.scene.handle;
+        UnityEngine.SceneManagement.Scene scene = player.gameObject.scene;
         if (shared == null || sharedScene != scene) {
             LayerMask ground = player.whatIsGround.value != 0 ? player.whatIsGround : (LayerMask)LayerMask.GetMask("Ground");
             shared = Build(ground, ArenaBounds.Left, ArenaBounds.Right, ArenaBounds.Bottom, ArenaBounds.Top,
