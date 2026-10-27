@@ -37,14 +37,18 @@ public class Bat : Enemy {
         bool chasing = player.Health > 0 && (distance <= radius * Tuning.EnemyAggro.Value || isHit);
         SetInCombat(chasing);
 
-        float bob = Mathf.Sin(Time.time * hoverFrequency + phase) * hoverAmplitude;
+        // a smaller bob while chasing, so it stays where the sword and the bullets reach
+        float bob = Mathf.Sin(Time.time * hoverFrequency + phase) * hoverAmplitude * (chasing ? 0.3f : 1f);
+        Vector3 body = player.BodyCenter;
+        Vector3 centerOffset = (Vector3)Center - transform.position; // its own body vs its pivot
         Vector3 goal;
         if (chasing) {
-            // approach from the side it is already on, flying at her body height
-            if (Mathf.Abs(transform.position.x - player_t.position.x) > sideOffset * 1.5f) {
-                side = Mathf.Sign(transform.position.x - player_t.position.x);
+            // approach from the side it is already on, its body level with the middle of hers
+            // (aiming at player_t put it at head height, over the sword and the shots)
+            if (Mathf.Abs(transform.position.x - body.x) > sideOffset * 1.5f) {
+                side = Mathf.Sign(transform.position.x - body.x);
             }
-            goal = player_t.position + new Vector3(side * sideOffset, 0.5f, 0f);
+            goal = body + new Vector3(side * sideOffset, 0f, 0f) - centerOffset;
         } else {
             goal = home;
         }
@@ -61,8 +65,8 @@ public class Bat : Enemy {
             transform.localScale = new Vector3(dx > 0 ? -1 : 1, 1, 1);
         }
 
-        float dxToPlayer = Mathf.Abs(transform.position.x - player_t.position.x);
-        float dyToPlayer = Mathf.Abs(transform.position.y - (player_t.position.y + 0.5f));
+        float dxToPlayer = Mathf.Abs(Center.x - body.x);
+        float dyToPlayer = Mathf.Abs(Center.y - body.y);
         if (chasing && dxToPlayer <= biteDistance && dyToPlayer <= 0.8f && Time.time >= nextBiteTime) {
             PlaySound("attack");
             HitPlayer();

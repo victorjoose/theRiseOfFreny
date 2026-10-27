@@ -35,8 +35,10 @@ public class ArenaDirector : MonoBehaviour {
     private readonly Dictionary<ArenaMap.Platform, Transform[]> patrols = new Dictionary<ArenaMap.Platform, Transform[]>();
 
     public float Elapsed => Time.time - runStart;
-    public float Difficulty => Mathf.Clamp01(Elapsed / Tuning.RampSeconds.Value);
-    public int MaxAlive => Mathf.RoundToInt(Mathf.Lerp(1f, Tuning.PeakEnemies.Value, Difficulty));
+    // the arena difficulty picked in the menu (ArenaDifficulty) speeds the ramp up or down,
+    // changes the peak and can start the run part-way up the curve
+    public float Difficulty => Mathf.Clamp01(ArenaDifficulty.StartAt + Elapsed / (Tuning.RampSeconds.Value * ArenaDifficulty.RampFactor));
+    public int MaxAlive => Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, Tuning.PeakEnemies.Value * ArenaDifficulty.PeakFactor, Difficulty)));
     public float SpawnInterval => Mathf.Lerp(6f, 1.5f, Difficulty);
 
     private static readonly Color PortalColor = new Color(0.6f, 0.3f, 1f);
@@ -83,10 +85,15 @@ public class ArenaDirector : MonoBehaviour {
         return alive;
     }
 
+    // the weakest enemies (unlockAt 0) are always there; the rest move with the arena difficulty
+    private bool Unlocked(Entry entry) {
+        return entry.unlockAt <= 0f || Difficulty >= entry.unlockAt + ArenaDifficulty.UnlockShift;
+    }
+
     private Entry Pick() {
         float total = 0f;
         foreach (Entry entry in enemies) {
-            if (entry.prefab != null && Difficulty >= entry.unlockAt) {
+            if (entry.prefab != null && Unlocked(entry)) {
                 total += entry.weight;
             }
         }
@@ -95,7 +102,7 @@ public class ArenaDirector : MonoBehaviour {
         }
         float roll = Random.Range(0f, total);
         foreach (Entry entry in enemies) {
-            if (entry.prefab == null || Difficulty < entry.unlockAt) {
+            if (entry.prefab == null || !Unlocked(entry)) {
                 continue;
             }
             roll -= entry.weight;

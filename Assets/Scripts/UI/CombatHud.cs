@@ -41,8 +41,8 @@ public class CombatHud : MonoBehaviour {
         float x = 60f * scale;
         float y = 175f * scale;
         DrawWeapons(x, y, size, scale);
-        // well below the icons: the sword bar, the bullet dots and the ammo counts sit right under them
-        DrawCooldowns(60f * scale, y + size + 70f * scale, scale);
+        // stacked on the left, below the sword bar, the bullet dots and the ammo counts
+        DrawCooldowns(60f * scale, y + size + 46f * scale, scale);
     }
 
     private void DrawWeapons(float x, float y, float size, float scale) {
@@ -76,17 +76,17 @@ public class CombatHud : MonoBehaviour {
 
     // run and dash readiness, so a key that does nothing shows why
     private void DrawCooldowns(float x, float y, float scale) {
-        float width = 150f * scale;
-        float gap = 36f * scale;
-        float height = 50f * scale;
+        float width = 170f * scale;
+        float height = 48f * scale;
+        float step = height + 10f * scale;
         DrawLabeledMeter(new Rect(x, y, width, height), $"Pulo ({Key(GameAction.Jump)})", player.JumpReady ? 1f : 0f,
             player.JumpReady ? ReadyColor : ChargingColor, scale);
-        x += width + gap;
+        y += step;
         float run = player.RunMeter;
         DrawLabeledMeter(new Rect(x, y, width, height), $"Corrida ({Key(GameAction.Run)})", run,
             player.IsRunning ? ActiveColor : run >= 1f ? ReadyColor : ChargingColor, scale);
         if (dash) {
-            x += width + gap;
+            y += step;
             DrawLabeledMeter(new Rect(x, y, width, height), $"Dash ({Key(GameAction.Dash)})", dash.Readiness,
                 dash.Readiness >= 1f ? ReadyColor : ChargingColor, scale);
         }
