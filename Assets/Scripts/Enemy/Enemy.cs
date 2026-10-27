@@ -525,6 +525,18 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // ==== taking hits ==========================================================================
 
+    // any enemy killed (Freny's Rage meter counts them)
+    public static event System.Action<Enemy> Killed;
+
+    // a harder hit (the sword during Rage): the extra points first, then the usual hit
+    public void Damage(int amount) {
+        if (isDead) {
+            return;
+        }
+        Health -= Mathf.Max(0, amount - 1);
+        Damage();
+    }
+
     // one point of damage from the sword, a bullet or a grenade
     public virtual void Damage() {
         if (isDead) {
@@ -572,6 +584,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             rb.simulated = false;
         }
 
+        Killed?.Invoke(this);
         FrenyProgress.AddXp(Mathf.Max(scoreToAdd, 10));
         if (UIManager.Instance) {
             UIManager.Instance.HandleComboManager(this);

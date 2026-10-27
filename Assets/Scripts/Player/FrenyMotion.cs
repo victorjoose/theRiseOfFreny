@@ -46,8 +46,8 @@ public class FrenyMotion : MonoBehaviour {
     private const float BladeFrom = 70f, BladeTo = -45f;
     private const float GreatSwordScale = 1.8f;  // the great sword's cut and hitbox, "bem maior"
 
-    // the great sword in hand (Arena thread: becomes Player.GreatSwordActive, shop upgrade or drop)
-    private static bool GreatSword => FrenyProgress.HasGreatSword;
+    // the great sword in hand: bought at the shop, or dropped for a few swings (Player.GreatSwordActive)
+    private bool GreatSword => player && player.GreatSwordActive;
     private Vector3 rigBase;
     private float bodyCenter = 0.6f;       // height of her middle above the feet
 

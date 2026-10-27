@@ -233,7 +233,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float towardTarget = Mathf.Sign(dx);
         bool facingTarget = (dx > 0) == player.FacingRight;
         bool sameFloor = dy <= verticalTolerance && dy >= -0.7f;
-        float meleeRange = Tuning.AutoMeleeRange.Value * (FrenyProgress.HasGreatSword ? 1.4f : 1f);
+        float meleeRange = Tuning.AutoMeleeRange.Value * (player.GreatSwordActive ? 1.4f : 1f);
         float nearestEnemy = NearestEnemyDistance(me);
 
         // 1b. an enemy next to her is winding up a hit: get out of the way (a person would)
@@ -570,6 +570,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         foreach (ArenaChest chest in ArenaChest.Active) {
             Consider(chest ? chest.transform : null, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, "o baú");
         }
+        foreach (ArenaVase vase in ArenaVase.Active) {
+            Consider(vase ? vase.transform : null, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, "o vaso");
+        }
         foreach (ItemPickup item in ItemPickup.Active) {
             if (item && item.Landed && item.UsefulTo(player)) {
                 // items count as closer than coins: a potion or ammo matters more than a coin
@@ -579,7 +582,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (bestDist == float.MaxValue) {
             return false;
         }
-        bool isChest = what == "o baú";
+        bool isChest = what == "o baú" || what == "o vaso";   // both open only when hit
         float dx = best.x - me.x;
 
         if (bestPlatform != myPlatform) {
@@ -597,7 +600,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             } else if (player.AttackReady) {
                 frame.meleePressed = true;
             }
-            action = "Quebrando o baú";
+            action = what == "o vaso" ? "Quebrando o vaso" : "Quebrando o baú";
             return true;
         }
         if (Mathf.Abs(dx) < 0.15f) {

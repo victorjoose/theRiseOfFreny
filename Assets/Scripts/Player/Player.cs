@@ -80,6 +80,17 @@ public class Player : MonoBehaviour, IDamageable {
     private float attackReadyAt;
     private float reloadReadyAt = -1f;  // -1: not reloading
     private float invulnerableUntil;
+    private float greatSwordGraceUntil;
+    private float rageUntil;
+
+    // drops and buffs (see GiveGreatSword, GiveArmor, OnEnemyKilled)
+    public const int ArmorMax = 3;
+    private const int GreatSwordDropSwings = 3;
+    private const float GreatSwordGrace = 0.45f;   // the last dropped swing keeps the big hitbox
+    private const int RageKills = 12;
+    private const float RageSeconds = 20f;
+    private const int RageMeleeDamage = 2;
+    private static readonly Color RageTint = new Color(1f, 0.55f, 0.5f);
     private float stunnedUntil;
     private float runUntil;
     private float runReadyAt;
@@ -97,7 +108,6 @@ public class Player : MonoBehaviour, IDamageable {
     private Dash _dash;
     private SpriteRenderer _sprite;
     private GameManager _gameManager;
-    private Transform swordBox;
 
     // ---- read by the autopilot and the HUD, so they decide with the same information a person sees
     public bool IsGrounded => isGrounded;
@@ -120,12 +130,27 @@ public class Player : MonoBehaviour, IDamageable {
     public bool GunReadyFor(bool shotgun) => AttackReady && (shotgun
         ? ShotgunOwned && ShotgunShells > 0
         : !Reloading && RevolverBullets > 0);
-    // a potion on the floor is worth picking up: she is hurt, or has room to carry one
     // a dropped potion only heals: at full health it stays on the floor until needed or it expires
     public bool WantsPotion => !isDead && Health < MaxHealth;
     public bool WantsBullets => RevolverReserve < revolverReserveMax;
     public bool WantsShells => ShotgunOwned && ShotgunShells < shellsMax;
     public bool WantsGrenades => Grenades < grenadesMax;
+    public bool WantsArmor => !isDead && Armor < ArmorMax;
+    // a dropped great sword is no use with the bought one, or with a fresh one still in hand
+    public bool WantsGreatSword => !isDead && !FrenyProgress.HasGreatSword && GreatSwordSwings < GreatSwordDropSwings;
+
+    // ---- drops and buffs: the dropped great sword, armor and Rage
+    // the great sword (bought at the shop, or dropped for a few swings): FrenyMotion makes the slash
+    // and the hitbox bigger. It stays on briefly after the last dropped swing so that swing is big too.
+    public bool GreatSwordActive => FrenyProgress.HasGreatSword || GreatSwordSwings > 0 || Time.time < greatSwordGraceUntil;
+    public int GreatSwordSwings { get; private set; }
+    // armor hearts (the Berserker helmet): each one takes a hit before the life hearts
+    public int Armor { get; private set; }
+    // kills fill the Rage meter; full, it gives RageSeconds of red helmet and harder sword hits
+    public float Rage { get; private set; }
+    public bool Raging => Time.time < rageUntil;
+    public float RageLeft => Raging ? (rageUntil - Time.time) / RageSeconds : 0f;
+    public int MeleeDamage => Raging ? RageMeleeDamage : 1;
     public float ReloadProgress => Reloading ? Mathf.Clamp01(1f - (reloadReadyAt - Time.time) / revolverReloadTime) : 1f;
     // body and jump, for the autopilot's platform map (the same numbers the physics uses)
     public float JumpHeight => jumpHeight;
@@ -164,7 +189,6 @@ public class Player : MonoBehaviour, IDamageable {
         _dash = GetComponent<Dash>();
         _sprite = GetComponentInChildren<SpriteRenderer>();
         _gameManager = FindAnyObjectByType<GameManager>();
-        swordBox = FindChild("Sword_Hit_Box");
         if (playerRevolverShootPosition == null) {
             playerRevolverShootPosition = FindShootPosition();
         }
@@ -182,6 +206,7 @@ public class Player : MonoBehaviour, IDamageable {
         _baseMaxHealth = MaxHealth;
         ApplyUpgrades();
         FrenyProgress.Changed += ApplyUpgrades;
+        Enemy.Killed += OnEnemyKilled;
 
         Health = MaxHealth;
         // the run's loadout: a loaded revolver with spare bullets; the shop's shotgun and grenades
@@ -199,6 +224,7 @@ public class Player : MonoBehaviour, IDamageable {
 
     private void OnDestroy() {
         FrenyProgress.Changed -= ApplyUpgrades;
+        Enemy.Killed -= OnEnemyKilled;
     }
 
     private void Update() {
@@ -209,6 +235,8 @@ public class Player : MonoBehaviour, IDamageable {
         if (_sprite) {
             // blink while invulnerable
             _sprite.enabled = !IsInvulnerable || Mathf.Repeat(Time.time, 0.16f) < 0.08f;
+            // Rage: she glows red until it runs out
+            _sprite.color = Raging ? RageTint : Color.white;
         }
 
         CheckGround();
@@ -276,11 +304,6 @@ public class Player : MonoBehaviour, IDamageable {
         MaxHealth = _baseMaxHealth + FrenyProgress.BonusMaxHealth;
         _speed = _baseSpeed * FrenyProgress.SpeedMultiplier;
         attackCooldown = _baseAttackCooldown * FrenyProgress.AttackCooldownMultiplier;
-
-        // the great sword swings a wider hitbox (the animation drives offset/size, the scale multiplies them)
-        if (swordBox) {
-            swordBox.localScale = new Vector3(FrenyProgress.HasGreatSword ? 1.5f : 1f, 1f, 1f);
-        }
 
         // a bought heart arrives full
         if (Health > 0 && MaxHealth > oldMax) {
@@ -438,6 +461,10 @@ public class Player : MonoBehaviour, IDamageable {
         _playerAnim.Melee();
         Sfx.Play("sword_swing", transform.position);
         attackReadyAt = Time.time + attackCooldown;
+        if (GreatSwordSwings > 0 && !FrenyProgress.HasGreatSword) {
+            GreatSwordSwings--;
+            greatSwordGraceUntil = Time.time + GreatSwordGrace;
+        }
     }
 
     // the revolver holds revolverCapacity shots; empty, it reloads by itself over revolverReloadTime
@@ -608,6 +635,14 @@ public class Player : MonoBehaviour, IDamageable {
             return false;
         }
         invulnerableUntil = Time.time + invulnerableTime;
+        if (Armor > 0) {
+            // the armor takes the hit: she blinks as usual but keeps her life
+            Armor--;
+            _playerAnim.Hit();
+            Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.75f, 0.78f, 0.85f), 12, 2.5f, 0.08f, 0.4f);
+            Sfx.Play("sword_hit", transform.position);
+            return true;
+        }
         Health = Mathf.Max(Health - 1, 0);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, true);
@@ -663,6 +698,37 @@ public class Player : MonoBehaviour, IDamageable {
         Health = Mathf.Min(Health + amount, MaxHealth);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, false);
+        }
+    }
+
+    // a great sword picked up from the floor: bigger slashes for a few swings
+    public bool GiveGreatSword() {
+        if (!WantsGreatSword) {
+            return false;
+        }
+        GreatSwordSwings = GreatSwordDropSwings;
+        return true;
+    }
+
+    // the Berserker helmet: full armor
+    public bool GiveArmor() {
+        if (!WantsArmor) {
+            return false;
+        }
+        Armor = ArmorMax;
+        return true;
+    }
+
+    private void OnEnemyKilled(Enemy enemy) {
+        if (isDead || Raging) {
+            return;
+        }
+        Rage = Mathf.Min(1f, Rage + 1f / RageKills);
+        if (Rage >= 1f) {
+            Rage = 0f;
+            rageUntil = Time.time + RageSeconds;
+            Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(1f, 0.25f, 0.2f), 30, 3.5f, 0.12f, 0.7f);
+            Sfx.Play("level_up", transform.position);
         }
     }
 
