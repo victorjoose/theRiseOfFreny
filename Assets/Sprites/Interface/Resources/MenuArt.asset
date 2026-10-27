@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05c34e5eef124c29a790bbde308078fe, type: 3}
+  m_Name: MenuArt
+  m_EditorClassIdentifier: 
+  merchantFace:
+  - {fileID: -8747448929444150692, guid: 2bcd606b9abbcf146a64367c965c42b0, type: 3}
+  - {fileID: 9075503317016155703, guid: 2bcd606b9abbcf146a64367c965c42b0, type: 3}
+  - {fileID: 1293834141102877854, guid: 2bcd606b9abbcf146a64367c965c42b0, type: 3}
+  - {fileID: -6148688280900925733, guid: 2bcd606b9abbcf146a64367c965c42b0, type: 3}
+  - {fileID: -5646203299595776838, guid: 2bcd606b9abbcf146a64367c965c42b0, type: 3}
+  - {fileID: 1688199192255663952, guid: 2bcd606b9abbcf146a64367c965c42b0, type: 3}
+  frenyFace:
+  - {fileID: 3132709245091185678, guid: 641f31898eae9504891a9b60f83c1fa7, type: 3}
+  - {fileID: -3391380419005887715, guid: 641f31898eae9504891a9b60f83c1fa7, type: 3}
+  frenyIdle:
+  - {fileID: -2963809309829806852, guid: 4b71d90cfc65be44d8094a4b0d25e3d7, type: 3}
+  - {fileID: 2777318823585287634, guid: 4b71d90cfc65be44d8094a4b0d25e3d7, type: 3}
+  greatSword: {fileID: 3846876039218944220, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  shotgun: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  grenade: {fileID: 3195551602420287392, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  potion: {fileID: -146668759384179144, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  berserkerHelmet: {fileID: -6371926176569892122, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  heart: {fileID: 21300000, guid: 88122f18812e56641b0dd9062874a6a5, type: 3}
+  sword: {fileID: -8525561222273819436, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  jump: {fileID: 2585791992712628342, guid: 3d4a77280e1e7d44fbacbd2d025acdd2, type: 3}
+  run: {fileID: 9115711866327617280, guid: 45720687a9289484faf269ec5a285804, type: 3}
