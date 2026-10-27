@@ -1,12 +1,14 @@
 # Builds Freny's swappable helmets: for every frame of every sheet her Animator plays, finds the
 # grey helmet (the pixels above the orange neck, flood-filled from the top of the figure) and
-# repaints it as the Rage and Berserker helmets. Each helmet becomes one small sprite cropped to
-# the head and pivoted so that, drawn on the body's transform, it sits exactly on the old helmet.
+# puts the HUD's helmet icons on it (Items 100x100_6 for Rage, _7 for Berserker), the same art
+# the life bar shows. Grey pixels an icon leaves uncovered are repainted in its colours. Each
+# helmet becomes one small sprite cropped to the head and pivoted so that, drawn on the body's
+# transform, it sits exactly on the old helmet.
 #
 #   python3 freny_heads.py <repo root>
 #
 # Writes Assets/Sprites/Characters/Player/Resources/FrenyHeads/{rage,berserker}.png + .meta; FrenyMotion loads them by the
-# body sprite's name. Frames with no helmet (white hit flash, death) get no head.
+# body sprite's name. Rerun it after changing the icons or any of her sheets. Frames with no helmet (white hit flash, death) get no head.
 import os, re, sys, uuid, random
 from PIL import Image
 
@@ -23,10 +25,12 @@ LIGHT, MID, SHADE, WHITE = (176, 162, 141), (129, 111, 109), (99, 86, 85), (239,
 PLUM, DARK, BLACK = (69, 40, 60), (48, 27, 42), (26, 17, 25)
 RED, DEEP_RED, PALE_RED = (208, 47, 47), (150, 32, 40), (240, 120, 105)
 
-# the grey helmet's colours, repainted per helmet (anything else keeps its colour)
+# the HUD icons drawn on the head: cell index in Items 100x100.png
+ICONS = {'rage': 6, 'berserker': 7}
+# the grey helmet's colours, for any helmet pixel an icon doesn't cover
 PALETTES = {
     'rage': {LIGHT: RED, MID: DEEP_RED, SHADE: PLUM, WHITE: PALE_RED},
-    'berserker': {LIGHT: PLUM, MID: DARK, SHADE: BLACK, WHITE: MID},
+    'berserker': {LIGHT: PLUM, MID: DARK, SHADE: BLACK, WHITE: PLUM},
 }
 ALIGN = {0: (.5, .5), 1: (0, 1), 2: (.5, 1), 3: (1, 1), 4: (0, .5), 5: (1, .5), 6: (0, 0), 7: (.5, 0), 8: (1, 0)}
 
@@ -93,22 +97,28 @@ def repaint(c, pal):
     return pal[min(pal, key=lambda k: abs(lum(k) - lum(c)))]
 
 
-def berserker_extras(pixels):
-    """horns curling out of both sides and a dark visor slit"""
-    xs = [x for x, _ in pixels]; ys = [y for _, y in pixels]
-    left, right, top, bottom = min(xs), max(xs), min(ys), max(ys)
-    mid = (left + right) // 2
-    extra = {}
-    for side, edge in ((-1, left), (1, right)):
-        for i, (dx, dy) in enumerate(((1, 3), (2, 2), (3, 1), (3, 0), (3, -1), (2, -2))):
-            extra[(edge + side * dx, top + dy)] = LIGHT if i < 5 else WHITE
-    for y in range(top + 3, bottom):
-        extra[(mid, y)] = BLACK
-    return extra
+def icon_art(index):
+    """the icon's art pixels {(x, y): rgb}, cropped to the drawing, and its size"""
+    items = Image.open(os.path.join(ROOT, 'Assets/Sprites/Items/Items 100x100.png')).convert('RGBA')
+    cell = items.crop((index * 100, 0, index * 100 + 100, 100))
+    cell = cell.crop(cell.getbbox())
+    w, h = cell.width // PX, cell.height // PX
+    return {(x, y): cell.getpixel((x * PX, y * PX))[:3] for x in range(w) for y in range(h)
+            if cell.getpixel((x * PX, y * PX))[3] > 0}, w, h
+
+
+def put_icon(head, icon):
+    """the icon centred over the helmet's columns and resting on its top row"""
+    art, w, _ = icon
+    xs = [x for x, _ in head]; ys = [y for _, y in head]
+    ox = (min(xs) + max(xs) + 1 - w) // 2
+    oy = min(ys)
+    return {(x + ox, y + oy): c for (x, y), c in art.items()}
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
+    icons = {kind: icon_art(i) for kind, i in ICONS.items()}
     entries = []                       # (name, pixels {(x,y): rgb per helmet}, origin, pivot px)
     for sheet in SHEETS:
         img = Image.open(os.path.join(PLAYER, sheet + '.png')).convert('RGBA')
@@ -122,8 +132,7 @@ def main():
             per = {}
             for kind, pal in PALETTES.items():
                 pix = {p: repaint(cell.getpixel((p[0] * PX, p[1] * PX))[:3], pal) for p in head}
-                if kind == 'berserker':
-                    pix.update(berserker_extras(head))
+                pix.update(put_icon(head, icons[kind]))
                 per[kind] = pix
             entries.append((name, per, r, pivot))
 
@@ -163,7 +172,7 @@ def write_meta(path, sprites):
     guid = guid or uuid.uuid4().hex
     ids = [random.randint(-2 ** 62, 2 ** 62) for _ in sprites]
     head, sheet = template.split('  spriteSheet:\n', 1)
-    head = re.sub(r'^guid: \w+', 'guid: ' + guid, head, 1, flags=re.M)
+    head = re.sub(r'^guid: \w+', 'guid: ' + guid, head, count=1, flags=re.M)
     table = ''.join(f'  - first:\n      213: {i}\n    second: {s[0]}\n' for i, s in zip(ids, sprites))
     head = re.sub(r'  internalIDToNameTable:\n.*?(?=  externalObjects)', lambda m: '  internalIDToNameTable:\n' + table, head, flags=re.S)
     body = ''
