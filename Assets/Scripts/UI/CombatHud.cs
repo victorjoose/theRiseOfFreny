@@ -33,11 +33,16 @@ public class CombatHud : MonoBehaviour {
         }
 
         float scale = Screen.width / 1920f;
+        if (labelStyle == null) {
+            labelStyle = new GUIStyle(GUI.skin.label);
+        }
+        labelStyle.fontSize = Mathf.Max(11, Mathf.RoundToInt(20f * scale));
         float size = 56f * scale;
         float x = 60f * scale;
         float y = 175f * scale;
         DrawWeapons(x, y, size, scale);
-        DrawCooldowns(60f * scale, y + size + 16f * scale, scale);
+        // well below the icons: the sword bar, the bullet dots and the ammo counts sit right under them
+        DrawCooldowns(60f * scale, y + size + 70f * scale, scale);
     }
 
     private void DrawWeapons(float x, float y, float size, float scale) {
@@ -49,11 +54,11 @@ public class CombatHud : MonoBehaviour {
         DrawIcon(Icon(revolverIcon, a => a.revolverIcon), ref x, y, size, !player.UsingShotgun && !player.RevolverDry);
         DrawBullets(revolverX, y + size + 2f, size, scale);
         // spare bullets: the revolver is no longer infinite
-        GUI.Label(new Rect(revolverX + size - 14f * scale, y + size - 18f * scale, 70f * scale, 20f * scale), $"+{player.RevolverReserve}");
+        ShadowLabel(new Rect(revolverX + size - 14f * scale, y + size + 10f * scale, 70f * scale, 26f * scale), $"+{player.RevolverReserve}");
         if (player.ShotgunOwned) {
             float sx = x;
             DrawIcon(Icon(shotgunIcon, a => a.shotgunIcon), ref x, y, size, player.UsingShotgun);
-            GUI.Label(new Rect(sx + size - 10f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.ShotgunShells}");
+            ShadowLabel(new Rect(sx + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.ShotgunShells}");
         }
         if (player.Grenades > 0) {
             Color old = GUI.color;
@@ -61,7 +66,7 @@ public class CombatHud : MonoBehaviour {
             float gx = x;
             DrawIcon(Icon(grenadeIcon, a => a.grenadeIcon), ref x, y, size);
             GUI.color = old;
-            GUI.Label(new Rect(gx + size - 10f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.Grenades}");
+            ShadowLabel(new Rect(gx + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.Grenades}");
             if (player.ChargingGrenade) {
                 // power bar while G is held
                 DrawMeter(new Rect(gx, y + size + 2f, size, 6f * scale), player.GrenadeCharge, Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge));
@@ -71,23 +76,47 @@ public class CombatHud : MonoBehaviour {
 
     // run and dash readiness, so a key that does nothing shows why
     private void DrawCooldowns(float x, float y, float scale) {
-        if (labelStyle == null) {
-            labelStyle = new GUIStyle(GUI.skin.label);
-        }
-        labelStyle.fontSize = Mathf.Max(10, Mathf.RoundToInt(18f * scale));
-        float width = 110f * scale;
+        float width = 150f * scale;
+        float gap = 36f * scale;
+        float height = 50f * scale;
+        DrawLabeledMeter(new Rect(x, y, width, height), $"Pulo ({Key(GameAction.Jump)})", player.JumpReady ? 1f : 0f,
+            player.JumpReady ? ReadyColor : ChargingColor, scale);
+        x += width + gap;
         float run = player.RunMeter;
-        DrawLabeledMeter(new Rect(x, y, width, 34f * scale), player.IsRunning ? "Corrida" : "Corrida (Shift)", run,
+        DrawLabeledMeter(new Rect(x, y, width, height), $"Corrida ({Key(GameAction.Run)})", run,
             player.IsRunning ? ActiveColor : run >= 1f ? ReadyColor : ChargingColor, scale);
         if (dash) {
-            DrawLabeledMeter(new Rect(x + width + 12f * scale, y, width, 34f * scale), "Dash (C)", dash.Readiness,
+            x += width + gap;
+            DrawLabeledMeter(new Rect(x, y, width, height), $"Dash ({Key(GameAction.Dash)})", dash.Readiness,
                 dash.Readiness >= 1f ? ReadyColor : ChargingColor, scale);
         }
     }
 
+    // the key bound in Settings > Controls, short ("Ctrl", not "Ctrl esq.")
+    private static string Key(GameAction action) {
+        return InputBindings.KeyName(InputBindings.Keyboard(action)).Replace(" esq.", "").Replace(" dir.", "");
+    }
+
     private void DrawLabeledMeter(Rect rect, string label, float fill, Color color, float scale) {
-        GUI.Label(new Rect(rect.x, rect.y, rect.width, rect.height - 8f * scale), label, labelStyle);
-        DrawMeter(new Rect(rect.x, rect.yMax - 8f * scale, rect.width, 8f * scale), fill, color);
+        // label on top, a clear gap, then the bar
+        ShadowLabel(new Rect(rect.x, rect.y, rect.width + 40f * scale, rect.height - 18f * scale), label);
+        DrawMeter(new Rect(rect.x, rect.yMax - 10f * scale, rect.width, 10f * scale), fill, color);
+    }
+
+    // white text with a dark outline, readable over the cave background
+    private void ShadowLabel(Rect rect, string text) {
+        Color old = GUI.color;
+        Color oldText = labelStyle.normal.textColor;
+        labelStyle.normal.textColor = Color.black;
+        float o = Mathf.Max(1f, Screen.width / 960f);
+        GUI.Label(new Rect(rect.x - o, rect.y, rect.width, rect.height), text, labelStyle);
+        GUI.Label(new Rect(rect.x + o, rect.y, rect.width, rect.height), text, labelStyle);
+        GUI.Label(new Rect(rect.x, rect.y - o, rect.width, rect.height), text, labelStyle);
+        GUI.Label(new Rect(rect.x, rect.y + o, rect.width, rect.height), text, labelStyle);
+        labelStyle.normal.textColor = Color.white;
+        GUI.Label(rect, text, labelStyle);
+        labelStyle.normal.textColor = oldText;
+        GUI.color = old;
     }
 
     // one dot per bullet left in the revolver; while reloading, the dots fill back up as a bar

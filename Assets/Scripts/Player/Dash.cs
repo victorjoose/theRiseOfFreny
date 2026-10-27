@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Dash (C): a fixed-speed burst in the facing direction. Owns the horizontal velocity while it
+// Dash (Ctrl): a fixed-speed burst in the facing direction. Owns the horizontal velocity while it
 // lasts (Player.FixedUpdate leaves it alone), then hands it back. Added to the arena Player by
 // ArenaBootstrap.
 public class Dash : MonoBehaviour {

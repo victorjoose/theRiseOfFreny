@@ -48,7 +48,7 @@ public static class InputBindings {
             case GameAction.Jump: return KeyCode.Space;
             case GameAction.Melee: return KeyCode.Mouse0;
             case GameAction.Ranged: return KeyCode.R;
-            case GameAction.Dash: return KeyCode.C;
+            case GameAction.Dash: return KeyCode.LeftControl;
             case GameAction.Run: return KeyCode.LeftShift;
             case GameAction.Grenade: return KeyCode.G;
             case GameAction.Potion: return KeyCode.Q;
