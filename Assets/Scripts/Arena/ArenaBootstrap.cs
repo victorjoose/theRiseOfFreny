@@ -20,13 +20,9 @@ public static class ArenaBootstrap {
         SetUp(scene);
     }
 
-    private static bool collisionSaved;
-    private static bool heroEnemyIgnoredByDefault;
-
     private static void SetUp(Scene scene) {
         if (scene.name != ArenaSceneName) {
             ArenaBounds.Disable();
-            IgnoreHeroEnemyCollision(false);
             return;
         }
         ArenaBounds.Enable(Camera.main); // the screen is the whole arena
@@ -38,9 +34,8 @@ public static class ArenaBootstrap {
                 area.gameObject.SetActive(false);
             }
         }
-        // enemies are kinematic bodies: colliding with them would shove Freny around, so in the arena
-        // she walks through them and the fight happens with the sword and the guns
-        IgnoreHeroEnemyCollision(true);
+        // (enemies are kinematic bodies and would shove Freny: each one ignores her collider in
+        // Enemy.Init while the arena is active, so she walks through them)
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {
@@ -59,20 +54,5 @@ public static class ArenaBootstrap {
     private static T GetOrAdd<T>(GameObject obj) where T : Component {
         T component = obj.GetComponent<T>();
         return component ? component : obj.AddComponent<T>();
-    }
-
-    // Physics2D settings outlive the scene, so the project's own value is kept and put back
-    // whenever a non-arena scene loads
-    private static void IgnoreHeroEnemyCollision(bool ignore) {
-        int hero = LayerMask.NameToLayer("Good Guy");
-        int enemy = LayerMask.NameToLayer("Enemy");
-        if (hero < 0 || enemy < 0) {
-            return;
-        }
-        if (!collisionSaved) {
-            heroEnemyIgnoredByDefault = Physics2D.GetIgnoreLayerCollision(hero, enemy);
-            collisionSaved = true;
-        }
-        Physics2D.IgnoreLayerCollision(hero, enemy, ignore || heroEnemyIgnoredByDefault);
     }
 }

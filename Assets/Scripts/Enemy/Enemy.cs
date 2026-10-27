@@ -118,6 +118,16 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             rb.SetVel(Vector2.zero);
         }
         playerCol = player ? player.GetComponent<Collider2D>() : null;
+        if (ArenaBounds.Active && playerCol != null) {
+            // arena only: a kinematic body would shove Freny around, so she walks through enemies and
+            // the fight happens with the sword and the guns. Per instance: the project's layer matrix
+            // (which Play mode edits would save) is never touched
+            foreach (Collider2D c in GetComponentsInChildren<Collider2D>(true)) {
+                if (!c.isTrigger) {
+                    Physics2D.IgnoreCollision(playerCol, c, true);
+                }
+            }
+        }
         Health = health; // the inspector value
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
         hasMovingParam = anim && HasParameter(anim, "Moving");

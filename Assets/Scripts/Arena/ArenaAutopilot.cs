@@ -65,6 +65,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private ArenaMap.Step route;
     private float phaseStart;
     private int attempts;
+    private float walkBestDx;               // closest she has been to the stand spot (the walk is stuck when it stops shrinking)
+    private Transform routeLoot;            // the coin/chest this route is for (null: it is for the enemy)
+    private readonly Dictionary<Transform, float> lootUnreachableUntil = new Dictionary<Transform, float>();
 
     public string CurrentAction { get; private set; } = "";  // enemies, target and what she is doing (logged to the console)
     private string action = "";
@@ -112,6 +115,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             plan = Decide();
             if (!wantsRoute) {
                 phase = Phase.None; // the decision went another way: the route is dropped
+                routeLoot = null;
             }
             CheckStuck();
             Announce();
@@ -312,7 +316,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         // 7. go to the target: walk when it stands on her platform (or flies at her height), else hop
         // towards its platform over the map
         ArenaMap.Platform targetPlatform = PlatformOf(target);
-        bool walkable = targetPlatform == null ? sameFloor : targetPlatform == myPlatform;
+        bool flying = targetPlatform == null;
+        bool atBodyHeight = Mathf.Abs(target.Center.y - (me.y + 0.5f)) <= verticalTolerance;
+        bool walkable = flying ? atBodyHeight : targetPlatform == myPlatform;
         if (walkable) {
             bool dashIn = Mathf.Abs(dx) > dashCloseDistance && player.AttackReady && striker == null && player.IsGrounded && dash && dash.CanDash;
             if (dashIn) {
@@ -331,7 +337,13 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             return frame;
         }
 
-        if (targetPlatform != null && RequestRoute(myPlatform, targetPlatform, me.x)) {
+        if (flying) {
+            // a bat above or below her comes down by itself: no route, and never "unreachable"
+            action = "Esperando o inimigo voador";
+            return frame;
+        }
+        routeLoot = null;
+        if (RequestRoute(myPlatform, targetPlatform, me.x)) {
             return frame; // the hop drives the frame
         }
 
@@ -390,21 +402,30 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         phase = next;
         phaseStart = Time.time;
         lastProgressTime = Time.time;
+        if (next == Phase.Walk) {
+            walkBestDx = float.MaxValue;
+        }
     }
 
     private void FinishRoute(string how) {
         Debug.Log($"[Autopiloto {Time.time:0.0}s] {how} em {route.to}");
         phase = Phase.None;
+        routeLoot = null;
         plan = default;
         nextDecisionTime = Time.time; // think again right away
     }
 
+    // the thing the route was for is forgotten for a while: the loot when she was after loot,
+    // else the enemy (before, a failed coin route blamed an enemy standing right next to her)
     private void FailRoute(string why) {
         Debug.Log($"[Autopiloto {Time.time:0.0}s] Rota abandonada ({why}): {route}");
-        if (currentTarget != null) {
+        if (routeLoot != null) {
+            lootUnreachableUntil[routeLoot] = Time.time + unreachableMemory;
+        } else if (currentTarget != null) {
             unreachableUntil[currentTarget] = Time.time + unreachableMemory;
+            currentTarget = null;
         }
-        currentTarget = null;
+        routeLoot = null;
         phase = Phase.None;
         plan = default;
         nextDecisionTime = Time.time;
@@ -443,7 +464,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                         action = $"Caindo para {route.to}";
                     }
                 }
-                if (elapsed > maneuverTimeout * 2f) {
+                // stuck only when she stops getting closer to the spot (a far edge takes longer than any fixed time)
+                float remaining = Mathf.Abs(route.x - x);
+                if (remaining < walkBestDx - 0.25f) {
+                    walkBestDx = remaining;
+                    phaseStart = Time.time;
+                    elapsed = 0f;
+                }
+                if (elapsed > maneuverTimeout) {
                     FailRoute("não chegou à beirada");
                 }
                 break;
@@ -478,7 +506,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 action = $"Entrando em {route.to}";
                 // the feet circle touches the top a little before she rests on it, so landing also
                 // means the body stopped falling (else she could turn and walk off the edge in mid-air)
-                bool resting = grounded && Mathf.Abs(player.VerticalSpeed) < 0.5f;
+                bool resting = grounded && Mathf.Abs(player.VerticalSpeed) < 0.5f && feet <= route.to.y + 0.1f;
                 ArenaMap.Platform landed = resting ? map.PlatformUnder(new Vector2(x, feet + 0.1f), 0.5f) : null;
                 if (landed != null && elapsed > 0.1f) {
                     if (landed == route.to) {
@@ -524,14 +552,15 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private bool GoToPickup(ref PlayerInputFrame frame, Vector2 me, float myFeet, ArenaMap.Platform myPlatform, float range) {
         Vector2 best = Vector2.zero;
+        Transform bestItem = null;
         ArenaMap.Platform bestPlatform = null;
         float bestDist = float.MaxValue;
         string what = "";
         foreach (Coin coin in Coin.Active) {
-            Consider(coin ? coin.transform : null, me, myPlatform, range, ref best, ref bestPlatform, ref bestDist, ref what, "a moeda");
+            Consider(coin ? coin.transform : null, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, "a moeda");
         }
         foreach (ArenaChest chest in ArenaChest.Active) {
-            Consider(chest ? chest.transform : null, me, myPlatform, range, ref best, ref bestPlatform, ref bestDist, ref what, "o baú");
+            Consider(chest ? chest.transform : null, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, "o baú");
         }
         if (bestDist == float.MaxValue) {
             return false;
@@ -540,6 +569,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float dx = best.x - me.x;
 
         if (bestPlatform != myPlatform) {
+            routeLoot = bestItem;
             if (RequestRoute(myPlatform, bestPlatform, me.x)) {
                 action = "Pegando " + what + ": " + action;
                 return true;
@@ -611,10 +641,13 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         return status + " · " + action;
     }
 
-    private void Consider(Transform item, Vector2 me, ArenaMap.Platform myPlatform, float range, ref Vector2 best,
+    private void Consider(Transform item, Vector2 me, ArenaMap.Platform myPlatform, float range, ref Vector2 best, ref Transform bestItem,
                           ref ArenaMap.Platform bestPlatform, ref float bestDist, ref string what, string name) {
         if (item == null) {
             return;
+        }
+        if (lootUnreachableUntil.TryGetValue(item, out float until) && Time.time < until) {
+            return; // a route to it failed a moment ago
         }
         Vector2 pos = item.position;
         ArenaMap.Platform platform = map.PlatformUnder(pos, 3f);
@@ -629,6 +662,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (dist <= range && dist < bestDist) {
             bestDist = dist;
             best = pos;
+            bestItem = item;
             bestPlatform = platform;
             what = name;
         }
