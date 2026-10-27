@@ -36,13 +36,13 @@ public class CombatHud : MonoBehaviour {
         if (labelStyle == null) {
             labelStyle = new GUIStyle(GUI.skin.label);
         }
-        labelStyle.fontSize = Mathf.Max(10, Mathf.RoundToInt(18f * scale));
+        labelStyle.fontSize = Mathf.Max(11, Mathf.RoundToInt(20f * scale));
         float size = 56f * scale;
         float x = 60f * scale;
         float y = 175f * scale;
         DrawWeapons(x, y, size, scale);
         // well below the icons: the sword bar, the bullet dots and the ammo counts sit right under them
-        DrawCooldowns(60f * scale, y + size + 44f * scale, scale);
+        DrawCooldowns(60f * scale, y + size + 70f * scale, scale);
     }
 
     private void DrawWeapons(float x, float y, float size, float scale) {
@@ -76,19 +76,31 @@ public class CombatHud : MonoBehaviour {
 
     // run and dash readiness, so a key that does nothing shows why
     private void DrawCooldowns(float x, float y, float scale) {
-        float width = 110f * scale;
+        float width = 150f * scale;
+        float gap = 36f * scale;
+        float height = 50f * scale;
+        DrawLabeledMeter(new Rect(x, y, width, height), $"Pulo ({Key(GameAction.Jump)})", player.JumpReady ? 1f : 0f,
+            player.JumpReady ? ReadyColor : ChargingColor, scale);
+        x += width + gap;
         float run = player.RunMeter;
-        DrawLabeledMeter(new Rect(x, y, width, 40f * scale), player.IsRunning ? "Corrida" : "Corrida (Shift)", run,
+        DrawLabeledMeter(new Rect(x, y, width, height), $"Corrida ({Key(GameAction.Run)})", run,
             player.IsRunning ? ActiveColor : run >= 1f ? ReadyColor : ChargingColor, scale);
         if (dash) {
-            DrawLabeledMeter(new Rect(x + width + 50f * scale, y, width, 40f * scale), "Dash (C)", dash.Readiness,
+            x += width + gap;
+            DrawLabeledMeter(new Rect(x, y, width, height), $"Dash ({Key(GameAction.Dash)})", dash.Readiness,
                 dash.Readiness >= 1f ? ReadyColor : ChargingColor, scale);
         }
     }
 
+    // the key bound in Settings > Controls, short ("Ctrl", not "Ctrl esq.")
+    private static string Key(GameAction action) {
+        return InputBindings.KeyName(InputBindings.Keyboard(action)).Replace(" esq.", "").Replace(" dir.", "");
+    }
+
     private void DrawLabeledMeter(Rect rect, string label, float fill, Color color, float scale) {
-        ShadowLabel(new Rect(rect.x, rect.y, rect.width + 40f * scale, rect.height - 10f * scale), label);
-        DrawMeter(new Rect(rect.x, rect.yMax - 8f * scale, rect.width, 8f * scale), fill, color);
+        // label on top, a clear gap, then the bar
+        ShadowLabel(new Rect(rect.x, rect.y, rect.width + 40f * scale, rect.height - 18f * scale), label);
+        DrawMeter(new Rect(rect.x, rect.yMax - 10f * scale, rect.width, 10f * scale), fill, color);
     }
 
     // white text with a dark outline, readable over the cave background

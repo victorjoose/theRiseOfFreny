@@ -105,6 +105,8 @@ public class Player : MonoBehaviour, IDamageable {
     public bool IsStunned => stunned;
     public bool IsInvulnerable => Time.time < invulnerableUntil;
     public bool CanAirJump => !isGrounded && airJumpsLeft > 0;
+    // the HUD's jump meter: on the ground (or just off an edge), or with the double jump still left
+    public bool JumpReady => isGrounded || Time.time - lastGroundedTime <= coyoteTime || CanAirJump;
     public bool AttackReady => Time.time >= attackReadyAt;
     public bool FacingRight => transform.localScale.x > 0;
     public bool RunReady => !IsRunning && Time.time >= runReadyAt;
