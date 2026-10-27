@@ -21,8 +21,19 @@ public class MainMenu : MonoBehaviour {
             }
         }
 
+        // the scene's title art sits where the menu goes: smaller and higher, menu below it
+        foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects()) {
+            foreach (RectTransform child in root.GetComponentsInChildren<RectTransform>(true)) {
+                if (child.name == "Title") {
+                    child.localScale = Vector3.one * 0.62f;
+                    child.anchoredPosition = new Vector2(child.anchoredPosition.x, 340f);
+                }
+            }
+        }
+
         Canvas canvas = MenuKit.CreateCanvas("Main Menu", 10, transform);
         stack = canvas.gameObject.AddComponent<MenuStack>();
+        stack.ShadeSubPages = true;
         stack.OnRootCancel = () => { };
         stack.ResetTo(MainPage());
     }
@@ -59,11 +70,16 @@ public class MainMenu : MonoBehaviour {
     }
 
     private MenuPage MainPage() {
-        MenuPage page = new MenuPage(stack.transform, "", 460f, new Vector2(1f, 0.5f));
+        MenuPage page = new MenuPage(stack.transform, "", 440f, new Vector2(0.5f, 0.5f), 6f);
+        // under the title, on the right half of the art (title centre: x = 0.716 of the screen)
+        page.Panel.anchorMin = page.Panel.anchorMax = new Vector2(0.716f, 0f);
+        page.Panel.pivot = new Vector2(0.5f, 0f);
+        page.Panel.anchoredPosition = new Vector2(0f, 24f);
+        page.Panel.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(22, 22, 16, 16);
         SaveData save = SaveSystem.Current;
 
         if (save.HasProgress) {
-            page.BigButton("Continuar", "Espaço " + (SaveSystem.ActiveSlot + 1) + ": " + save.Summary, GameMenus.Continue);
+            page.BigButton("Continuar", save.ShortSummary, GameMenus.Continue);
         } else {
             page.Button("Começar", () => GameMenus.StartStage(CampaignLevels.All[0].id));
         }

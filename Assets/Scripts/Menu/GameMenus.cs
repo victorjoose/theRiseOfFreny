@@ -37,7 +37,7 @@ public class GameMenus : MonoBehaviour {
 
     public static bool IsGameplayScene(string scene) {
         return CampaignLevels.IsStage(scene) || scene == ArenaScene ||
-               (scene != MainMenuScene && !scene.StartsWith("UI - ") && FindObjectOfType<Player>() != null);
+               (scene != MainMenuScene && !scene.StartsWith("UI - ") && FindFirstObjectByType<Player>() != null);
     }
 
     // where "Main menu" goes; false while the menu scene is not in the build
@@ -167,7 +167,7 @@ public class GameMenus : MonoBehaviour {
         InputBindings.BlockGameplay(true);
 
         if (pauseCanvas == null) {
-            pauseCanvas = MenuKit.CreateCanvas("Pause Menu", 100, transform);
+            pauseCanvas = MenuKit.CreateCanvas("Pause Menu", 30000, transform);
             Image shade = MenuKit.MakeImage("Shade", pauseCanvas.transform, MenuKit.ShadeColor);
             MenuKit.Stretch(shade.rectTransform);
             pauseStack = pauseCanvas.gameObject.AddComponent<MenuStack>();
@@ -234,7 +234,7 @@ public class GameMenus : MonoBehaviour {
             return;
         }
         if (touchCanvas == null) {
-            touchCanvas = MenuKit.CreateCanvas("Touch Pause", 90, transform);
+            touchCanvas = MenuKit.CreateCanvas("Touch Pause", 29000, transform);
             Button button = MenuKit.MakeButton(touchCanvas.transform, "II", Pause, MenuKit.TitleSize);
             RectTransform rect = (RectTransform)button.transform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 1f);

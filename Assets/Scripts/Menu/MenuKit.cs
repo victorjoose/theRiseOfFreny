@@ -56,7 +56,7 @@ public static class MenuKit {
 
     // the scene's own EventSystem when it has one, otherwise a new one that dies with the scene
     public static void EnsureEventSystem() {
-        if (EventSystem.current != null || UnityEngine.Object.FindObjectOfType<EventSystem>() != null) {
+        if (EventSystem.current != null || UnityEngine.Object.FindFirstObjectByType<EventSystem>() != null) {
             return;
         }
         new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));

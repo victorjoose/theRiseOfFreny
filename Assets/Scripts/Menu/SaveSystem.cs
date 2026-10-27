@@ -41,15 +41,17 @@ public class SaveData {
     }
 
     // "1-4 · Nv 3 · 250 moedas · 12 min"
-    public string Summary {
+    public string Summary => ShortSummary + (HasProgress ? $" · {Mathf.FloorToInt(playSeconds / 60f)} min" : "");
+
+    // "1-4 · Nv 3 · 250 moedas"
+    public string ShortSummary {
         get {
             if (!HasProgress) {
                 return "vazio";
             }
             string where = string.IsNullOrEmpty(lastScene) ? CampaignLevels.All[Mathf.Clamp(campaignUnlocked, 0, CampaignLevels.All.Count - 1)].id
                 : CampaignLevels.IsStage(lastScene) ? lastScene : "Arena";
-            int minutes = Mathf.FloorToInt(playSeconds / 60f);
-            return $"{where} · Nv {Level} · {coins} moedas · {minutes} min";
+            return $"{where} · Nv {Level} · {coins} moedas";
         }
     }
 }

@@ -124,6 +124,7 @@ public class MenuStack : MonoBehaviour {
     public Action OnRootCancel;
     public Func<bool> ExtraCancel;   // e.g. the pause button also closes the pause menu
     public bool Busy;                // waiting for a key to rebind: no navigation, no cancel
+    public bool ShadeSubPages;       // darken the scene behind every page but the first
 
     private readonly List<MenuPage> pages = new List<MenuPage>();
     private int shownFrame = -1;
@@ -137,6 +138,11 @@ public class MenuStack : MonoBehaviour {
             Top.Visible = false;
         }
         page.Finish();
+        if (ShadeSubPages && pages.Count > 0) {
+            Image shade = MenuKit.MakeImage("Shade", page.Root, MenuKit.ShadeColor);
+            MenuKit.Stretch(shade.rectTransform);
+            shade.transform.SetAsFirstSibling();
+        }
         pages.Add(page);
         Show(page, page.First ? page.First.gameObject : null);
     }

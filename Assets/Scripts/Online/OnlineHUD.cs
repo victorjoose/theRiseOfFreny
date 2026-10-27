@@ -83,7 +83,9 @@ namespace Online {
         }
 
         private void OnGUI() {
-            if (InCampaign) return;
+            if (InCampaign || GameMenus.Paused) return;
+            // the main menu has its own "Online" button; draw only the open panel there
+            if (!_open && SceneManager.GetActiveScene().name == GameMenus.MainMenuScene) return;
             float scale = Screen.height / ReferenceHeight;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float width = Screen.width / scale;
