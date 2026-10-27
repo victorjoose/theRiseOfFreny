@@ -1,8 +1,8 @@
 using UnityEngine;
 
-// Dash (Ctrl): a fixed-speed burst in the facing direction. Owns the horizontal velocity while it
-// lasts (Player.FixedUpdate leaves it alone), then hands it back. Added to the arena Player by
-// ArenaBootstrap.
+// Dash (Shift or Ctrl, in the air only): a flat, fixed-speed burst in the facing direction, once per
+// jump. Owns the velocity while it lasts (Player.FixedUpdate leaves the horizontal speed alone), then
+// hands it back. On the ground Shift is the sprint instead. Added by ArenaBootstrap and CampaignBootstrap.
 public class Dash : MonoBehaviour {
 
     public float dashVelocity = 12f;   // units/s, constant for the whole dash
@@ -16,9 +16,10 @@ public class Dash : MonoBehaviour {
     private int direction;             // 0 = not dashing, otherwise -1 or 1
     private float dashUntil;
     private float nextDashTime;
+    private bool usedInAir;            // one dash per jump; landing gives it back
 
     public bool IsDashing => direction != 0;
-    public bool CanDash => direction == 0 && Time.time >= nextDashTime;
+    public bool CanDash => direction == 0 && Time.time >= nextDashTime && !usedInAir && player && player.IsAirborne;
     // 1 = ready, 0 = just dashed (for the HUD)
     public float Readiness => 1f - Mathf.Clamp01((nextDashTime - Time.time) / (startDashTime + dashCooldown));
 
@@ -38,6 +39,10 @@ public class Dash : MonoBehaviour {
             input = GetComponent<FrenyInput>();
         }
 
+        if (player.IsGrounded && !player.IsAirborne) {
+            usedInAir = false;
+        }
+
         if (IsDashing) {
             if (Time.time >= dashUntil) {
                 Stop();
@@ -53,12 +58,14 @@ public class Dash : MonoBehaviour {
     private void FixedUpdate() {
         // rb is destroyed when the player dies
         if (IsDashing && rb) {
-            rb.SetVel(new Vector2(direction * dashVelocity, rb.Vel().y));
+            // flat: the fall waits until the dash is over
+            rb.SetVel(new Vector2(direction * dashVelocity, 0f));
         }
     }
 
     private void Begin() {
         direction = player.FacingRight ? 1 : -1;
+        usedInAir = true;
         dashUntil = Time.time + startDashTime;
         nextDashTime = dashUntil + dashCooldown;
         if (playerAnim) {

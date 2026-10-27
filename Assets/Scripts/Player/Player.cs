@@ -22,10 +22,17 @@ public class Player : MonoBehaviour, IDamageable {
     private float _speed = 3.0f;
     private float jumpHeight = 2.6f;      // units; arena platforms are 2 apart
     private float gravityScale = 3f;      // heavier than Unity's default: a snappy jump
-    private float fallMultiplier = 2.0f;  // extra gravity on the way down (the arena value, playtested)
+    private float fallMultiplier = 1.6f;  // extra gravity on the way down (2 fell so fast the camera lost her)
+    private float maxFallSpeed = 12f;     // units/s: about the jump's take-off speed, so the camera keeps up
     private float checkRadius = 0.4f;     // ground check circle at feetPos
     private float coyoteTime = 0.1f;      // may still jump this long after walking off an edge
     private float jumpBuffer = 0.12f;     // a jump pressed this long before landing still happens
+
+    // fall damage: a drop longer than this (from the highest point of the fall) costs a heart,
+    // and one more for every FallDamageStep beyond it
+    public const float SafeFallHeight = 7f;
+    private const float FallDamageStep = 5f;
+    private const int FallDamageMax = 3;
 
     // sprint (Shift)
     private float runMultiplier = 1.6f;
@@ -75,6 +82,7 @@ public class Player : MonoBehaviour, IDamageable {
     private bool isDead;
     private int airJumpsLeft;          // double jump upgrade
     private float lastGroundedTime = -10f;
+    private float fallPeakY;            // the highest point since she last stood on the ground
     private float jumpPressedTime = -10f;
     private float jumpStartTime = -10f;
     private float attackReadyAt;
@@ -116,6 +124,8 @@ public class Player : MonoBehaviour, IDamageable {
 
     // ---- read by the autopilot and the HUD, so they decide with the same information a person sees
     public bool IsGrounded => isGrounded;
+    // off the ground, or just jumped (the feet circle still touches the floor for a moment)
+    public bool IsAirborne => !isGrounded || isJumping;
     public bool IsDead => isDead;
     public bool IsStunned => stunned;
     public bool IsInvulnerable => Time.time < invulnerableUntil;
@@ -280,6 +290,7 @@ public class Player : MonoBehaviour, IDamageable {
         // fixed-height jump with a quick fall: holding the button doesn't change the height
         if (velocity.y < 0f) {
             velocity.y += Physics2D.gravity.y * gravityScale * (fallMultiplier - 1f) * Time.fixedDeltaTime;
+            velocity.y = Mathf.Max(velocity.y, -maxFallSpeed);
         }
 
         rg2d.SetVel(velocity);
@@ -331,14 +342,32 @@ public class Player : MonoBehaviour, IDamageable {
             if (!wasGrounded && !justTookOff) {
                 Fx.Dust(Feet, 5); // landed
                 Sfx.Play("freny_land", Feet);
+                FallDamage(fallPeakY - transform.position.y);
             }
+            fallPeakY = transform.position.y;
             if (!justTookOff) {
                 isJumping = false;
             }
             airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
             lastGroundedTime = Time.time;
+        } else {
+            fallPeakY = Mathf.Max(fallPeakY, transform.position.y);
         }
         wasGrounded = isGrounded;
+    }
+
+    private void FallDamage(float drop) {
+        if (drop <= SafeFallHeight) {
+            return;
+        }
+        int hearts = Mathf.Min(FallDamageMax, 1 + Mathf.FloorToInt((drop - SafeFallHeight) / FallDamageStep));
+        Fx.Dust(Feet, 12);
+        TryDamage(hearts);
+    }
+
+    // after a teleport (pit, checkpoint): the fall starts again from here
+    public void ResetFall() {
+        fallPeakY = transform.position.y;
     }
 
     // true while she is still down
@@ -385,7 +414,8 @@ public class Player : MonoBehaviour, IDamageable {
             if (!wantsRun || Time.time >= runUntil) {
                 EndRun();
             }
-        } else if (wantsRun && RunReady) {
+        } else if (wantsRun && RunReady && isGrounded) {
+            // in the air the same key is the dash (see Dash)
             IsRunning = true;
             runUntil = Time.time + runDuration;
             Fx.Dust(Feet, 4);

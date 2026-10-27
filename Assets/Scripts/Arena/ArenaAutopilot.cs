@@ -328,7 +328,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         bool atBodyHeight = Mathf.Abs(target.Center.y - (me.y + 0.5f)) <= verticalTolerance;
         bool walkable = flying ? atBodyHeight : targetPlatform == myPlatform;
         if (walkable) {
-            bool dashIn = Mathf.Abs(dx) > dashCloseDistance && player.AttackReady && striker == null && player.IsGrounded && dash && dash.CanDash;
+            bool dashIn = Mathf.Abs(dx) > dashCloseDistance && player.AttackReady && striker == null && dash && dash.CanDash; // CanDash: only in the air
             if (dashIn) {
                 if (!facingTarget) {
                     Turn(ref frame, towardTarget);

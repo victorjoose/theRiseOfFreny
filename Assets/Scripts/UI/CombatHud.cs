@@ -93,7 +93,7 @@ public class CombatHud : MonoBehaviour {
         float width = 170f * scale;
         float height = 48f * scale;
         float step = height + 10f * scale;
-        DrawLabeledMeter(new Rect(x, y, width, height), $"Pulo ({Key(GameAction.Jump)})", player.JumpReady ? 1f : 0f,
+        DrawLabeledMeter(new Rect(x, y, width, height), $"{(FrenyProgress.HasDoubleJump ? "Pulo duplo" : "Pulo")} ({Key(GameAction.Jump)})", player.JumpReady ? 1f : 0f,
             player.JumpReady ? ReadyColor : ChargingColor, scale);
         y += step;
         float run = player.RunMeter;
@@ -101,7 +101,7 @@ public class CombatHud : MonoBehaviour {
             player.IsRunning ? ActiveColor : run >= 1f ? ReadyColor : ChargingColor, scale);
         if (dash) {
             y += step;
-            DrawLabeledMeter(new Rect(x, y, width, height), $"Dash ({Key(GameAction.Dash)})", dash.Readiness,
+            DrawLabeledMeter(new Rect(x, y, width, height), $"Dash no ar ({Key(GameAction.Run)})", dash.Readiness,
                 dash.Readiness >= 1f ? ReadyColor : ChargingColor, scale);
         }
         // kills fill it; full, it drains over the 20 s of Rage
