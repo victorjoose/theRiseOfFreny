@@ -23,6 +23,8 @@ namespace Online {
         public FirestoreClient Db => _db;   // for CloudProgressSync (save slots)
         public PlayerSave Save { get; private set; }
         public List<LeaderboardEntry> Top { get; private set; } = new List<LeaderboardEntry>();
+        // the autopilot drove at some point of this run: it won't count for the leaderboard
+        public bool RunAssisted => _assisted;
 
         // score, isNewBest, assisted (the arena autopilot played part of the run)
         public event Action<long, bool, bool> RunReported;

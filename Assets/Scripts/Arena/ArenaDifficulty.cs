@@ -8,11 +8,22 @@ public enum ArenaLevel { Easy, Medium, Hard, Freny }
 public static class ArenaDifficulty {
 
     private const string Key = "freny.arena.difficulty";
+    private const string ManualKey = "freny.arena.manual";
 
     public static ArenaLevel Current {
         get => (ArenaLevel)Mathf.Clamp(PlayerPrefs.GetInt(Key, (int)ArenaLevel.Medium), 0, 3);
         set {
             PlayerPrefs.SetInt(Key, (int)value);
+            PlayerPrefs.Save();
+        }
+    }
+
+    // picked with the difficulty: Manual starts the run with Auto off, Automático with it on.
+    // Only a run played by hand from start to end counts for the ranking (OnlineServices).
+    public static bool Manual {
+        get => PlayerPrefs.GetInt(ManualKey, 0) == 1;
+        set {
+            PlayerPrefs.SetInt(ManualKey, value ? 1 : 0);
             PlayerPrefs.Save();
         }
     }

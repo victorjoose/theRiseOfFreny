@@ -67,6 +67,11 @@ public class ArenaHud : MonoBehaviour {
             who = "Você no controle";
         }
         GUILayout.Label(who);
+        Online.OnlineServices online = Online.OnlineServices.Instance;
+        if (online != null && online.State != Online.OnlineServices.Status.Disabled && !(run && run.RunOver)) {
+            GUILayout.Label(online.RunAssisted ? "Esta corrida não vale para o ranking (o Auto jogou)"
+                                               : "Corrida manual: vale para o ranking");
+        }
 
         if (GUILayout.Button(input.AutoEnabled ? "Auto: LIGADO (T)" : "Auto: DESLIGADO (T)")) {
             input.ToggleAuto();
