@@ -17,6 +17,8 @@ public class LadderClimber : MonoBehaviour {
     private Collider2D bodyCollider;
     private Ladder ladder;
     private float savedGravity;
+    private Animator animator;
+    private bool hasClimbingParam;
     private float vertical;
     private float horizontal;
 
@@ -48,9 +50,10 @@ public class LadderClimber : MonoBehaviour {
             body.SetVel(new Vector2(horizontal * 3f, jumpOffSpeed)); // jumps off the rungs
         } else if (here != ladder) {
             bool overTheTop = vertical > 0.5f && Middle().y > ladder.Area.max.y - 0.1f;
+            Ladder from = ladder;
             Release();
             if (overTheTop) {
-                body.SetVel(new Vector2(horizontal * sideSpeed, topHopSpeed)); // a step up onto the floor above
+                StepOntoTop(from);
             }
         } else if (player.IsStunned) {
             Release();
@@ -67,8 +70,24 @@ public class LadderClimber : MonoBehaviour {
         body.SetVel(new Vector2(horizontal * sideSpeed, vertical * climbSpeed));
     }
 
+    // at the top: stand on the floor the ladder leads to (a hop was not enough to clear its edge,
+    // she fell back onto the rungs); with no floor there, a small hop
+    private void StepOntoTop(Ladder from) {
+        float top = from.Area.max.y - 0.5f; // the top of the last rung cell
+        int ground = LayerMask.GetMask("Ground");
+        RaycastHit2D hit = Physics2D.Raycast(new Vector2(body.position.x, top + 1.5f), Vector2.down, 2.3f, ground);
+        if (hit.collider != null && bodyCollider != null && hit.point.y > top - 0.6f) {
+            float feetBelowRoot = body.position.y - bodyCollider.bounds.min.y;
+            body.position = new Vector2(body.position.x, hit.point.y + feetBelowRoot + 0.02f);
+            body.SetVel(new Vector2(horizontal * sideSpeed, 0f));
+            return;
+        }
+        body.SetVel(new Vector2(horizontal * sideSpeed, topHopSpeed));
+    }
+
     private void Grab(Ladder target) {
         ladder = target;
+        SetClimbing(true);
         savedGravity = body.gravityScale;
         body.gravityScale = 0f;
         body.SetVel(Vector2.zero);
@@ -79,8 +98,26 @@ public class LadderClimber : MonoBehaviour {
             return;
         }
         ladder = null;
+        SetClimbing(false);
         if (body != null) {
             body.gravityScale = savedGravity;
+        }
+    }
+
+    // the Animator's "Climbing" parameter (its Climb state), when the controller has one
+    private void SetClimbing(bool climbing) {
+        if (animator == null) {
+            animator = GetComponentInChildren<Animator>();
+            if (animator != null) {
+                foreach (AnimatorControllerParameter parameter in animator.parameters) {
+                    if (parameter.name == "Climbing" && parameter.type == AnimatorControllerParameterType.Bool) {
+                        hasClimbingParam = true;
+                    }
+                }
+            }
+        }
+        if (animator != null && hasClimbingParam) {
+            animator.SetBool("Climbing", climbing);
         }
     }
 

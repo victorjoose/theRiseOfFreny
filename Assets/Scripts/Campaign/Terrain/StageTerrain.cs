@@ -8,6 +8,7 @@ using UnityEngine.Tilemaps;
 //   thin ledges (Tileset_83..87)     one-way platforms: solid from above, jump through from below
 //   spikes (Tileset_17, 18, 27, 28, 40..43)   not solid; they hurt Freny and the enemies (Hazard)
 //   ladders (Tileset_90..94)         climbed with up and down (Ladder, LadderClimber)
+//   acid and water (the Liquids sheet)   not solid; Liquid pools (LiquidSwimmer on Freny)
 //   props on a solid tilemap (vases, chains, webs, arches, statues, banners...)   no collider
 // Before, every tile on a tilemap with a collider was solid, so Freny bumped her head on ledges,
 // stood on spikes and walked on chains.
@@ -26,7 +27,7 @@ public static class StageTerrain {
     private const float BottomLedgeMin = 0.04f, BottomLedgeMax = 0.24f;
     private const float TopLedgeMin = 0.78f, TopLedgeMax = 1f;
 
-    private enum Kind { None, LedgeBottom, LedgeTop, Spike, Ladder, Prop }
+    private enum Kind { None, LedgeBottom, LedgeTop, Spike, Ladder, Prop, Acid, Water }
 
     public static void Build(Scene scene) {
         GameObject root = new GameObject("Stage Terrain");
@@ -36,6 +37,8 @@ public static class StageTerrain {
         var ledges = new Dictionary<(int, int), Kind>();  // world cell -> ledge kind
         var spikes = new HashSet<(int, int)>();
         var ladders = new HashSet<(int, int)>();
+        var acid = new HashSet<(int, int)>();
+        var water = new HashSet<(int, int)>();
 
         foreach (Tilemap map in FindCompat.All<Tilemap>()) {
             if (map.gameObject.scene != scene) {
@@ -67,9 +70,17 @@ public static class StageTerrain {
                     case Kind.Ladder:
                         ladders.Add(at);
                         break;
+                    case Kind.Acid:
+                        acid.Add(at);
+                        break;
+                    case Kind.Water:
+                        water.Add(at);
+                        break;
                 }
             }
         }
+
+        UnblockWallIslands(scene);
 
         // one collider per horizontal run of ledge tiles
         foreach (var run in Runs(ledges.Keys, (a, b) => ledges[a] == ledges[b])) {
@@ -100,6 +111,9 @@ public static class StageTerrain {
                 new Vector3(run.length - 0.2f, 0.8f, 1f));
         }
 
+        Liquid.Build(root.transform, acid, true);
+        Liquid.Build(root.transform, water, false);
+
         // ladders are columns: one per vertical run, reaching half a cell over the top so Freny
         // can climb onto the floor above
         foreach (var run in Columns(ladders)) {
@@ -112,8 +126,8 @@ public static class StageTerrain {
     }
 
     // a few stage enemies were saved with their body inside a wall or a floor: they couldn't move
-    // (or slid out through the level). Lift each walker until its body is in free cells, onto the
-    // floor right under it, within a few cells.
+    // (or slid out through the level). Each walker whose body overlaps solid cells is moved to the
+    // nearest spot (up first, then sideways) where its body is free and there is floor under it.
     public static void SettleEnemies(Scene scene) {
         var solidMaps = new List<Tilemap>();
         foreach (TilemapCollider2D collider in FindCompat.All<TilemapCollider2D>()) {
@@ -127,16 +141,100 @@ public static class StageTerrain {
                 continue;
             }
             Vector3 feet = enemy.Feet;
+            float halfWidth = Mathf.Max(0.2f, enemy.HalfWidth);
             float height = Mathf.Max(0.5f, enemy.HalfHeight * 2f);
-            if (!Solid(solidMaps, feet + Vector3.up * 0.2f) && !Solid(solidMaps, feet + Vector3.up * (height * 0.6f))) {
-                continue; // already standing in the open
+            if (BodyFree(solidMaps, feet, halfWidth, height)) {
+                continue; // already in the open
             }
-            for (int rise = 1; rise <= 4; rise++) {
-                float floorY = Mathf.Floor(feet.y) + rise;
-                Vector3 newFeet = new Vector3(feet.x, floorY, feet.z);
-                if (!Solid(solidMaps, newFeet + Vector3.up * 0.2f) && !Solid(solidMaps, newFeet + Vector3.up * (height * 0.6f))) {
-                    enemy.transform.position += Vector3.up * (floorY + 0.01f - feet.y);
+            bool moved = false;
+            for (int rise = 0; rise <= 6 && !moved; rise++) {
+                foreach (int side in new[] { 0, -1, 1, -2, 2, -3, 3 }) {
+                    Vector3 spot = new Vector3(Mathf.Floor(feet.x) + side + 0.5f, Mathf.Floor(feet.y) + rise, feet.z);
+                    if (BodyFree(solidMaps, spot, halfWidth, height) && Solid(solidMaps, spot + Vector3.down * 0.5f)) {
+                        enemy.transform.position += spot + Vector3.up * 0.01f - feet;
+                        moved = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // no solid cell under the body's corners, middle and top
+    private static bool BodyFree(List<Tilemap> maps, Vector3 feet, float halfWidth, float height) {
+        float w = halfWidth * 0.8f;
+        foreach (float dx in new[] { -w, 0f, w }) {
+            foreach (float dy in new[] { 0.15f, height * 0.5f, height - 0.1f }) {
+                if (Solid(maps, feet + new Vector3(dx, dy, 0f))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // plain wall bricks painted on a solid tilemap in small loose groups look like the background
+    // wall behind them, so they were invisible bumps in mid-air (an enemy walking on nothing, Freny
+    // standing on air). Groups of up to MaxIsland solid cells, all of them such bricks, stop blocking.
+    private static readonly HashSet<int> WallBricks = new HashSet<int> { 54, 55, 64, 65, 74, 75 };
+    private const int MaxIsland = 6;
+
+    private static void UnblockWallIslands(Scene scene) {
+        var solid = new Dictionary<(int, int), (Tilemap, Vector3Int)>();
+        foreach (TilemapCollider2D collider in FindCompat.All<TilemapCollider2D>()) {
+            Tilemap map = collider.GetComponent<Tilemap>();
+            if (!collider.enabled || map == null || collider.gameObject.scene != scene) {
+                continue;
+            }
+            foreach (Vector3Int cell in map.cellBounds.allPositionsWithin) {
+                if (map.HasTile(cell) && map.GetColliderType(cell) != Tile.ColliderType.None) {
+                    Vector3 corner = map.CellToWorld(cell);
+                    solid[(Mathf.RoundToInt(corner.x), Mathf.RoundToInt(corner.y))] = (map, cell);
+                }
+            }
+        }
+        var seen = new HashSet<(int, int)>();
+        foreach ((int, int) start in solid.Keys) {
+            if (!seen.Add(start)) {
+                continue;
+            }
+            var island = new List<(int, int)> { start };
+            var stack = new Stack<(int, int)>();
+            stack.Push(start);
+            while (stack.Count > 0 && island.Count <= MaxIsland) {
+                (int, int) c = stack.Pop();
+                foreach ((int, int) n in new[] { (c.Item1 + 1, c.Item2), (c.Item1 - 1, c.Item2), (c.Item1, c.Item2 + 1), (c.Item1, c.Item2 - 1) }) {
+                    if (solid.ContainsKey(n) && seen.Add(n)) {
+                        island.Add(n);
+                        stack.Push(n);
+                    }
+                }
+            }
+            if (island.Count > MaxIsland) {
+                // part of the level's ground: mark the rest of it as seen without looking further
+                while (stack.Count > 0) {
+                    (int, int) c = stack.Pop();
+                    foreach ((int, int) n in new[] { (c.Item1 + 1, c.Item2), (c.Item1 - 1, c.Item2), (c.Item1, c.Item2 + 1), (c.Item1, c.Item2 - 1) }) {
+                        if (solid.ContainsKey(n) && seen.Add(n)) {
+                            stack.Push(n);
+                        }
+                    }
+                }
+                continue;
+            }
+            bool allBricks = true;
+            foreach ((int, int) c in island) {
+                (Tilemap map, Vector3Int cell) = solid[c];
+                Sprite sprite = map.GetSprite(cell);
+                if (sprite == null || !sprite.name.StartsWith("Tileset_") || !int.TryParse(sprite.name.Substring(8), out int index) || !WallBricks.Contains(index)) {
+                    allBricks = false;
                     break;
+                }
+            }
+            if (allBricks) {
+                foreach ((int, int) c in island) {
+                    (Tilemap map, Vector3Int cell) = solid[c];
+                    map.SetColliderType(cell, Tile.ColliderType.None);
                 }
             }
         }
@@ -153,6 +251,8 @@ public static class StageTerrain {
     }
 
     private static Kind KindOf(Sprite sprite) {
+        if (sprite != null && sprite.name.StartsWith("Acid")) return Kind.Acid;
+        if (sprite != null && sprite.name.StartsWith("Water")) return Kind.Water;
         if (sprite == null || !sprite.name.StartsWith("Tileset_") || !int.TryParse(sprite.name.Substring(8), out int index)) {
             return Kind.None;
         }

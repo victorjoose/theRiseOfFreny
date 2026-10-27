@@ -42,6 +42,7 @@ public static class CampaignBootstrap {
         StageTerrain.Build(scene);
         StageTerrain.SettleEnemies(scene);
         GetOrAdd<LadderClimber>(playerObj);
+        GetOrAdd<LiquidSwimmer>(playerObj);
 
         // stages generated outside the Editor (1-6) are saved without the merged collider shape
         foreach (CompositeCollider2D composite in FindCompat.All<CompositeCollider2D>()) {

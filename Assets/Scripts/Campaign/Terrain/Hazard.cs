@@ -29,8 +29,11 @@ public class Hazard : MonoBehaviour {
         All.Remove(this);
     }
 
-    // is this point (an enemy's next step) on spikes?
+    // is this point (an enemy's next step) on spikes, or in acid or water?
     public static bool At(Vector2 point) {
+        if (Liquid.At(point) != null || Liquid.At(point + Vector2.down * 0.4f) != null) {
+            return true;
+        }
         foreach (Hazard hazard in All) {
             Bounds area = hazard.Area;
             area.Expand(new Vector3(0.2f, 0.4f, 0f));
