@@ -12,6 +12,12 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private float x1PatrolOffset = 0f;
     [SerializeField] private float x2PatrolOffset = 0f;
     [SerializeField] public int countEnemies = 0;
+    // after each spawn the spawner moves to another random spot on the floor near where it was placed
+    [SerializeField] private bool randomizePosition = true;
+    [SerializeField] private float randomizeRange = 8f;       // how far from its original spot (each side)
+    [SerializeField] private float minDistanceFromPlayer = 4f;
+    private Vector3 home;
+    private float hoverHeight;                                 // its height above the floor, kept when it moves
     public string uuid;
 
     // shared by every enemy of this spawner (before, two new GameObjects were created per spawn)
@@ -24,6 +30,9 @@ public class EnemySpawner : MonoBehaviour
     void Start()
     {
         uuid = Guid.NewGuid().ToString();
+        home = transform.position;
+        RaycastHit2D under = Physics2D.Raycast(transform.position, Vector2.down, 6f, LayerMask.GetMask("Ground"));
+        hoverHeight = under.collider != null ? transform.position.y - under.point.y : 0f;
         CreatePatrolPoints();
         if (canSpawn) {
             StartCoroutine(Spawner());
@@ -75,6 +84,43 @@ public class EnemySpawner : MonoBehaviour
             }
         }
         countEnemies++;
+        if (randomizePosition) {
+            Randomize();
+        }
+    }
+   }
+
+   // moves to a random floor spot near its original place (with room above and away from Freny).
+   // The enemies already out keep their patrol: the old patrol points stay where they were
+   public void Randomize() {
+    int ground = LayerMask.GetMask("Ground");
+    GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+    for (int attempt = 0; attempt < 12; attempt++) {
+        float x = home.x + UnityEngine.Random.Range(-randomizeRange, randomizeRange);
+        if (ArenaBounds.Active) {
+            x = ArenaBounds.ClampX(x, 1f);
+        }
+        Vector2 from = new Vector2(x, home.y + 4f);
+        RaycastHit2D floor = Physics2D.Raycast(from, Vector2.down, 12f, ground);
+        if (floor.collider == null) {
+            continue;
+        }
+        // standing room above the floor, and not right next to Freny
+        if (Physics2D.Raycast(floor.point + Vector2.up * 0.05f, Vector2.up, 2f, ground).collider != null) {
+            continue;
+        }
+        if (playerObj && Vector2.Distance(floor.point, playerObj.transform.position) < minDistanceFromPlayer) {
+            continue;
+        }
+        if (pointA) {
+            pointA.SetParent(null, true);
+        }
+        if (pointB) {
+            pointB.SetParent(null, true);
+        }
+        transform.position = new Vector3(floor.point.x, floor.point.y + hoverHeight, transform.position.z);
+        CreatePatrolPoints();
+        return;
     }
    }
 
