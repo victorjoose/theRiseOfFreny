@@ -44,6 +44,10 @@ public class FrenyMotion : MonoBehaviour {
     private static readonly Vector2 Hand = new Vector2(0.5f, -0.3f);  // grip, in the Sprite's space
     private const float BladeLength = 0.62f;
     private const float BladeFrom = 70f, BladeTo = -45f;
+    private const float GreatSwordScale = 1.8f;  // the great sword's cut and hitbox, "bem maior"
+
+    // the great sword in hand (Arena thread: becomes Player.GreatSwordActive, shop upgrade or drop)
+    private static bool GreatSword => FrenyProgress.HasGreatSword;
     private Vector3 rigBase;
     private float bodyCenter = 0.6f;       // height of her middle above the feet
 
@@ -214,7 +218,7 @@ public class FrenyMotion : MonoBehaviour {
         }
         if (arcPending && sinceSlash >= windup) {
             arcPending = false;
-            SlashArc.Spawn(transform, body, Hand, BladeLength + 0.2f, BladeFrom, BladeTo, FrenyProgress.HasGreatSword);
+            SlashArc.Spawn(transform, body, Hand, BladeLength + 0.2f, BladeFrom, BladeTo, GreatSword);
         }
 
         // ---- springs (frozen during the hit-stop)
@@ -245,9 +249,9 @@ public class FrenyMotion : MonoBehaviour {
 
         // The sword hitbox covers the whole cut: from her hand forward by the reach, from above the
         // shoulder to below the hip. The Melee Attack clip still keys the old box (and switches it
-        // on), so its shape is set here, after the Animator, every frame; the great sword reaches 30% more.
+        // on), so its shape is set here, after the Animator, every frame; the great sword reaches 1.8x.
         if (swordBox) {
-            float reach = swordReach * (FrenyProgress.HasGreatSword ? 1.3f : 1f);
+            float reach = swordReach * (GreatSword ? GreatSwordScale : 1f);
             swordBox.localPosition = Hand;
             swordBox.localRotation = Quaternion.identity;
             swordBox.localScale = Vector3.one;
@@ -306,7 +310,7 @@ public class FrenyMotion : MonoBehaviour {
             go.transform.SetParent(owner, false);
             go.transform.localPosition = new Vector3(center.x, center.y, -0.01f);
             SlashArc arc = go.AddComponent<SlashArc>();
-            arc.radius = radius * (greatSword ? 1.3f : 1f);
+            arc.radius = radius * (greatSword ? GreatSwordScale : 1f);
             // the trail of the blade's tip, around her hand
             arc.from = from;
             arc.to = to;
