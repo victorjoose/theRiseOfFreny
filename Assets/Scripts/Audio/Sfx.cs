@@ -35,7 +35,7 @@ public static class Sfx {
         { "pickup_ammo", (0.45f, 0.1f) },
         { "weapon_switch", (0.4f, 0.1f) },
         { "arena_wrap", (0.3f, 0.1f) },
-        { "golem_step", (0.3f, 0.25f) },
+        { "golem_step", (0.12f, 0.45f) },
         { "coin", (0.5f, 0.03f) },
         { "combo", (0.35f, 0.05f) },
         { "portal", (0.35f, 0.1f) },
