@@ -10,6 +10,7 @@ public struct PlayerInputFrame {
     public bool rangedPressed;
     public bool dashPressed;
     public bool runHeld;         // sprint while held (short, with a cooldown)
+    public bool crouchHeld;      // down: crouch while on the ground
     public bool selectPistol;    // weapon keys
     public bool selectShotgun;
     public bool potionPressed;
@@ -19,7 +20,7 @@ public struct PlayerInputFrame {
 
     public bool IsEmpty =>
         Mathf.Approximately(move, 0f) && !jumpPressed && !jumpHeld && !meleePressed &&
-        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed && !grenadeHeld && !runHeld && !selectPistol && !selectShotgun;
+        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed && !grenadeHeld && !runHeld && !crouchHeld && !selectPistol && !selectShotgun;
 }
 
 public interface IPlayerInputSource {

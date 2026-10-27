@@ -42,6 +42,7 @@ public class PlayerAnimation : MonoBehaviour {
 
     public void Ranged() {
         Fire("Ranged");
+        _motion.Shot();
     }
 
     public void Dash() {

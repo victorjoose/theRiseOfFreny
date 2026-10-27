@@ -40,6 +40,7 @@ public class KeyboardInputSource : IPlayerInputSource {
             rangedPressed = InputBindings.GetDown(GameAction.Ranged),
             dashPressed = InputBindings.GetDown(GameAction.Dash),
             runHeld = InputBindings.Get(GameAction.Run),
+            crouchHeld = Input.GetAxisRaw("Vertical") < -0.5f,
             selectPistol = InputBindings.GetDown(GameAction.Pistol),
             selectShotgun = InputBindings.GetDown(GameAction.Shotgun),
             potionPressed = InputBindings.GetDown(GameAction.Potion),
