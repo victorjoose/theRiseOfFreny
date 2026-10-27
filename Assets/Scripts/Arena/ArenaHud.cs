@@ -5,7 +5,10 @@ using UnityEngine;
 // uGUI screens exist: who is in control, the Auto toggle, XP and the upgrade shop.
 public class ArenaHud : MonoBehaviour {
 
+    // U hides every panel here (this one, the upgrades and the AI sliders) for a clean screen to
+    // record video; U again brings them back as they were. The game HUD stays.
     [SerializeField] private KeyCode togglePanelKey = KeyCode.U;
+    [SerializeField] private bool hidden = false;
     [SerializeField] private bool showUpgrades = true;
     [SerializeField] private KeyCode toggleTuningKey = KeyCode.I;
     [SerializeField] private bool showTuning = false;
@@ -29,7 +32,7 @@ public class ArenaHud : MonoBehaviour {
 
     private void Update() {
         if (Input.GetKeyDown(togglePanelKey)) {
-            showUpgrades = !showUpgrades;
+            hidden = !hidden;
         }
         if (Input.GetKeyDown(toggleTuningKey)) {
             showTuning = !showTuning;
@@ -37,7 +40,7 @@ public class ArenaHud : MonoBehaviour {
     }
 
     private void OnGUI() {
-        if (GameMenus.Paused) {
+        if (GameMenus.Paused || hidden) {
             return;
         }
         if (player == null || input == null) {
@@ -48,7 +51,7 @@ public class ArenaHud : MonoBehaviour {
             boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, wordWrap = true };
         }
 
-        // the panel hugs the bottom-left corner and only grows when the upgrade list is shown (U)
+        // the panel hugs the bottom-left corner and only grows when the upgrade list is shown
         float panelHeight = showUpgrades ? 560f : 250f;
         GUILayout.BeginArea(new Rect(10, Screen.height - panelHeight - 10f, 340, panelHeight));
         GUILayout.BeginVertical(boxStyle);
@@ -98,7 +101,7 @@ public class ArenaHud : MonoBehaviour {
             }
             GUILayout.EndHorizontal();
         }
-        GUILayout.Label("U: melhorias   I: ajustes da IA   T: auto");
+        GUILayout.Label("U: esconder painéis   I: ajustes da IA   T: auto");
         GUILayout.Label(ControlsLine());
 
         GUILayout.EndVertical();
