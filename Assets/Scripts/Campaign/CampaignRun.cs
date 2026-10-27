@@ -25,6 +25,7 @@ public class CampaignRun : MonoBehaviour {
     public string StageId { get; private set; }
     public float Elapsed => (Finished ? finishTime : Time.time) - attemptStart;
     public bool Finished { get; private set; }
+    public float PitY => pitY;           // below this Freny loses a heart and enemies are removed
     public bool IsLastStage => CampaignLevels.NextOf(StageId) == null;
     public float SecondsUntilRespawn => deathTime < 0f ? 0f : Mathf.Max(0f, deathTime + respawnDelay - Time.time);
     public float SecondsUntilNextStage => Finished && !IsLastStage ? Mathf.Max(0f, finishTime + nextStageDelay - Time.time) : 0f;

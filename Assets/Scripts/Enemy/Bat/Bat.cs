@@ -28,7 +28,7 @@ public class Bat : Enemy {
     }
 
     public override void Update() {
-        if (isDead || player == null || player_t == null || FellOutOfArena()) {
+        if (isDead || player == null || player_t == null || FellOutOfWorld()) {
             return;
         }
 
