@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Procedural motion on top of Freny's sprite frames, so the pixel art feels alive without new
-// drawings: lean with speed, squash and stretch on jumps and landings, a lateral sword arc with a
-// lunge and a hit-stop, dash afterimages, a flip on the double jump, a springy flinch when hurt and
+// drawings: lean with speed, squash and stretch on jumps and landings, a forward sword arc (the
+// body stays still, only the cut moves) with a hit-stop, dash afterimages, a flip on the double jump, a springy flinch when hurt and
 // a body that breaks into tumbling pieces on death (a small ragdoll).
 //
 // Everything moves a "Rig" transform placed at her feet, between the Player root (physics, facing
@@ -23,8 +23,8 @@ public class FrenyMotion : MonoBehaviour {
     public float breathe = 0.018f;
 
     [Header("Slash")]
-    public float windup = 0.05f;           // lean back before the cut
-    public float lungeDistance = 0.12f;
+    public float windup = 0.05f;           // the arm draws back before the cut
+    public float arcReach = 0.3f;          // how far in front of her the cut is centred
     public float arcRadius = 0.85f;
     public float hitStop = 0.06f;
 
@@ -102,8 +102,6 @@ public class FrenyMotion : MonoBehaviour {
         slashStart = Time.time;
         arcPending = true;
         slashCount++;
-        angle.v += 140f;          // wind-up: lean back
-        squash.v -= 1.5f;
     }
 
     public void DashStart() {
@@ -202,20 +200,14 @@ public class FrenyMotion : MonoBehaviour {
         if (player && player.IsStunned) {
             angleTarget = 8f;
         }
-        if (sinceSlash < 0.3f) {
-            if (sinceSlash < windup) {
-                angleTarget = 6f;
-            } else {
-                angleTarget = -9f;
-                lungeTarget = lungeDistance;
-                squashTarget = -0.05f;
-            }
+        // the body stays planted and upright while she swings: only the arm and the arc move
+        if (sinceSlash < 0.3f && grounded) {
+            angleTarget = 0f;
+            squashTarget = 0f;
         }
         if (arcPending && sinceSlash >= windup) {
             arcPending = false;
-            angle.v -= 380f;   // the cut throws her body forward
-            lunge.v += 4f;
-            SlashArc.Spawn(transform, body, rigBase.y + bodyCenter, arcRadius, slashCount % 2 == 0, FrenyProgress.HasGreatSword);
+            SlashArc.Spawn(transform, body, rigBase.y + bodyCenter, arcReach, arcRadius, slashCount % 2 == 0, FrenyProgress.HasGreatSword);
         }
 
         // ---- springs (frozen during the hit-stop)
@@ -292,16 +284,17 @@ public class FrenyMotion : MonoBehaviour {
         private float from, to, radius, squashY;
         private Color tint;
 
-        public static void Spawn(Transform owner, SpriteRenderer body, float height, float radius, bool alternate, bool greatSword) {
+        public static void Spawn(Transform owner, SpriteRenderer body, float height, float reach, float radius, bool alternate, bool greatSword) {
             GameObject go = new GameObject("SlashArc");
             go.transform.SetParent(owner, false);
-            go.transform.localPosition = new Vector3(0.05f, height, -0.01f);
+            go.transform.localPosition = new Vector3(reach, height * 0.92f, -0.01f);
             SlashArc arc = go.AddComponent<SlashArc>();
             arc.radius = radius * (greatSword ? 1.3f : 1f);
-            // A: high behind to low in front (a wide diagonal swipe); B: a flatter, lower sweep
-            arc.from = alternate ? 150f : 115f;
-            arc.to = alternate ? -20f : -55f;
-            arc.squashY = alternate ? 0.45f : 0.6f;
+            // a forward cut in front of her, from above the shoulder down past the hip;
+            // the second swing of a combo is flatter, almost straight ahead
+            arc.from = alternate ? 60f : 80f;
+            arc.to = alternate ? -35f : -50f;
+            arc.squashY = alternate ? 0.55f : 0.8f;
             arc.tint = greatSword ? new Color(0.65f, 0.85f, 1f) : new Color(1f, 0.97f, 0.88f);
             arc.Build(body);
         }
