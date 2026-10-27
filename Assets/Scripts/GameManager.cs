@@ -8,9 +8,6 @@ public class GameManager : MonoBehaviour {
 
     public static GameManager Instance {
         get {
-            if (_instance == null) {
-                Debug.Log("GameManager is null");
-            }
             return _instance;
         }
     }

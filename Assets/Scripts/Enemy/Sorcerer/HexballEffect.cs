@@ -9,14 +9,27 @@ public class HexballEffect : MonoBehaviour
     private Vector3 direction = Vector3.right;
 
     public Vector3 Direction => direction;
+    public float Speed => speed;
+
+    // live hexballs, read by the autopilot to dodge (instead of FindObjectsOfType)
+    public static readonly List<HexballEffect> Active = new List<HexballEffect>();
+
+    private void OnEnable()
+    {
+        Active.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        Active.Remove(this);
+    }
 
     public void SetDirection(Vector3 newDirection)
     {
-        direction = newDirection;
-        // mirror the sprite when it travels left
-        Vector3 scale = transform.localScale;
-        scale.x = Mathf.Abs(scale.x) * (direction.x < 0 ? -1 : 1);
-        transform.localScale = scale;
+        direction = newDirection.sqrMagnitude > 0.0001f ? newDirection.normalized : Vector3.right;
+        // point the sprite along its path (works for any angle, not only left/right)
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 
     private void Start()
@@ -38,6 +51,7 @@ public class HexballEffect : MonoBehaviour
             if (hit != null)
             {
                 hit.Damage();
+                Fx.Burst(transform.position, new Color(0.7f, 0.4f, 1f), 12, 2.5f, 0.1f, 0.4f);
                 Destroy(this.gameObject);
             }
         }

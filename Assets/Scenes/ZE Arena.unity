@@ -29033,3 +29033,94 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c619a3f788608ea448806110792456af, type: 3}
+--- !u!1 &1900000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1900000002}
+  - component: {fileID: 1900000003}
+  - component: {fileID: 1900000004}
+  m_Layer: 0
+  m_Name: Arena Director
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1900000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1900000001}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 30
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1900000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1900000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 079d0d2a81d94f8ea77737aa7df272bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemies:
+  - prefab: {fileID: 6496106852740584793, guid: 49496e0f74af48345867a62b81c12758, type: 3}
+    unlockAt: 0
+    weight: 3
+    flying: 0
+  - prefab: {fileID: 8274441830027215983, guid: 60d87c22096e25a46afea541c8d6f3e2, type: 3}
+    unlockAt: 0.1
+    weight: 2
+    flying: 0
+  - prefab: {fileID: 332949994701094415, guid: c46c49e424834b74baa7cd1d50995add, type: 3}
+    unlockAt: 0.2
+    weight: 2
+    flying: 0
+  - prefab: {fileID: 8274441830027215983, guid: 9bbb006b562745c0a0aa7aa53edcac30, type: 3}
+    unlockAt: 0.3
+    weight: 1.5
+    flying: 1
+  - prefab: {fileID: 4902039112802150574, guid: 20e5ccc9f5a154c48af6bbaec4f33329, type: 3}
+    unlockAt: 0.4
+    weight: 1.5
+    flying: 0
+  - prefab: {fileID: 4902039112802150574, guid: 1937232610ea4673b7e52f0b1ecd8845, type: 3}
+    unlockAt: 0.8
+    weight: 1
+    flying: 0
+  chestPrefab: {fileID: 840620173825923865, guid: b275f40a18a7d8442999d5655b1d037a, type: 3}
+  chestInterval: 45
+  portalSeconds: 1
+  firstSpawnDelay: 2
+--- !u!114 &1900000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1900000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc7711350d9b4c05aad4a763b1ebf8d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  revolverIcon: {fileID: -6624225963862695163, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  shotgunIcon: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  swordIcon: {fileID: -8525561222273819436, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  greatSwordIcon: {fileID: 3846876039218944220, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  grenadeIcon: {fileID: -1480233837858187749, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}

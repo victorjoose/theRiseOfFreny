@@ -49,16 +49,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coinPrefab: {fileID: 1839722716228608488, guid: 71247d32d6f48964d842d8570fb2e767,
     type: 3}
-  health: 5
+  health: 3
   speed: 2
-  coins: 0
+  coins: 4
   pointA: {fileID: 0}
   pointB: {fileID: 0}
   scoreToAdd: 500
   currentTarget: {x: -70.03526, y: 9.2, z: 0}
   spawnerUuid: d1a8099b-17f1-429c-85e5-1c442c148c5d
-  radius: 0
-  attackDistance: 0
+  radius: 5
+  attackDistance: 0.5
   ignoreLayer:
     serializedVersion: 2
     m_Bits: 1536

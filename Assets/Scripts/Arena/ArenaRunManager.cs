@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 // FrenyProgress (PlayerPrefs), so they survive the reload.
 public class ArenaRunManager : MonoBehaviour {
 
-    [SerializeField] private float restartDelay = 4f;
+    [SerializeField] private float restartDelay = 3f;
 
     private Player player;
     private float runStart;

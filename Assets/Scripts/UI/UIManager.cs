@@ -10,9 +10,7 @@ public class UIManager : MonoBehaviour {
 
     public static UIManager Instance {
         get {
-            if (!_instance) {
-                Debug.Log("UI Manager is null");
-            }
+            // many scenes have no UIManager; callers check for null (logging here spammed the console)
             return _instance;
         }
     }

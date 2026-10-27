@@ -17,12 +17,40 @@ public class EnemySpawner : MonoBehaviour
     // shared by every enemy of this spawner (before, two new GameObjects were created per spawn)
     private Transform pointA, pointB;
 
+    public Transform PointA => pointA;
+    public Transform PointB => pointB;
+
     // Start is called before the first frame update
     void Start()
     {
         uuid = Guid.NewGuid().ToString();
         CreatePatrolPoints();
-        StartCoroutine(Spawner());
+        if (canSpawn) {
+            StartCoroutine(Spawner());
+        }
+    }
+
+    // the arena director decides what and when to spawn; this spawner only lends its position and patrol
+    public void SetDirected() {
+        canSpawn = false;
+        StopAllCoroutines();
+    }
+
+    public Vector2 RandomSpawnPosition() {
+        return new Vector2(UnityEngine.Random.Range(transform.position.x - x1SpawnOffset, transform.position.x + x2SpawnOffset), transform.position.y);
+    }
+
+    // `floorPoint` is a point on the floor: the enemy's feet go there (its root is higher by the
+    // collider's offset, so spawning the root there buried the feet in thin platforms)
+    public Enemy SpawnDirected(GameObject prefab, Vector2 floorPoint) {
+        GameObject spawned = Instantiate(prefab, floorPoint, Quaternion.identity);
+        Enemy enemy = spawned.GetComponent<Enemy>();
+        if (enemy != null) {
+            AssignPatrol(enemy);
+            enemy.PlaceFeetAt(floorPoint);
+        }
+        countEnemies++;
+        return enemy;
     }
 
    private IEnumerator Spawner () {
@@ -40,6 +68,11 @@ public class EnemySpawner : MonoBehaviour
         Enemy enemy = spawned.GetComponent<Enemy>();
         if (enemy != null) {
             AssignPatrol(enemy);
+            // the spawner floats above its platform: put the feet on the floor under it when there is one
+            RaycastHit2D floor = Physics2D.Raycast(spawnPos + Vector2.up * 0.5f, Vector2.down, 6f, LayerMask.GetMask("Ground"));
+            if (floor.collider != null) {
+                enemy.PlaceFeetAt(floor.point);
+            }
         }
         countEnemies++;
     }

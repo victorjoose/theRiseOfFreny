@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Invisible post at a platform edge (campaign scenes): an enemy touching it turns around.
+// Enemies no longer jump (the Golems used to hop on every touch); the arena disables these posts.
 public class ChangeGroundArea : MonoBehaviour
 {
 
-    [SerializeField]
-    protected float jumpOdds;
     [SerializeField]
     protected float fallOdds;
     [SerializeField]
@@ -15,18 +15,6 @@ public class ChangeGroundArea : MonoBehaviour
     public LayerMask playerLayer;
     public float detectionRadius = 11f;
     public float resetCollisionTimer = 1f;
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
     public string enemyTag = "Enemy"; // Set this to the tag of the enemy GameObject
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -39,15 +27,10 @@ public class ChangeGroundArea : MonoBehaviour
 
         if (((1 << collision.gameObject.layer) & enemyLayer) != 0)
         {
-            // Call the Jump function on the enemy when touched
             Enemy enemy = collision.collider.GetComponent<Enemy>();
             if (enemy == null)
             {
                 return;
-            }
-
-            if (jumpOdds > 0 && Random.value < jumpOdds/100) {
-                enemy.Jump();
             }
 
             if (changeDirection) {
