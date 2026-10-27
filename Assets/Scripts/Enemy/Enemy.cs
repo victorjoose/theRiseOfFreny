@@ -95,6 +95,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // ground enemies are moved by their transform and kept on the floor by StickToGround; the Bat flies
     protected virtual bool WalksOnGround => true;
+    // the one-hit enemies (Bug, Bat), which the arena's harder levels speed up the most
+    protected virtual bool Small => false;
+    // arena difficulty on attack rhythm (1 outside the arena)
+    protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor : 1f;
 
     // colour of the particles when this enemy is hit or dies
     protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
@@ -422,7 +426,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         transform.position = Vector2.MoveTowards(transform.position, goal, MoveSpeed * Time.deltaTime);
     }
 
-    protected float MoveSpeed => speed * Tuning.EnemySpeed.Value;
+    protected float MoveSpeed => speed * Tuning.EnemySpeed.Value * (ArenaBounds.Active ? ArenaDifficulty.SpeedFactor(Small) : 1f);
 
     public void ChangeDirection() {
         if (pointA == null || pointB == null) {
@@ -490,7 +494,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (!isDead && player != null && player.Health > 0 && InAttackReach()) {
             HitPlayer();
         }
-        nextAttackTime = Time.time + attackCooldown * Tuning.EnemyCooldown.Value;
+        nextAttackTime = Time.time + attackCooldown * Tuning.EnemyCooldown.Value * DifficultyCooldown;
         attackRoutine = null;
     }
 
@@ -586,6 +590,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Coin coin = dropped.GetComponent<Coin>();
         if (coin) {
             coin.coins = coins;
+            coin.Expire();
         }
     }
 

@@ -13,6 +13,10 @@ public class Coin : MonoBehaviour {
     private static int GroundMask => groundMask >= 0 ? groundMask : (groundMask = LayerMask.GetMask("Ground"));
 
     private const float BobHeight = 0.1f;
+    private const float Lifetime = 29f;   // dropped coins: 25 s steady, then blink for the last 4 (like the items)
+    private const float BlinkFor = 4f;
+    private float dieAt = -1f;            // < 0: a coin placed in a level, it stays
+    private SpriteRenderer sprite;
 
     private bool tossing;
     private bool hovering;
@@ -38,9 +42,25 @@ public class Coin : MonoBehaviour {
         velocity = initialVelocity;
         tossing = true;
         rb = GetComponent<Rigidbody2D>();
+        Expire();
+    }
+
+    // a dropped coin (enemy or chest) disappears after a while, blinking first
+    public void Expire() {
+        dieAt = Time.time + Lifetime;
+        sprite = GetComponentInChildren<SpriteRenderer>();
     }
 
     private void Update() {
+        if (dieAt >= 0f) {
+            if (Time.time >= dieAt) {
+                Destroy(gameObject);
+                return;
+            }
+            if (sprite) {
+                sprite.enabled = dieAt - Time.time > BlinkFor || Mathf.Repeat(Time.time, 0.3f) < 0.18f;
+            }
+        }
         if (hovering) {
             // a chest coin floats where its arc peaked, bobbing, easy to see and grab
             Vector3 p = transform.position;

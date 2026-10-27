@@ -39,7 +39,7 @@ public class CombatHud : MonoBehaviour {
         labelStyle.fontSize = Mathf.Max(11, Mathf.RoundToInt(20f * scale));
         float size = 56f * scale;
         float x = 60f * scale;
-        float y = 175f * scale;
+        float y = 200f * scale; // a little under the portrait frame
         DrawWeapons(x, y, size, scale);
         // stacked on the left, below the sword bar, the bullet dots and the ammo counts
         DrawCooldowns(60f * scale, y + size + 46f * scale, scale);

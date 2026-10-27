@@ -14,11 +14,13 @@ public class ItemPickup : MonoBehaviour {
     private const float PotionChance = 0.20f;
     private const float BulletsChance = 0.30f;
     private const float ShellsChance = 0.10f;   // only when she has the shotgun
+    private const float GrenadeChance = 0.06f;
+    private const int GrenadesPerDrop = 1;
     private const int BulletsPerDrop = 4;
     private const int ShellsPerDrop = 3;
 
     private const float TossGravity = -18f;
-    private const float Lifetime = 20f;
+    private const float Lifetime = 29f;   // 25 s steady, then blinks for the last 4
     private const float BlinkFor = 4f;
     private const float WorldSize = 0.85f;       // on screen size, the shotgun a bit bigger (WorldSizeFor)
     private const float BobHeight = 0.12f;
@@ -88,7 +90,9 @@ public class ItemPickup : MonoBehaviour {
             Spawn(Kind.Potion, 1, position, toss);
         } else if (roll < PotionChance + BulletsChance) {
             Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
-        } else if (roll < PotionChance + BulletsChance + ShellsChance && player != null && player.ShotgunOwned) {
+        } else if (roll < PotionChance + BulletsChance + GrenadeChance) {
+            Spawn(Kind.Grenades, GrenadesPerDrop, position, toss);
+        } else if (roll < PotionChance + BulletsChance + GrenadeChance + ShellsChance && player != null && player.ShotgunOwned) {
             Spawn(Kind.Shells, ShellsPerDrop, position, toss);
         }
     }

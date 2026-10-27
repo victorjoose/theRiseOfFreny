@@ -10,9 +10,9 @@ public class ArenaChest : MonoBehaviour, IDamageable {
     [SerializeField] private int coinCount = 5;
     [SerializeField] private int minCoins = 10;     // total value, split over the coins
     [SerializeField] private int maxCoins = 25;
-    [SerializeField] private float coinsWeight = 45f;  // chances of each reward
-    [SerializeField] private float grenadesWeight = 30f;
-    [SerializeField] private float shotgunWeight = 25f;
+    [SerializeField] private float coinsWeight = 30f;  // chances of each reward
+    [SerializeField] private float grenadesWeight = 35f;
+    [SerializeField] private float shotgunWeight = 35f;
     [SerializeField] private int grenadesInside = 2;
     [SerializeField] private int shotgunShells = 6;
     [SerializeField] private float scatter = 2.2f;  // sideways speed of the outermost coins (about 1.3 units of spread)

@@ -41,8 +41,8 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private int shellsPerRun = 6;         // shotgun shells at the start of a run; chests add more
     [SerializeField] private int revolverCapacity = 4;     // shots before the revolver has to be reloaded
     [SerializeField] private float revolverReloadTime = 1.6f;
-    [SerializeField] private int revolverReserveStart = 16; // spare bullets at the start of a run: the gun is no longer infinite
-    [SerializeField] private int revolverReserveMax = 40;
+    [SerializeField] private int revolverReserveStart = 8;  // spare bullets at the start of a run: the gun is no longer infinite
+    [SerializeField] private int revolverReserveMax = 16;
     [SerializeField] private int shellsMax = 30;
 
     [Header("Grenade (G)")]
