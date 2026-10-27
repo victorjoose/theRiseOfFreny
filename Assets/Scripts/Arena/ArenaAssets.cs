@@ -11,6 +11,10 @@ public class ArenaAssets : MonoBehaviour {
     public Sprite swordIcon;
     public Sprite greatSwordIcon;
     public Sprite grenadeIcon;
+    // item pickups (ItemPickup); left empty, bullets and shells reuse the gun icons tinted, the potion is a red disc
+    public Sprite potionIcon;
+    public Sprite ammoIcon;
+    public Sprite shellsIcon;
 
     private void Awake() {
         Instance = this;

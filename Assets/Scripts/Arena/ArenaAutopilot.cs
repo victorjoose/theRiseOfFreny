@@ -26,7 +26,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     [SerializeField] private float grabRange = 4f;             // coins this close are grabbed even mid-fight
     [SerializeField] private float stuckSeconds = 3f;          // not getting closer to the target this long -> it's unreachable
     [SerializeField] private float grenadeAimError = 0.15f;    // +-15% on the charge: a person doesn't land every grenade on the head
-    [SerializeField] private float dangerRange = 3f;           // an enemy this close means no detours
+    [SerializeField] private float dangerRange = 3f;
+    [SerializeField] private float shotgunRange = 3.5f;        // closer than this the shotgun's fan lands all three pellets           // an enemy this close means no detours
     [SerializeField] private float jumpCooldown = 0.5f;        // no hopping: one jump, then land and think
     [SerializeField] private float unreachableMemory = 4f;     // seconds an enemy with no route is ignored
     [SerializeField] private float routeHopCost = 3f;          // one platform hop weighs this many metres when picking a target
@@ -165,10 +166,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (!ArenaBounds.Active) {
             return false;
         }
-        map = ArenaMap.Build(ground, ArenaBounds.Left, ArenaBounds.Right, ArenaBounds.Bottom, ArenaBounds.Top,
-            player.BodyHalfWidth, player.BodyHeight, player.JumpHeight);
-        Debug.Log($"[Autopiloto] Mapa da arena: {map.Describe()}");
-        return true;
+        map = ArenaMap.Shared(player);
+        return map != null;
     }
 
     private void TrackPlatform() {
@@ -273,32 +272,41 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
         retreating = false;
 
-        // 3. grenade: a group, or an enemy on a platform above, lobbed with the charge that lands there
-        if (FrenyProgress.HasGrenade && player.GrenadeReady && Mathf.Abs(dx) >= 1.5f && Mathf.Abs(dx) <= 8f) {
-            bool group = CountEnemiesNear(targetPos, 2.5f) >= 2;
-            bool above = dy > jumpToReachHeight;
-            float charge = player.GrenadeChargeFor(dx, target.Center.y - (me.y + 0.6f));
-            if ((group || above) && charge >= 0f) {
-                if (!facingTarget) {
-                    Turn(ref frame, towardTarget);
+        // 3. grenade (they are counted now: found in chests or bought): a group, an enemy on a
+        // platform above, or one she can't reach at all (a sorcerer on a tower), lobbed with the
+        // charge that lands there
+        if (player.CanThrowGrenade && player.IsGrounded) {
+            Enemy lob = GrenadeTarget(me, target, out string why);
+            if (lob != null) {
+                float lobDx = lob.transform.position.x - me.x;
+                float charge = player.GrenadeChargeFor(lobDx, lob.Center.y - (me.y + 0.6f));
+                if ((lobDx > 0) != player.FacingRight) {
+                    Turn(ref frame, Mathf.Sign(lobDx));
                 } else {
                     frame.grenadePressed = true;
                     frame.grenadeCharge = Mathf.Clamp01(charge * Random.Range(1f - grenadeAimError, 1f + grenadeAimError));
-                    action = group ? "Granada no grupo" : "Granada na plataforma";
+                    action = why;
                 }
                 return frame;
             }
         }
 
-        // 4. gun (only from the ground)
-        if (sameFloor && player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && player.GunReady) {
-            if (!facingTarget) {
-                Turn(ref frame, towardTarget);
-            } else {
-                frame.rangedPressed = true;
-                action = player.UsingShotgun ? "Tiro de escopeta" : "Tiro";
+        // 4. gun (only from the ground): the shotgun up close while it has shells, the revolver
+        // farther away; with no ammo at all it is the sword only
+        if (sameFloor && player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value) {
+            bool shotgun = Mathf.Abs(dx) <= shotgunRange && player.GunReadyFor(true);
+            bool revolver = !shotgun && player.GunReadyFor(false);
+            if (shotgun || revolver) {
+                if (!facingTarget) {
+                    Turn(ref frame, towardTarget);
+                } else {
+                    frame.selectShotgun = shotgun;
+                    frame.selectPistol = !shotgun;
+                    frame.rangedPressed = true;
+                    action = shotgun ? "Tiro de escopeta" : "Tiro";
+                }
+                return frame;
             }
-            return frame;
         }
 
         // 5. potion
@@ -562,6 +570,12 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         foreach (ArenaChest chest in ArenaChest.Active) {
             Consider(chest ? chest.transform : null, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, "o baú");
         }
+        foreach (ItemPickup item in ItemPickup.Active) {
+            if (item && item.Landed && item.UsefulTo(player)) {
+                // items count as closer than coins: a potion or ammo matters more than a coin
+                Consider(item.transform, me, myPlatform, range + 2f, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, item.Describe());
+            }
+        }
         if (bestDist == float.MaxValue) {
             return false;
         }
@@ -727,6 +741,55 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
         }
         return count;
+    }
+
+    // who deserves a grenade: the current target when it stands in a group or above her, else an
+    // enemy she has no route to (it would never be fought otherwise). Only within a lob's reach.
+    private Enemy GrenadeTarget(Vector2 me, Enemy target, out string why) {
+        why = "";
+        if (target != null && InLobRange(me, target)) {
+            if (CountEnemiesNear(target.transform.position, 2.5f) >= 2) {
+                why = "Granada no grupo";
+                return target;
+            }
+            if (target.Feet.y - FeetY > jumpToReachHeight) {
+                why = "Granada na plataforma";
+                return target;
+            }
+        }
+        Enemy best = null;
+        float bestDistance = float.MaxValue;
+        foreach (Enemy enemy in enemies) {
+            if (!enemy || enemy.IsDead || !InLobRange(me, enemy)) {
+                continue;
+            }
+            ArenaMap.Platform platform = PlatformOf(enemy);
+            if (platform == null || HopsTo(platform) != int.MaxValue) {
+                continue; // reachable (or flying): the sword and the gun will do
+            }
+            float distance = Mathf.Abs(enemy.transform.position.x - me.x);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = enemy;
+            }
+        }
+        if (best != null) {
+            why = TargetLabel(best) + ": granada";
+        }
+        return best;
+    }
+
+    private string TargetLabel(Enemy enemy) {
+        ArenaMap.Platform platform = PlatformOf(enemy);
+        return platform != null && platform.tower ? $"{enemy.GetType().Name} na torre" : $"{enemy.GetType().Name} fora de alcance";
+    }
+
+    private bool InLobRange(Vector2 me, Enemy enemy) {
+        float dx = enemy.transform.position.x - me.x;
+        if (Mathf.Abs(dx) < 1.5f || Mathf.Abs(dx) > 8f) {
+            return false;
+        }
+        return player.GrenadeChargeFor(dx, enemy.Center.y - (me.y + 0.6f)) >= 0f;
     }
 
     // Enemies on her own platform come first; each hop over the map to another platform costs
