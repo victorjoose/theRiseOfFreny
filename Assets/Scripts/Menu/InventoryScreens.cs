@@ -107,7 +107,7 @@ public static class InventoryScreens {
                 slots.Add(Slot(row, Icon(item), ShortName(item),
                     () => FrenyProgress.GetLevel(item) > 0, () => FrenyProgress.IsEquipped(item)));
             }
-            slots.Add(Slot(row, art != null ? art.berserkerHelmet : null, "Capacete",
+            slots.Add(Slot(row, art != null ? MenuArt.Trim(art.berserkerHelmet) : null, "Capacete",
                 () => Loadout.Owns(Loadout.Helmet), () => Loadout.IsEquipped(Loadout.Helmet)));
 
             attributes = MenuKit.MakeText(side, "", MenuKit.SmallTextSize, MenuKit.DimTextColor, TextAnchor.MiddleCenter);
@@ -152,9 +152,8 @@ public static class InventoryScreens {
         RectTransform pictureRect = picture.rectTransform;
         pictureRect.anchorMin = new Vector2(0f, 0.3f);
         pictureRect.anchorMax = Vector2.one;
-        // drawn past the box: the item sprites have wide empty margins
-        pictureRect.offsetMin = new Vector2(-8f, -4f);
-        pictureRect.offsetMax = new Vector2(8f, 6f);
+        pictureRect.offsetMin = new Vector2(8f, 2f);
+        pictureRect.offsetMax = new Vector2(-8f, -6f);
         Text text = MenuKit.MakeText(box.transform, icon == null ? "?" : "", MenuKit.TextSize, MenuKit.TextColor, TextAnchor.MiddleCenter);
         MenuKit.Stretch(text.rectTransform);
         text.rectTransform.anchorMin = new Vector2(0f, 0.3f);
@@ -224,7 +223,7 @@ public static class InventoryScreens {
 
         string helmet = Loadout.Helmet;
         Button helmetButton = null;
-        Text helmetPrice = ItemButton(page, Loadout.DisplayName(helmet), art != null ? art.berserkerHelmet : null, () => {
+        Text helmetPrice = ItemButton(page, Loadout.DisplayName(helmet), art != null ? MenuArt.Trim(art.berserkerHelmet) : null, () => {
             if (Loadout.TryBuy(helmet)) {
                 speech.Say("O capacete é seu! Cada fase você começa com armadura cheia.");
                 refreshAll();
@@ -324,7 +323,8 @@ public static class InventoryScreens {
         name = button.GetComponentInChildren<Text>();
         name.alignment = TextAnchor.MiddleLeft;
         name.fontSize = MenuKit.SmallTextSize;
-        name.rectTransform.offsetMin = new Vector2(IconCenter * 2f + 4f, 0f);
+        name.rectTransform.offsetMin = new Vector2(IconBox + 18f, 0f);
+        name.rectTransform.offsetMax = new Vector2(-PriceWidth, 0f);   // the price has its own room
         if (icon != null) {
             Image picture = MenuKit.MakeImage("Icon", button.transform, Color.white);
             picture.sprite = icon;
@@ -332,12 +332,13 @@ public static class InventoryScreens {
             picture.raycastTarget = false;
             RectTransform rect = picture.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0.5f);
-            rect.anchoredPosition = new Vector2(IconCenter - IconSize(icon) / 2f, 0f);
-            rect.sizeDelta = Vector2.one * IconSize(icon);
+            rect.anchoredPosition = new Vector2(10f, 0f);
+            rect.sizeDelta = Vector2.one * IconBox;
         }
         Text price = MenuKit.MakeText(button.transform, "", MenuKit.SmallTextSize, MenuKit.TitleColor, TextAnchor.MiddleRight);
         MenuKit.Stretch(price.rectTransform);
-        price.rectTransform.offsetMin = new Vector2(10f, 0f);
+        price.rectTransform.anchorMin = new Vector2(1f, 0f);
+        price.rectTransform.offsetMin = new Vector2(-PriceWidth, 0f);
         price.rectTransform.offsetMax = new Vector2(-12f, 0f);
         return price;
     }
@@ -423,6 +424,10 @@ public static class InventoryScreens {
         if (art == null) {
             return null;
         }
+        return MenuArt.Trim(RawIcon(art, upgrade));
+    }
+
+    private static Sprite RawIcon(MenuArt art, FrenyUpgrade upgrade) {
         switch (upgrade) {
             case FrenyUpgrade.GreatSword: return art.greatSword;
             case FrenyUpgrade.Shotgun: return art.shotgun;
@@ -430,22 +435,13 @@ public static class InventoryScreens {
             case FrenyUpgrade.MaxHealth: return art.heart;
             case FrenyUpgrade.AttackSpeed: return art.sword;
             case FrenyUpgrade.DoubleJump: return art.jump;
-            case FrenyUpgrade.MoveSpeed: return art.dash;
+            case FrenyUpgrade.MoveSpeed: return art.run;
             default: return null;
         }
     }
 
-    private const float IconCenter = 26f;   // the icon column of a shop row
-
-    // the sprites carry a lot of empty margin: drawn bigger than the row, they read at the
-    // size of the text (the heart has none; Freny's frames have the most)
-    private static float IconSize(Sprite icon) {
-        MenuArt art = MenuArt.Get;
-        if (art != null && icon == art.heart) {
-            return 26f;
-        }
-        return art != null && (icon == art.jump || icon == art.dash) ? 64f : 52f;
-    }
+    private const float IconBox = 30f;      // icons are trimmed (MenuArt.Trim), so they all fill it
+    private const float PriceWidth = 104f;
 
     private static string ItemName(FrenyUpgrade upgrade) {
         switch (upgrade) {
