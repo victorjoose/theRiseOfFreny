@@ -29080,23 +29080,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemies:
   - prefab: {fileID: 6496106852740584793, guid: 49496e0f74af48345867a62b81c12758, type: 3}
-    unlockAt: 0
-    weight: 3
+    unlockAt: 0.5
+    weight: 1.5
     flying: 0
   - prefab: {fileID: 8274441830027215983, guid: 60d87c22096e25a46afea541c8d6f3e2, type: 3}
-    unlockAt: 0.1
-    weight: 2
+    unlockAt: 0
+    weight: 3
     flying: 0
   - prefab: {fileID: 332949994701094415, guid: c46c49e424834b74baa7cd1d50995add, type: 3}
     unlockAt: 0.2
     weight: 2
     flying: 0
   - prefab: {fileID: 8274441830027215983, guid: 9bbb006b562745c0a0aa7aa53edcac30, type: 3}
-    unlockAt: 0.3
-    weight: 1.5
+    unlockAt: 0
+    weight: 2
     flying: 1
   - prefab: {fileID: 4902039112802150574, guid: 20e5ccc9f5a154c48af6bbaec4f33329, type: 3}
-    unlockAt: 0.4
+    unlockAt: 0.35
     weight: 1.5
     flying: 0
   - prefab: {fileID: 4902039112802150574, guid: 1937232610ea4673b7e52f0b1ecd8845, type: 3}

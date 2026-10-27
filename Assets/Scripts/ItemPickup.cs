@@ -11,7 +11,7 @@ public class ItemPickup : MonoBehaviour {
     public enum Kind { Potion, Bullets, Shells, Grenades, Shotgun }
 
     // enemy drops, rolled once per death on top of its coin
-    private const float PotionChance = 0.10f;
+    private const float PotionChance = 0.20f;
     private const float BulletsChance = 0.30f;
     private const float ShellsChance = 0.10f;   // only when she has the shotgun
     private const int BulletsPerDrop = 4;
@@ -20,7 +20,8 @@ public class ItemPickup : MonoBehaviour {
     private const float TossGravity = -18f;
     private const float Lifetime = 20f;
     private const float BlinkFor = 4f;
-    private const float WorldSize = 0.5f;
+    private const float WorldSize = 0.85f;       // on screen size, the shotgun a bit bigger (WorldSizeFor)
+    private const float BobHeight = 0.12f;
 
     public static readonly List<ItemPickup> Active = new List<ItemPickup>();
 
@@ -29,6 +30,8 @@ public class ItemPickup : MonoBehaviour {
 
     private Vector2 velocity;
     private bool tossing;
+    private float hoverY;
+    private float bobPhase;
     private float dieAt;
     private SpriteRenderer sprite;
     private static int groundMask = -1;
@@ -57,7 +60,7 @@ public class ItemPickup : MonoBehaviour {
         renderer.sortingOrder = 40;
         if (renderer.sprite != null) {
             float size = Mathf.Max(renderer.sprite.bounds.size.x, renderer.sprite.bounds.size.y);
-            obj.transform.localScale = Vector3.one * (size > 0.001f ? WorldSize / size : 1f);
+            obj.transform.localScale = Vector3.one * (size > 0.001f ? WorldSizeFor(kind) / size : 1f);
         }
 
         CircleCollider2D trigger = obj.AddComponent<CircleCollider2D>();
@@ -98,6 +101,10 @@ public class ItemPickup : MonoBehaviour {
             cachedPlayer = obj ? obj.GetComponent<Player>() : null;
         }
         return cachedPlayer;
+    }
+
+    private static float WorldSizeFor(Kind kind) {
+        return kind == Kind.Shotgun ? WorldSize * 1.35f : WorldSize;
     }
 
     private static Sprite SpriteFor(Kind kind) {
@@ -158,10 +165,18 @@ public class ItemPickup : MonoBehaviour {
             sprite.enabled = dieAt - Time.time > BlinkFor || Mathf.Repeat(Time.time, 0.3f) < 0.18f;
         }
         if (!tossing) {
+            // floats where the arc peaked, bobbing like the coins, so it is easy to see and reach
+            Vector3 p = transform.position;
+            p.y = hoverY + Mathf.Sin(Time.time * 3f + bobPhase) * BobHeight;
+            transform.position = p;
             return;
         }
 
         velocity.y += TossGravity * Time.deltaTime;
+        if (velocity.y <= 0f) {
+            Hover(transform.position.y);
+            return;
+        }
         Vector3 pos = transform.position;
         Vector3 next = pos + (Vector3)(velocity * Time.deltaTime);
         if (velocity.y < 0f) {
@@ -169,7 +184,7 @@ public class ItemPickup : MonoBehaviour {
             RaycastHit2D hit = Physics2D.Raycast(pos, Vector2.down, drop + 0.25f, GroundMask);
             if (hit.collider != null) {
                 next.y = hit.point.y + 0.25f;
-                tossing = false;
+                Hover(next.y);
             }
         }
         if (ArenaBounds.Active) {
@@ -180,6 +195,12 @@ public class ItemPickup : MonoBehaviour {
             return;
         }
         transform.position = next;
+    }
+
+    private void Hover(float y) {
+        tossing = false;
+        hoverY = y;
+        bobPhase = Random.Range(0f, Mathf.PI * 2f);
     }
 
     // would Freny take it right now (the autopilot skips the ones she can't use)

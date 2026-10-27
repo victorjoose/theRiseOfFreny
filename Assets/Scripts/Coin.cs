@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A coin lying in the arena: Freny collects it by touching it. Enemies drop one where they die;
-// a broken chest tosses a handful that fly out in a small arc and settle on the floor.
+// a broken chest tosses a handful that fly out in a small arc and float where it peaks.
 public class Coin : MonoBehaviour {
 
     public int coins = 1;
@@ -12,7 +12,12 @@ public class Coin : MonoBehaviour {
     private static int groundMask = -1;
     private static int GroundMask => groundMask >= 0 ? groundMask : (groundMask = LayerMask.GetMask("Ground"));
 
+    private const float BobHeight = 0.1f;
+
     private bool tossing;
+    private bool hovering;
+    private float hoverY;
+    private float bobPhase;
     private Vector2 velocity;
     private Rigidbody2D rb; // the prefab has one (no gravity) for the pickup trigger; the arc moves it directly
 
@@ -36,11 +41,25 @@ public class Coin : MonoBehaviour {
     }
 
     private void Update() {
+        if (hovering) {
+            // a chest coin floats where its arc peaked, bobbing, easy to see and grab
+            Vector3 p = transform.position;
+            p.y = hoverY + Mathf.Sin(Time.time * 3f + bobPhase) * BobHeight;
+            Place(p);
+            return;
+        }
         if (!tossing) {
             return;
         }
 
         velocity.y += TossGravity * Time.deltaTime;
+        if (velocity.y <= 0f) {
+            tossing = false;
+            hovering = true;
+            hoverY = transform.position.y;
+            bobPhase = Random.Range(0f, Mathf.PI * 2f);
+            return;
+        }
         Vector3 pos = transform.position;
         Vector3 next = pos + (Vector3)(velocity * Time.deltaTime);
 
@@ -56,10 +75,14 @@ public class Coin : MonoBehaviour {
             Destroy(gameObject); // fell out of the world
             return;
         }
+        Place(next);
+    }
+
+    private void Place(Vector3 position) {
         if (rb) {
-            rb.position = next;
+            rb.position = position;
         } else {
-            transform.position = next;
+            transform.position = position;
         }
     }
 

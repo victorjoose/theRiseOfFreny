@@ -131,6 +131,8 @@ public class Player : MonoBehaviour, IDamageable {
     public float MaxSpeed => _speed * runMultiplier;
     public float BodyHalfWidth => col2d ? col2d.bounds.extents.x : 0.28f;
     public float BodyHeight => col2d ? col2d.bounds.size.y : 1.3f;
+    // the middle of her body (the transform sits near the head), where flyers should aim
+    public Vector3 BodyCenter => col2d ? (Vector3)col2d.bounds.center : transform.position;
     public float VerticalSpeed => rg2d ? rg2d.Vel().y : 0f;
     // meters for the HUD: 1 = ready / full, 0 = just used / empty
     public float AttackReadiness => attackCooldown > 0f ? 1f - Mathf.Clamp01((attackReadyAt - Time.time) / attackCooldown) : 1f;
