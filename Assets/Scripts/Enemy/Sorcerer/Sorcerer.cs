@@ -14,6 +14,7 @@ public class Sorcerer : Enemy {
     // many casts it vanishes in a portal (0 = stays until killed)
     [System.NonSerialized] public int castsBeforeLeaving;
     private int casts;
+    private bool laughed;
 
     private Transform SorcererCastPosition;
 
@@ -23,6 +24,7 @@ public class Sorcerer : Enemy {
     }
 
     protected override Color DeathColor => predictive ? new Color(0.8f, 0.4f, 1f) : new Color(0.45f, 0.3f, 0.7f);
+    protected override string SoundName => predictive ? "supreme" : "sorcerer";
 
     // the sorcerer stands still and casts on a steady rhythm; the Fire animation event calls Attack()
     // (before, the animator looped the cast forever, even with nobody around)
@@ -46,6 +48,11 @@ public class Sorcerer : Enemy {
 
         if (Time.time >= nextCastTime) {
             anim.SetTrigger("Attack");
+            PlaySound("cast");
+            if (predictive && !laughed) {
+                laughed = true; // the Sorcerer Supreme laughs at Freny when the fight starts
+                PlaySound("laugh");
+            }
             nextCastTime = Time.time + castCooldown * Tuning.EnemyCooldown.Value;
         }
     }
@@ -59,6 +66,7 @@ public class Sorcerer : Enemy {
         Vector3 castPosition = SorcererCastPosition ? SorcererCastPosition.position : transform.position;
         GameObject hexball = Instantiate(hexballEffectPrefab, castPosition, Quaternion.identity);
         Fx.Burst(castPosition, DeathColor, 8, 1.5f, 0.08f, 0.4f);
+        Sfx.Play("hexball_launch", castPosition);
 
         // aim at Freny wherever she is (below, above, diagonal), not only left or right
         HexballEffect effect = hexball.GetComponent<HexballEffect>();
@@ -77,6 +85,7 @@ public class Sorcerer : Enemy {
         }
         if (castsBeforeLeaving > 0 && casts >= castsBeforeLeaving) {
             Fx.Portal(Feet + Vector3.up * 0.6f, 0.6f, DeathColor);
+            Sfx.Play("portal", Feet);
             Despawn();
         }
     }

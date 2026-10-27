@@ -39,5 +39,6 @@ public class MeleeAttack : MonoBehaviour
         }
         lastHit[hit] = Time.time;
         hit.Damage();
+        Sfx.Play("sword_hit", other.transform.position);
     }
 }

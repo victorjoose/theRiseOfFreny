@@ -35,6 +35,9 @@ public class Merchant : MonoBehaviour {
                     UIManager.Instance.UpdateCoins(_player.coins);
                 }
                 
+                if (!shopPanel.activeSelf) {
+                    Sfx.Play("shop_open");
+                }
                 hud.SetActive(false);
                 shopPanel.SetActive(true);
                 coinCount.SetActive(true);
@@ -53,6 +56,7 @@ public class Merchant : MonoBehaviour {
     }
 
     public void SelectItem(int item) {
+        Sfx.Ui("ui_move");
 
         switch (item) {
             case 0: //rev
@@ -100,14 +104,17 @@ public class Merchant : MonoBehaviour {
             }
             
             _player.AddCoins(-itemCost);
+            Sfx.Ui("shop_buy");
             Debug.Log("Bought");
         } else {
+            Sfx.Ui("ui_error");
             Debug.Log("Didnt buy");
         }
         
     }
 
     public void CloseStore() {
+        Sfx.Ui("ui_back");
         shopPanel.SetActive(false);
         hud.SetActive(true);
         if (_player) {

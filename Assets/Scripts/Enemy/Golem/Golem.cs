@@ -4,4 +4,5 @@ using UnityEngine;
 // Everything else is the Enemy base.
 public class Golem : Enemy {
     protected override Color DeathColor => new Color(0.6f, 0.55f, 0.5f);
+    protected override string SoundName => "golem";
 }

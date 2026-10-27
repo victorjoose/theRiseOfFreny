@@ -79,3 +79,7 @@ crashlytics-build.properties
 # compile-check build output
 /.ci/**/bin/
 /.ci/**/obj/
+
+# raw sound libraries (several GB): keep them out of git; only the cut clips in Assets/Audio are committed
+/[Aa]ssets/[Ss]ounds/
+/[Aa]ssets/[Ss]ounds.meta

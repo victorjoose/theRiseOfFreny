@@ -218,6 +218,7 @@ public class ItemPickup : MonoBehaviour {
             return;
         }
         Fx.Burst(transform.position, TintFor(kind) == Color.white ? new Color(1f, 0.95f, 0.7f) : TintFor(kind), 10, 2f, 0.07f, 0.35f);
+        Sfx.Play(kind == Kind.Potion ? "potion" : kind == Kind.Shotgun ? "pistol_reload" : "pickup_ammo", transform.position);
         Destroy(gameObject);
     }
 

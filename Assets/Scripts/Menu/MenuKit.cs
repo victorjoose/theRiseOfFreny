@@ -130,6 +130,7 @@ public static class MenuKit {
         Button button = background.gameObject.AddComponent<Button>();
         button.targetGraphic = background;
         button.colors = Colors();
+        button.onClick.AddListener(() => Sfx.Ui("ui_select"));
         if (onClick != null) {
             button.onClick.AddListener(() => onClick());
         }
@@ -200,6 +201,7 @@ public static class MenuKit {
         slider.onValueChanged.AddListener(v => {
             int whole = Mathf.RoundToInt(v);
             valueText.text = format(whole);
+            Sfx.Ui("ui_move");
             onChange(whole);
         });
         return slider;

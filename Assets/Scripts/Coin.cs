@@ -70,6 +70,7 @@ public class Coin : MonoBehaviour {
         Player player = other.GetComponent<Player>();
         if (player != null) {
             player.AddCoins(coins);
+            Sfx.Play("coin", transform.position);
             Destroy(gameObject);
         }
     }
