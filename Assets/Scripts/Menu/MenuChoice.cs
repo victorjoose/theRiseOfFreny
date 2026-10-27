@@ -45,6 +45,7 @@ public class MenuChoice : Selectable, ISubmitHandler, IPointerClickHandler {
             return;
         }
         Index = (Index + delta + options.Length) % options.Length;
+        Sfx.Ui("ui_move");
         Refresh();
         onChange?.Invoke(Index);
     }

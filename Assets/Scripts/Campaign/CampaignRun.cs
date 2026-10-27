@@ -92,6 +92,7 @@ public class CampaignRun : MonoBehaviour {
         if (transform.position.y < pitY) {
             // a pit costs a heart, not the whole stage
             if (player.TryDamage() && !player.IsDead) {
+                Sfx.Play("pit_fall");
                 transform.position = lastSafe;
                 if (rb) {
                     rb.SetVel(Vector2.zero);
@@ -126,6 +127,7 @@ public class CampaignRun : MonoBehaviour {
             rb.SetVel(Vector2.zero);
         }
         Fx.Burst(transform.position + Vector3.up * 0.5f, new Color(1f, 0.85f, 0.3f), 30, 3f, 0.1f, 0.8f);
+        Sfx.Play("stage_clear");
 
         if (!IsLastStage) {
             Invoke(nameof(LoadNextStage), nextStageDelay);

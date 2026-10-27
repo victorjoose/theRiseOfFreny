@@ -243,6 +243,7 @@ public class ArenaDirector : MonoBehaviour {
 
         pendingSpawns++;
         Fx.Portal(position, portalSeconds, PortalColor);
+        Sfx.Play("portal", position);
         yield return new WaitForSeconds(portalSeconds);
         pendingSpawns--;
 
@@ -271,6 +272,7 @@ public class ArenaDirector : MonoBehaviour {
             yield break;
         }
         Fx.Portal(position, portalSeconds, ChestPortalColor);
+        Sfx.Play("portal", position, 1f, 1.3f);
         yield return new WaitForSeconds(portalSeconds);
         // the chest sprite is centred on its root: lift it so it sits on the floor instead of sinking in
         Instantiate(chestPrefab, position + Vector3.up * 0.3f, Quaternion.identity);

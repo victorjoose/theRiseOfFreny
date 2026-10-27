@@ -15,6 +15,7 @@ public class Checkpoint : MonoBehaviour {
         }
         if (CampaignRun.SetCheckpoint(transform.position)) {
             Fx.Burst(transform.position + Vector3.up * 0.5f, new Color(0.3f, 0.8f, 1f), 14, 2f, 0.08f, 0.5f);
+            Sfx.Play("checkpoint", transform.position);
         }
     }
 }

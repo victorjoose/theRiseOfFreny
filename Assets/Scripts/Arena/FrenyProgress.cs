@@ -82,7 +82,11 @@ public static class FrenyProgress {
         if (amount <= 0) {
             return;
         }
+        int levelBefore = Level;
         PlayerPrefs.SetInt(XpKey, Xp + amount);
+        if (Level > levelBefore) {
+            Sfx.Play("level_up");
+        }
         Changed?.Invoke();
     }
 
@@ -164,6 +168,7 @@ public static class FrenyProgress {
 
         PlayerPrefs.SetInt(LevelKeyPrefix + upgrade, GetLevel(upgrade) + 1);
         PlayerPrefs.Save();
+        Sfx.Ui("upgrade");
         Changed?.Invoke();
         return true;
     }

@@ -295,6 +295,7 @@ public class Player : MonoBehaviour, IDamageable {
             bool justTookOff = Time.time - jumpStartTime <= 0.15f;
             if (!wasGrounded && !justTookOff) {
                 Fx.Dust(Feet, 5); // landed
+                Sfx.Play("freny_land", Feet);
             }
             if (!justTookOff) {
                 isJumping = false;
@@ -330,6 +331,7 @@ public class Player : MonoBehaviour, IDamageable {
         // dust kicked up while running
         if (isGrounded && Time.time >= nextDustTime) {
             Fx.Dust(Feet, 2);
+            Sfx.Play("freny_step", Feet);
             nextDustTime = Time.time + 0.15f;
         }
     }
@@ -373,9 +375,11 @@ public class Player : MonoBehaviour, IDamageable {
             jumpPressedTime = -10f;
             if (groundJump) {
                 Fx.Dust(Feet, 4);
+                Sfx.Play("freny_jump", Feet);
             } else {
                 airJumpsLeft--;
                 Fx.Burst(Feet, Color.white, 8, 1.5f, 0.07f, 0.3f);
+                Sfx.Play("freny_jump_air", Feet);
             }
             isJumping = true;
             jumpStartTime = Time.time;
@@ -405,16 +409,19 @@ public class Player : MonoBehaviour, IDamageable {
         stunned = true;
         stunnedUntil = Time.time + stunTime;
         _playerAnim.Stunned(true);
+        Sfx.Play("freny_stun", transform.position);
     }
 
     // ==== weapons ==============================================================================
 
     // 1 = pistol, 2 = shotgun (when owned and loaded)
     private void SelectWeapon() {
-        if (_input.Current.selectPistol) {
+        if (_input.Current.selectPistol && ShotgunEquipped) {
             ShotgunEquipped = false;
-        } else if (_input.Current.selectShotgun && ShotgunOwned) {
+            Sfx.Play("weapon_switch", transform.position);
+        } else if (_input.Current.selectShotgun && ShotgunOwned && !ShotgunEquipped) {
             ShotgunEquipped = true;
+            Sfx.Play("weapon_switch", transform.position);
         }
     }
 
@@ -424,6 +431,7 @@ public class Player : MonoBehaviour, IDamageable {
             return;
         }
         _playerAnim.Melee();
+        Sfx.Play("sword_swing", transform.position);
         attackReadyAt = Time.time + attackCooldown;
     }
 
@@ -437,9 +445,11 @@ public class Player : MonoBehaviour, IDamageable {
                 RevolverBullets = take;
                 RevolverReserve -= take;
                 Fx.Spray(transform.position + Vector3.up * 0.6f, Vector3.up, new Color(1f, 0.9f, 0.5f), 4, 1.5f, 0.3f);
+                Sfx.Play("pistol_reload", transform.position);
             }
         } else if (RevolverBullets <= 0 && RevolverReserve > 0) {
             reloadReadyAt = Time.time + revolverReloadTime;
+            Sfx.Play("pistol_empty", transform.position);
         }
     }
 
@@ -454,6 +464,7 @@ public class Player : MonoBehaviour, IDamageable {
         Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);
 
         // the shotgun fires three bullets in a fan, one shell per shot
+        Sfx.Play(UsingShotgun ? "shotgun_shot" : "pistol_shot", muzzle);
         if (UsingShotgun) {
             ShotgunShells--;
             FireBullet(muzzle, Quaternion.Euler(0f, 0f, 10f) * forward);
@@ -564,6 +575,7 @@ public class Player : MonoBehaviour, IDamageable {
         trigger.radius = 0.4f;
         grenade.AddComponent<Grenade>();
         Fx.Spray(from, velocity, new Color(1f, 0.9f, 0.6f), 4, 2f, 0.4f);
+        Sfx.Play("grenade_throw", from);
     }
 
     // the charge (0..1) that lands a grenade `dx` away horizontally and `dy` higher, on the
@@ -601,6 +613,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
         _playerAnim.Hit();
         Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.9f, 0.2f, 0.2f), 10, 2.5f, 0.08f, 0.4f);
+        Sfx.Play("freny_hurt", transform.position);
 
         if (Health < 1) {
             Die();
@@ -613,6 +626,8 @@ public class Player : MonoBehaviour, IDamageable {
         _playerAnim.Death();
         // Freny bursts into particles instead of the "pieces" death animation
         Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.9f, 0.3f, 0.3f), 36, 3.5f, 0.12f, 0.9f);
+        Sfx.Play("freny_death", transform.position);
+        Sfx.Play("game_over");
         if (_sprite) {
             _sprite.enabled = false;
         }
@@ -631,6 +646,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
         _gameManager.HasPotion = false;
         Heal(1);
+        Sfx.Play("potion", transform.position);
     }
 
     public void PickUpItem(HealthPotion healthPotion) {
@@ -638,6 +654,7 @@ public class Player : MonoBehaviour, IDamageable {
             return;
         }
         Heal(Mathf.Max(healthPotion.healPoints, 1));
+        Sfx.Play("potion", transform.position);
         Destroy(healthPotion.gameObject);
     }
 
