@@ -87,7 +87,13 @@ public class Player : MonoBehaviour, IDamageable {
     public const int ArmorMax = 3;
     private const int GreatSwordDropSwings = 3;
     private const float GreatSwordGrace = 0.45f;   // the last dropped swing keeps the big hitbox
-    private const int RageKills = 12;
+    // Rage rises with action and drains when nothing happens (fractions of the full meter)
+    private const float RagePerKill = 0.12f;
+    private const float RagePerHit = 0.04f;
+    private const float RagePerHurt = 0.08f;
+    private const float RageCalmDelay = 2f;     // seconds without action before it starts draining
+    private const float RageDrainPerSecond = 0.05f;
+    private float lastRageAction;
     private const float RageSeconds = 20f;
     private const int RageMeleeDamage = 2;
     private static readonly Color RageTint = new Color(1f, 0.55f, 0.5f);
@@ -146,7 +152,8 @@ public class Player : MonoBehaviour, IDamageable {
     public int GreatSwordSwings { get; private set; }
     // armor hearts (the Berserker helmet): each one takes a hit before the life hearts
     public int Armor { get; private set; }
-    // kills fill the Rage meter; full, it gives RageSeconds of red helmet and harder sword hits
+    // kills, sword hits and hits taken fill the Rage meter, calm drains it; full, it gives
+    // RageSeconds of red helmet and harder sword hits
     public float Rage { get; private set; }
     public bool Raging => Time.time < rageUntil;
     public float RageLeft => Raging ? (rageUntil - Time.time) / RageSeconds : 0f;
@@ -237,6 +244,9 @@ public class Player : MonoBehaviour, IDamageable {
             _sprite.enabled = !IsInvulnerable || Mathf.Repeat(Time.time, 0.16f) < 0.08f;
             // Rage: she glows red until it runs out
             _sprite.color = Raging ? RageTint : Color.white;
+        }
+        if (!Raging && Rage > 0f && Time.time - lastRageAction > RageCalmDelay) {
+            Rage = Mathf.Max(0f, Rage - RageDrainPerSecond * Time.deltaTime);
         }
 
         CheckGround();
@@ -635,6 +645,7 @@ public class Player : MonoBehaviour, IDamageable {
             return false;
         }
         invulnerableUntil = Time.time + invulnerableTime;
+        AddRage(RagePerHurt);
         if (Armor > 0) {
             // the armor takes the hit: she blinks as usual but keeps her life
             Armor--;
@@ -720,10 +731,20 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     private void OnEnemyKilled(Enemy enemy) {
+        AddRage(RagePerKill);
+    }
+
+    // a sword hit that landed (MeleeAttack)
+    public void OnMeleeHit() {
+        AddRage(RagePerHit);
+    }
+
+    private void AddRage(float amount) {
         if (isDead || Raging) {
             return;
         }
-        Rage = Mathf.Min(1f, Rage + 1f / RageKills);
+        lastRageAction = Time.time;
+        Rage = Mathf.Min(1f, Rage + amount);
         if (Rage >= 1f) {
             Rage = 0f;
             rageUntil = Time.time + RageSeconds;
