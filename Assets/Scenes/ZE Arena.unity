@@ -6985,7 +6985,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 895971440}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 1.76, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10711,7 +10711,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 980548518}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.8275, y: 0, z: 0}
+  m_LocalPosition: {x: 0.6975, y: 0, z: 0}
   m_LocalScale: {x: 0.875, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -29104,7 +29104,7 @@ MonoBehaviour:
     weight: 1
     flying: 0
   chestPrefab: {fileID: 840620173825923865, guid: b275f40a18a7d8442999d5655b1d037a, type: 3}
-  chestInterval: 45
+  chestInterval: 30
   portalSeconds: 1
   firstSpawnDelay: 2
 --- !u!114 &1900000004

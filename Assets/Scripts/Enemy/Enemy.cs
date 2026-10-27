@@ -586,6 +586,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Coin coin = dropped.GetComponent<Coin>();
         if (coin) {
             coin.coins = coins;
+            coin.Expire();
         }
     }
 

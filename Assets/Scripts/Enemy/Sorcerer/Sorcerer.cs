@@ -13,6 +13,10 @@ public class Sorcerer : Enemy {
     // set by the arena director for a sorcerer on a tower, which Freny can't climb to: after this
     // many casts it vanishes in a portal (0 = stays until killed)
     [System.NonSerialized] public int castsBeforeLeaving;
+    // also set for a tower sorcerer: where to blink to after each cast (null = stay)
+    [System.NonSerialized] public System.Func<Vector3?> teleportTo;
+    [SerializeField] private float teleportDelay = 0.5f;  // after the hexball leaves
+    [SerializeField] private float castAfterTeleport = 0.9f;
     private int casts;
     private bool laughed;
 
@@ -87,7 +91,26 @@ public class Sorcerer : Enemy {
             Fx.Portal(Feet + Vector3.up * 0.6f, 0.6f, DeathColor);
             Sfx.Play("portal", Feet);
             Despawn();
+        } else if (teleportTo != null) {
+            StartCoroutine(TeleportAfterCast());
         }
+    }
+
+    // appear, cast, vanish in a portal and come out somewhere else: hard to keep track of
+    private System.Collections.IEnumerator TeleportAfterCast() {
+        yield return new WaitForSeconds(teleportDelay);
+        if (isDead || teleportTo == null) {
+            yield break;
+        }
+        Vector3? to = teleportTo();
+        if (!to.HasValue) {
+            yield break;
+        }
+        Fx.Portal(Feet + Vector3.up * 0.6f, 0.4f, DeathColor);
+        Sfx.Play("portal", Feet);
+        PlaceFeetAt(to.Value);
+        Fx.Portal(to.Value + Vector3.up * 0.6f, 0.4f, DeathColor);
+        nextCastTime = Mathf.Max(nextCastTime, Time.time + castAfterTeleport);
     }
 
     // each sorcerer uses its own cast point; the tag search alone made every sorcerer cast from the first one found

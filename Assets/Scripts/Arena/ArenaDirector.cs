@@ -20,7 +20,7 @@ public class ArenaDirector : MonoBehaviour {
 
     [SerializeField] private Entry[] enemies;
     [SerializeField] private GameObject chestPrefab;
-    [SerializeField] private float chestInterval = 45f;
+    [SerializeField] private float chestInterval = 30f;
     [SerializeField] private float portalSeconds = 1f;
     [SerializeField] private float firstSpawnDelay = 2f;
     [SerializeField] private float minDistanceFromHero = 3.5f;
@@ -134,6 +134,51 @@ public class ArenaDirector : MonoBehaviour {
     // A random clear spot: a platform picked by width among those that suit what spawns, then a
     // random x on it with room above and away from Freny. False when the map has nothing (the
     // spawners are used then).
+    // the lowest tower ledges: the two pockets in the side towers, where the sorcerers appear
+    private static List<ArenaMap.Platform> TowerLedges(ArenaMap map) {
+        List<ArenaMap.Platform> ledges = new List<ArenaMap.Platform>();
+        float lowest = float.MaxValue;
+        foreach (ArenaMap.Platform p in map.Platforms) {
+            if (p.tower) {
+                lowest = Mathf.Min(lowest, p.y);
+            }
+        }
+        foreach (ArenaMap.Platform p in map.Platforms) {
+            if (p.tower && p.y <= lowest + 0.5f) {
+                ledges.Add(p);
+            }
+        }
+        return ledges;
+    }
+
+    // where a tower sorcerer jumps to after a cast: another tower ledge (the other side when there
+    // is one), so Freny has to keep finding it
+    private Vector3? TeleportSpot(Sorcerer caster) {
+        ArenaMap map = Map;
+        if (map == null || caster == null) {
+            return null;
+        }
+        List<ArenaMap.Platform> ledges = TowerLedges(map);
+        ArenaMap.Platform here = map.PlatformUnder(caster.Feet + Vector3.up * 0.1f, 0.5f);
+        if (ledges.Count > 1) {
+            ledges.Remove(here);
+        }
+        for (int attempt = 0; attempt < 8 && ledges.Count > 0; attempt++) {
+            ArenaMap.Platform pick = ledges[Random.Range(0, ledges.Count)];
+            float min = Mathf.Max(pick.xMin + 0.4f, ArenaBounds.Left + 0.6f);
+            float max = Mathf.Min(pick.xMax - 0.4f, ArenaBounds.Right - 0.6f);
+            if (max < min) {
+                continue;
+            }
+            float x = Random.Range(min, max);
+            if (Mathf.Abs(x - caster.Feet.x) < 1f || map.HeadroomAt(x, pick.y) < 1.6f) {
+                continue;
+            }
+            return new Vector3(x, pick.y, 0f);
+        }
+        return null;
+    }
+
     private bool RandomSpot(bool towersFirst, float headroom, out Vector3 point, out ArenaMap.Platform platform) {
         point = Vector3.zero;
         platform = null;
@@ -143,11 +188,7 @@ public class ArenaDirector : MonoBehaviour {
         }
         List<ArenaMap.Platform> candidates = new List<ArenaMap.Platform>();
         if (towersFirst) {
-            foreach (ArenaMap.Platform p in map.Platforms) {
-                if (p.tower) {
-                    candidates.Add(p);
-                }
-            }
+            candidates.AddRange(TowerLedges(map));
         }
         if (candidates.Count == 0) {
             candidates = map.ReachableFrom(map.Floor);
@@ -237,6 +278,7 @@ public class ArenaDirector : MonoBehaviour {
         }
         if (enemy is Sorcerer caster && platform.tower) {
             caster.castsBeforeLeaving = towerSorcererCasts;
+            caster.teleportTo = () => TeleportSpot(caster);
         }
     }
 
