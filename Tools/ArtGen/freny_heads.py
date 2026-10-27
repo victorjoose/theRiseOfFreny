@@ -9,8 +9,9 @@
 #
 # Writes Assets/Sprites/Characters/Player/Resources/FrenyHeads/{rage,berserker}.png + .meta; FrenyMotion loads them by the
 # body sprite's name. Rerun it after changing the icons or any of her sheets. Frames with no helmet (white hit flash, death) get no head.
-import os, re, sys, uuid, random
+import os, re, sys, random
 from PIL import Image
+from sheetmeta import write_meta
 
 ROOT = sys.argv[1]
 PLAYER = os.path.join(ROOT, 'Assets/Sprites/Characters/Player')
@@ -18,7 +19,7 @@ OUT = os.path.join(ROOT, 'Assets/Sprites/Characters/Player/Resources/FrenyHeads'
 PX = 4                                   # art pixel size in texels
 SHEETS = ['Player idle', 'Player walk', 'Player jump', 'Player jump ranged', 'Player hit',
           'Player crouched', 'Player dash', 'Player kick', 'Player ranged', 'Player melee long',
-          'Player slash']
+          'Player slash', 'Resources/FrenyPoses/poses']
 
 ORANGE = (202, 117, 56)
 LIGHT, MID, SHADE, WHITE = (176, 162, 141), (129, 111, 109), (99, 86, 85), (239, 239, 233)
@@ -37,6 +38,13 @@ ALIGN = {0: (.5, .5), 1: (0, 1), 2: (.5, 1), 3: (1, 1), 4: (0, .5), 5: (1, .5), 
 
 def sprites_of(meta_path):
     meta = open(meta_path).read()
+    if re.search(r'\n  spriteMode: 1\n', meta):            # Single: the whole texture is one sprite
+        w, h = Image.open(meta_path[:-len('.meta')]).size
+        align = int(re.search(r'\n  alignment: (\d+)', meta).group(1))
+        p = re.search(r'\n  spritePivot: \{x: ([\d.\-e]+), y: ([\d.\-e]+)\}', meta)
+        pivot = (float(p.group(1)), float(p.group(2))) if align == 9 else ALIGN[align]
+        yield os.path.basename(meta_path)[:-len('.png.meta')], {'x': 0, 'y': 0, 'width': w, 'height': h}, pivot
+        return
     sheet = meta[meta.index('  spriteSheet:'):]
     for block in re.split(r'\n    - serializedVersion: 2\n', sheet)[1:]:
         name = re.search(r'name: (.+)', block).group(1).strip()
@@ -160,34 +168,9 @@ def main():
             atlas.paste(tile, (cx, cy))
             sprites.append((name, cx, atlas.height - cy - tile.height, tile.width, tile.height, piv))
         atlas.save(os.path.join(OUT, kind + '.png'))
-        write_meta(os.path.join(OUT, kind + '.png.meta'), sprites)
+        write_meta(ROOT, os.path.join(OUT, kind + '.png.meta'), sprites)
         print(kind, len(sprites), 'heads', atlas.size)
 
-
-def write_meta(path, sprites):
-    template = open(os.path.join(PLAYER, 'Player slash.png.meta')).read()
-    guid = None
-    if os.path.exists(path):                       # keep the guid stable on regeneration
-        guid = re.search(r'^guid: (\w+)', open(path).read(), re.M).group(1)
-    guid = guid or uuid.uuid4().hex
-    ids = [random.randint(-2 ** 62, 2 ** 62) for _ in sprites]
-    head, sheet = template.split('  spriteSheet:\n', 1)
-    head = re.sub(r'^guid: \w+', 'guid: ' + guid, head, count=1, flags=re.M)
-    table = ''.join(f'  - first:\n      213: {i}\n    second: {s[0]}\n' for i, s in zip(ids, sprites))
-    head = re.sub(r'  internalIDToNameTable:\n.*?(?=  externalObjects)', lambda m: '  internalIDToNameTable:\n' + table, head, flags=re.S)
-    body = ''
-    for i, (name, x, y, w, h, piv) in zip(ids, sprites):
-        body += (f"    - serializedVersion: 2\n      name: {name}\n      rect:\n        serializedVersion: 2\n"
-                 f"        x: {x}\n        y: {y}\n        width: {w}\n        height: {h}\n"
-                 f"      alignment: 9\n      pivot: {{x: {piv[0]:.6f}, y: {piv[1]:.6f}}}\n"
-                 f"      border: {{x: 0, y: 0, z: 0, w: 0}}\n      outline: []\n      physicsShape: []\n"
-                 f"      tessellationDetail: 0\n      bones: []\n      spriteID: {uuid.uuid4().hex}\n"
-                 f"      internalID: {i}\n      vertices: []\n      indices: \n      edges: []\n      weights: []\n")
-    start = sheet.index('    sprites:\n') + len('    sprites:\n')
-    rest = sheet[start:]
-    tail = rest[rest.rindex('      weights: []\n') + len('      weights: []\n'):]
-    tail = re.sub(r'    nameFileIdTable:\n(?:      .*\n)*', '    nameFileIdTable:\n' + ''.join(f'      {s[0]}: {i}\n' for i, s in zip(ids, sprites)), tail)
-    open(path, 'w').write(head + '  spriteSheet:\n' + sheet[:start] + body + tail)
 
 
 main()

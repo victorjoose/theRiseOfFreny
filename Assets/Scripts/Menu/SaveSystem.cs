@@ -17,6 +17,8 @@ public class SaveData {
     public int campaignUnlocked;
     public List<Entry> upgrades = new List<Entry>();
     public List<Entry> bestTimes = new List<Entry>();
+    public List<string> unequipped = new List<string>();   // bought, but left at home
+    public List<string> gear = new List<string>();         // Armeiro items that aren't upgrades (Loadout)
 
     [Serializable]
     public class Entry {
@@ -25,7 +27,7 @@ public class SaveData {
     }
 
     public bool HasProgress =>
-        coins > 0 || xp > 0 || campaignUnlocked > 0 || upgrades.Count > 0 || bestTimes.Count > 0 ||
+        coins > 0 || xp > 0 || campaignUnlocked > 0 || upgrades.Count > 0 || bestTimes.Count > 0 || (gear != null && gear.Count > 0) ||
         !string.IsNullOrEmpty(lastScene);
 
     public DateTime SavedAt => new DateTime(savedAtTicks, DateTimeKind.Utc);
@@ -193,6 +195,17 @@ public static class SaveSystem {
             if (level > 0) {
                 data.upgrades.Add(new SaveData.Entry { id = upgrade.ToString(), value = level });
             }
+            if (PlayerPrefs.HasKey(FrenyProgress.UnequippedKeyPrefix + upgrade)) {
+                data.unequipped.Add(upgrade.ToString());
+            }
+        }
+        foreach (string item in Loadout.GearIds) {
+            if (Loadout.Owns(item)) {
+                data.gear.Add(item);
+            }
+            if (PlayerPrefs.HasKey(FrenyProgress.UnequippedKeyPrefix + item)) {
+                data.unequipped.Add(item);
+            }
         }
         foreach (CampaignLevels.Stage stage in CampaignLevels.All) {
             float best = PlayerPrefs.GetFloat(CampaignProgress.BestTimeKeyPrefix + stage.id, 0f);
@@ -215,11 +228,21 @@ public static class SaveSystem {
         foreach (FrenyUpgrade upgrade in Enum.GetValues(typeof(FrenyUpgrade))) {
             SaveData.Entry entry = data.upgrades.Find(e => e.id == upgrade.ToString());
             SetOrDelete(FrenyProgress.LevelKeyPrefix + upgrade, entry != null ? Mathf.RoundToInt(entry.value) : 0);
+            SetOrDelete(FrenyProgress.UnequippedKeyPrefix + upgrade, Has(data.unequipped, upgrade.ToString()) ? 1 : 0);
+        }
+        foreach (string item in Loadout.GearIds) {
+            SetOrDelete(Loadout.GearKeyPrefix + item, Has(data.gear, item) ? 1 : 0);
+            SetOrDelete(FrenyProgress.UnequippedKeyPrefix + item, Has(data.unequipped, item) ? 1 : 0);
         }
         foreach (CampaignLevels.Stage stage in CampaignLevels.All) {
             SaveData.Entry entry = data.bestTimes.Find(e => e.id == stage.id);
             SetOrDelete(CampaignProgress.BestTimeKeyPrefix + stage.id, entry != null ? entry.value : 0f);
         }
+    }
+
+    // old saves (and the cloud copies) have no list at all
+    private static bool Has(List<string> list, string id) {
+        return list != null && list.Contains(id);
     }
 
     private static void SetOrDelete(string key, int value) {

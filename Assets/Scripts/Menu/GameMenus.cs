@@ -113,6 +113,7 @@ public class GameMenus : MonoBehaviour {
         gameplayScene = IsGameplayScene(scene.name);
         if (CampaignLevels.IsStage(scene.name) || scene.name == ArenaScene) {
             SaveSystem.SetLastScene(scene.name);
+            StartCoroutine(Loadout.ApplyAtStageStart());
         }
         SaveSystem.SaveNow();
         nextAutosave = Time.unscaledTime + AutosaveSeconds;
