@@ -15,7 +15,6 @@ public class ArenaHud : MonoBehaviour {
     private ArenaAutopilot autopilot;
     private ArenaRunManager run;
     private ArenaDirector director;
-    private Dash dash;
     private GUIStyle boxStyle;
 
     private static readonly FrenyUpgrade[] Upgrades = (FrenyUpgrade[])Enum.GetValues(typeof(FrenyUpgrade));
@@ -25,7 +24,6 @@ public class ArenaHud : MonoBehaviour {
         input = GetComponent<FrenyInput>();
         autopilot = GetComponent<ArenaAutopilot>();
         run = GetComponent<ArenaRunManager>();
-        dash = GetComponent<Dash>();
         director = FindObjectOfType<ArenaDirector>();
     }
 
@@ -39,6 +37,9 @@ public class ArenaHud : MonoBehaviour {
     }
 
     private void OnGUI() {
+        if (GameMenus.Paused) {
+            return;
+        }
         if (player == null || input == null) {
             return;
         }
@@ -67,7 +68,6 @@ public class ArenaHud : MonoBehaviour {
         if (GUILayout.Button(input.AutoEnabled ? "Auto: LIGADO (T)" : "Auto: DESLIGADO (T)")) {
             input.ToggleAuto();
         }
-        DrawCooldownRow();
 
         if (director) {
             GUILayout.Label($"Tempo {director.Elapsed:0}s  Dificuldade {director.Difficulty * 100f:0}%  Inimigos até {director.MaxAlive}");
@@ -107,118 +107,6 @@ public class ArenaHud : MonoBehaviour {
         if (showTuning) {
             DrawTuning();
         }
-        DrawWeapons();
-    }
-
-    private static readonly Color ReadyColor = new Color(0.35f, 0.9f, 0.35f);
-    private static readonly Color ChargingColor = new Color(1f, 0.6f, 0.2f);
-    private static readonly Color ActiveColor = new Color(0.3f, 0.8f, 1f);
-
-    // icons of what Freny carries, under the hearts (the HUD canvas is laid out for 1920x1080),
-    // with the cooldowns as bars so it is clear why a key did nothing
-    private void DrawWeapons() {
-        ArenaAssets assets = ArenaAssets.Instance;
-        if (assets == null) {
-            return;
-        }
-        float scale = Screen.width / 1920f;
-        float size = 56f * scale;
-        float x = 60f * scale;
-        float y = 175f * scale;
-
-        float swordX = x;
-        DrawIcon(FrenyProgress.HasGreatSword ? assets.greatSwordIcon : assets.swordIcon, ref x, y, size);
-        float swordReady = player.AttackReadiness;
-        DrawMeter(new Rect(swordX, y + size + 2f, size, 6f * scale), swordReady, swordReady >= 1f ? ReadyColor : ChargingColor);
-        float revolverX = x;
-        DrawIcon(assets.revolverIcon, ref x, y, size, !player.UsingShotgun && !player.RevolverDry);
-        DrawBullets(revolverX, y + size + 2f, size, scale);
-        // spare bullets: the revolver is no longer infinite
-        GUI.Label(new Rect(revolverX + size - 14f * scale, y + size - 18f * scale, 70f * scale, 20f * scale), $"+{player.RevolverReserve}");
-        if (player.ShotgunOwned) {
-            float sx = x;
-            DrawIcon(assets.shotgunIcon, ref x, y, size, player.UsingShotgun);
-            GUI.Label(new Rect(sx + size - 10f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.ShotgunShells}");
-        }
-        if (player.Grenades > 0) {
-            Color old = GUI.color;
-            GUI.color = player.GrenadeReady ? Color.white : new Color(1f, 1f, 1f, 0.35f);
-            float gx = x;
-            DrawIcon(assets.grenadeIcon, ref x, y, size);
-            GUI.color = old;
-            GUI.Label(new Rect(gx + size - 10f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.Grenades}");
-            if (player.ChargingGrenade) {
-                // power bar while G is held
-                DrawMeter(new Rect(gx, y + size + 2f, size, 6f * scale), player.GrenadeCharge, Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge));
-            }
-        }
-
-    }
-
-    // sword, sprint and dash readiness inside the panel, so a key that does nothing shows why
-    private void DrawCooldownRow() {
-        GUILayout.Space(8f);
-        GUILayout.BeginHorizontal();
-        DrawLabeledMeter("Espada", player.AttackReadiness, ReadyColor);
-        GUILayout.Space(10f);
-        float runMeter = player.RunMeter;
-        DrawLabeledMeter(player.IsRunning ? "Corrida" : "Corrida (Shift)", runMeter, player.IsRunning ? ActiveColor : ReadyColor);
-        if (dash) {
-            GUILayout.Space(10f);
-            DrawLabeledMeter("Dash (C)", dash.Readiness, ReadyColor);
-        }
-        GUILayout.EndHorizontal();
-        GUILayout.Space(8f);
-    }
-
-    private static void DrawLabeledMeter(string label, float fill, Color readyColor) {
-        GUILayout.BeginVertical(GUILayout.Width(96));
-        GUILayout.Label(fill >= 1f ? label : label + " ...", GUILayout.Width(96));
-        GUILayout.Space(2f);
-        Rect rect = GUILayoutUtility.GetRect(90, 9);
-        DrawMeter(rect, fill, fill >= 1f ? readyColor : ChargingColor);
-        GUILayout.EndVertical();
-    }
-
-    // one dot per bullet left in the revolver; while reloading, the dots fill back up as a bar
-    private void DrawBullets(float x, float y, float width, float scale) {
-        int capacity = Mathf.Max(1, player.RevolverCapacity);
-        if (player.Reloading) {
-            DrawMeter(new Rect(x, y, width, 6f * scale), player.ReloadProgress, ChargingColor);
-            return;
-        }
-        float gap = 3f * scale;
-        float dot = (width - gap * (capacity - 1)) / capacity;
-        Color old = GUI.color;
-        for (int i = 0; i < capacity; i++) {
-            GUI.color = i < player.RevolverBullets ? new Color(1f, 0.85f, 0.3f) : new Color(1f, 1f, 1f, 0.2f);
-            GUI.DrawTexture(new Rect(x + i * (dot + gap), y, dot, 6f * scale), Texture2D.whiteTexture);
-        }
-        GUI.color = old;
-    }
-
-    private static void DrawMeter(Rect rect, float fill, Color color) {
-        Color old = GUI.color;
-        GUI.Box(rect, GUIContent.none);
-        GUI.color = color;
-        GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(fill), rect.height), Texture2D.whiteTexture);
-        GUI.color = old;
-    }
-
-    private static void DrawIcon(Sprite sprite, ref float x, float y, float size, bool selected = true) {
-        if (sprite == null) {
-            return;
-        }
-        Color old = GUI.color;
-        if (!selected) {
-            GUI.color = new Color(1f, 1f, 1f, 0.35f);
-        }
-        Rect tr = sprite.textureRect;
-        Texture tex = sprite.texture;
-        Rect uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
-        GUI.DrawTextureWithTexCoords(new Rect(x, y, size, size), tex, uv);
-        GUI.color = old;
-        x += size + 6f;
     }
 
     // balance sliders (Tuning), on the right side so they don't cover the main panel

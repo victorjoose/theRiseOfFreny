@@ -22,11 +22,11 @@ public static class FrenyProgress {
 
     public static event Action Changed;
 
-    private const string XpKey = "freny.xp";
-    private const string SpentPointsKey = "freny.spentPoints";
-    private const string LevelKeyPrefix = "freny.upgrade.";
-    private const string CoinsKey = "freny.coins";
-    private const string BestWaveKey = "freny.arena.bestRunSeconds";
+    public const string XpKey = "freny.xp";
+    public const string SpentPointsKey = "freny.spentPoints";
+    public const string LevelKeyPrefix = "freny.upgrade.";
+    public const string CoinsKey = "freny.coins";
+    public const string BestWaveKey = "freny.arena.bestRunSeconds";
 
     // ---- coins (shared by arena, shop and campaign) ----
 

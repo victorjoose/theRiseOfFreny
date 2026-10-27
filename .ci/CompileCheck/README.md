@@ -9,6 +9,7 @@ Rodar localmente (precisa do .NET SDK 8):
 dotnet build .ci/CompileCheck
 ```
 
-Limites: não compila scripts de Editor nem o `2d-extras-master`, e os tipos do uGUI (`Text`, `Image`)
-são substituídos por stubs mínimos em `UiStubs.cs`. Se um script novo usar outro tipo do uGUI/TMP,
-adicione o stub ali. Isso não substitui testar na Unity: só garante que o código compila.
+Limites: não compila scripts de Editor. O uGUI (`UnityEngine.UI`: `Button`, `Slider`, `Text`...) vem do
+pacote NuGet `Unity3D.UnityEngine.UI` 2020.3 (a DLL real, não stubs), então os menus feitos em código são
+checados também; TextMeshPro não está incluído. Isso não substitui testar na Unity: só garante que o
+código compila.
