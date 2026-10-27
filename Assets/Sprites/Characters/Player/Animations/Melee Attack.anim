@@ -334,7 +334,7 @@ AnimationClip:
   m_PPtrCurves:
   - curve:
     - time: 0
-      value: {fileID: -665453217389043089, guid: 4fe8cc68c26f57f449f2fc553e3b958f,
+      value: {fileID: -4206156228050612202, guid: 4fe8cc68c26f57f449f2fc553e3b958f,
         type: 3}
     - time: 0.09090909
       value: {fileID: -4206156228050612202, guid: 4fe8cc68c26f57f449f2fc553e3b958f,

@@ -8,9 +8,14 @@ using UnityEngine;
 public class PlayerAnimation : MonoBehaviour {
 
     private Animator _anim;
+    private FrenyMotion _motion;   // procedural motion on top of the frames
 
     private void Awake() {
         _anim = GetComponentInChildren<Animator>();
+        _motion = GetComponent<FrenyMotion>();
+        if (_motion == null) {
+            _motion = gameObject.AddComponent<FrenyMotion>();
+        }
     }
 
     public void Move(bool moving) {
@@ -32,6 +37,7 @@ public class PlayerAnimation : MonoBehaviour {
 
     public void Melee() {
         Fire("Melee");
+        _motion.Slash();
     }
 
     public void Ranged() {
@@ -40,14 +46,17 @@ public class PlayerAnimation : MonoBehaviour {
 
     public void Dash() {
         Fire("Dash");
+        _motion.DashStart();
     }
 
     public void Hit() {
         _anim.SetTrigger("Hit");
+        _motion.Hurt();
     }
 
     public void Death() {
         _anim.SetTrigger("Death");
+        _motion.Die();
     }
 
     // a trigger stays armed until some state has a transition for it; if the current state has

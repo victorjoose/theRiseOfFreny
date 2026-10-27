@@ -6,6 +6,9 @@ using UnityEngine;
 // can hit two enemies standing together (before, the first hit blocked the sword for 1 s).
 public class MeleeAttack : MonoBehaviour
 {
+    // Freny's sword landed a hit (FrenyMotion's hit-stop and sparks), at the contact point
+    public static event System.Action<Vector2> FrenyHit;
+
     [SerializeField] private float rehitDelay = 0.5f; // shorter than any attack cooldown
     private readonly Dictionary<IDamageable, float> lastHit = new Dictionary<IDamageable, float>();
     private bool ownerIsEnemy;
@@ -39,6 +42,7 @@ public class MeleeAttack : MonoBehaviour
         }
         lastHit[hit] = Time.time;
         hit.Damage();
+        FrenyHit?.Invoke(other.ClosestPoint(transform.position));
         Sfx.Play("sword_hit", other.transform.position);
     }
 }
