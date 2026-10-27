@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Online {
     // Temporary IMGUI overlay for the online features, so they work without editing
@@ -35,7 +36,15 @@ namespace Online {
             if (_online != null) _online.RunReported -= OnRunReported;
         }
 
+        // The campaign has its own HUD and uses Tab for the stage list.
+        private static bool InCampaign => CampaignLevels.IsStage(SceneManager.GetActiveScene().name);
+
         private void Update() {
+            if (InCampaign) {
+                _open = false;
+                _openAt = -1f;
+                return;
+            }
             if (Input.GetKeyDown(ToggleKey)) {
                 SetOpen(!_open);
             }
@@ -66,6 +75,7 @@ namespace Online {
         }
 
         private void OnGUI() {
+            if (InCampaign) return;
             float scale = Screen.height / ReferenceHeight;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float width = Screen.width / scale;

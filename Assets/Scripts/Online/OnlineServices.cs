@@ -174,7 +174,8 @@ namespace Online {
             _ui = FindFirstObjectByType<UIManager>();
             _runnerScore = FindFirstObjectByType<ScoreManager>();
             _sawAlive = false;
-            _reported = false;
+            // Campaign stages are not runs: a death there just respawns at the checkpoint.
+            _reported = CampaignLevels.IsStage(scene.name);
             _assisted = false;
         }
 

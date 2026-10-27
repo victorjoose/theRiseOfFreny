@@ -167,12 +167,17 @@ public class CampaignRun : MonoBehaviour {
         return null;
     }
 
-    // the bottom of the stage's solid tiles, so falling below it means a pit
+    // the bottom of the stage's solid tiles, so falling below it means a pit.
+    // Uses the tiles themselves: a collider merged into a CompositeCollider2D reports empty bounds.
     private static float LowestGround() {
         float lowest = float.PositiveInfinity;
         foreach (TilemapCollider2D tiles in FindObjectsOfType<TilemapCollider2D>()) {
-            if (tiles.enabled) {
-                lowest = Mathf.Min(lowest, tiles.bounds.min.y);
+            Tilemap map = tiles.GetComponent<Tilemap>();
+            if (tiles.enabled && map != null) {
+                map.CompressBounds();
+                if (map.cellBounds.size.y > 0) {
+                    lowest = Mathf.Min(lowest, map.transform.TransformPoint(map.localBounds.min).y);
+                }
             }
         }
         return float.IsPositiveInfinity(lowest) ? -100f : lowest;

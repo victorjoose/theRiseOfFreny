@@ -30,6 +30,14 @@ go_of_tr={t:g for g,t in tr_of.items()}
 KEEP_ROOTS={'Main Camera','CM Follow Cam','cm','Global Light 2D','Global Volume','Player','Savepoint','LevelExit','World Boundary','Tilemap','Monitor','Scanlines'}
 KEEP_TILEMAPS={'Ground_Tilemap','Background_Tilemap','Foreground_Tilemap'}
 delete=set()   # doc ids
+moved=set()
+# the global light sits under a parent that gets deleted in some bases: move it to the scene root
+for g,n in names.items():
+    t=tr_of.get(g)
+    if n=='Global Light 2D' and t and father[t]!='0':
+        p=father[t]; moved.add(t); children[p]=[c for c in children[p] if c!=t]; father[t]='0'
+        i=byid[t]; docs[i][1]=re.sub(r'm_Father: \{fileID: -?\d+\}','m_Father: {fileID: 0}',docs[i][1])
+        break
 def kill_go(g):
     for c in comps.get(g,[]):
         delete.add(c)
@@ -58,7 +66,7 @@ alive=set(fid(h) for h,b in docs)
 def clean_children(b):
     if 'm_Children:' not in b: return b
     head,rest=b.split('m_Children:',1); kids,tail=rest.split('  m_Father',1)
-    ks=[k for k in re.findall(r'- \{fileID: (-?\d+)\}',kids) if k in alive]
+    ks=[k for k in re.findall(r'- \{fileID: (-?\d+)\}',kids) if k in alive and k not in moved]
     kids=' []\n' if not ks else '\n'+''.join(f'  - {{fileID: {k}}}\n' for k in ks)
     return head+'m_Children:'+kids+'  m_Father'+tail
 for d in docs:
@@ -191,7 +199,9 @@ def instance(kind,x,y,name,extra=()):
         body+=f'    - target: {{fileID: {t}, guid: {guid}, type: 3}}\n      propertyPath: {p}\n      value: {v}\n      objectReference: {{fileID: {r}}}\n'
     body+=f'    m_RemovedComponents: []\n  m_SourcePrefab: {{fileID: 100100000, guid: {guid}, type: 3}}\n'
     new.append([f'--- !u!1001 &{newid()}\n',body])
-OFFSET={'torch':1.15,'walltorch':1.5,'coin':0.5,'chest':0.5,'bat':0.5,'supreme':0.8,'sorcerer':0.6}
+# height of the pivot above the floor: for enemies, the bottom of the body collider (below the
+# pivot in the prefab) plus a little, so they don't start inside the ground and fall through it
+OFFSET={'torch':1.15,'walltorch':1.5,'coin':0.5,'chest':0.5,'bat':0.5,'bug':0.6,'golem':0.85,'licker':1.06,'sorcerer':1.06,'supreme':1.06}
 counts={}
 for e in ents:
     k=e[0]
@@ -202,8 +212,9 @@ for e in ents:
     name=f'{label} ({counts[k]})'
     if len(e)==5:   # enemy with a patrol
         ax,_=world(e[3],e[2]); bx_,_=world(e[4],e[2])
-        pa=point(f'PointA {name}',ax+0.5,y+0.6); pb=point(f'PointB {name}',bx_+0.5,y+0.6)
-        instance(k,x+0.5,y+0.6,name,[('pointA','',pa),('pointB','',pb),('spawnerUuid','','0')])
+        h=OFFSET.get(k,0.6)
+        pa=point(f'PointA {name}',ax+0.5,y+h); pb=point(f'PointB {name}',bx_+0.5,y+h)
+        instance(k,x+0.5,y+h,name,[('pointA','',pa),('pointB','',pb),('spawnerUuid','','0')])
     else:
         instance(k,x+0.5,y+OFFSET.get(k,0.5),name)
 # enemy patrol refs: value empty + objectReference; spawnerUuid is a string, not a reference
