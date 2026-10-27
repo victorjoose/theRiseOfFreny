@@ -58194,7 +58194,7 @@ GameObject:
   - component: {fileID: 536184681}
   - component: {fileID: 536184680}
   m_Layer: 0
-  m_Name: LevelExit 1-3
+  m_Name: LevelExit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -58209,10 +58209,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 536184679}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ac8725a28250fe3459964bd5feb03405, type: 3}
+  m_Script: {fileID: 11500000, guid: cb990cd1f1d74402b4d463c4e7cb7010, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  newLevel: JoviScene
+  doorId: exit
+  kind: 0
+  targetScene: 
+  targetDoor: 
+  pressUp: 0
 --- !u!61 &536184681
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -58247,7 +58251,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 536184679}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -42.94, y: -16, z: 0}
+  m_LocalPosition: {x: 58.3, y: 7.4, z: 0}
   m_LocalScale: {x: 7.923986, y: 9.098794, z: 2.2508166}
   m_Children: []
   m_Father: {fileID: 0}
@@ -82213,7 +82217,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 928715356}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.32, y: -3.77, z: 0}
+  m_LocalPosition: {x: -41.5, y: -15.3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1802565416}
@@ -168197,7 +168201,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1333886470}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -10.32, y: -2.77, z: -10}
+  m_LocalPosition: {x: -41.5, y: -14.3, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1498669586}
