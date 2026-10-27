@@ -79,8 +79,8 @@ public class CampaignHud : MonoBehaviour {
     }
 
     private void DrawStatus() {
-        // top center: the HUD has hearts and weapons on the left and the score on the right
-        GUILayout.BeginArea(new Rect(Screen.width / 2 - 140, 10, 280, 100));
+        // bottom right: the HUD has hearts and weapons top left, score and combo top center, coins top right
+        GUILayout.BeginArea(new Rect(Screen.width - 290, Screen.height - 110, 280, 100));
         GUILayout.BeginVertical(boxStyle);
         int index = CampaignLevels.IndexOf(run.StageId);
         CampaignLevels.Stage stage = CampaignLevels.All[index];
