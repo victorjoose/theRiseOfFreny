@@ -42,8 +42,9 @@ public class FrenyMotion : MonoBehaviour {
 
     // "Player slash.png": the arm held out, the long blade drawn from 70 degrees down to -45
     private static readonly Vector2 Hand = new Vector2(0.5f, -0.3f);  // grip, in the Sprite's space
-    private const float BladeLength = 0.62f;
-    private const float BladeFrom = 70f, BladeTo = -45f;
+    // the cut: a crescent in front of the blade, swept from above her shoulder to below her hips
+    private const float ArcAhead = 0.42f, ArcRadius = 0.5f;
+    private const float ArcFrom = 80f, ArcTo = -80f;
     private const float GreatSwordScale = 1.8f;  // the great sword's cut and hitbox, "bem maior"
 
     // the great sword in hand: bought at the shop, or dropped for a few swings (Player.GreatSwordActive)
@@ -263,7 +264,8 @@ public class FrenyMotion : MonoBehaviour {
         }
         if (arcPending && sinceSlash >= windup) {
             arcPending = false;
-            SlashArc.Spawn(transform, body, Hand, BladeLength + 0.2f, BladeFrom, BladeTo, GreatSword);
+            float scale = GreatSword ? GreatSwordScale : 1f;
+            SlashArc.Spawn(transform, body, Hand + new Vector2(ArcAhead * scale, 0f), ArcRadius * scale, ArcFrom, ArcTo, GreatSword);
         }
 
         // ---- springs (frozen during the hit-stop)
@@ -340,10 +342,10 @@ public class FrenyMotion : MonoBehaviour {
         }
     }
 
-    // a crescent swept in front of her: the head runs ahead, the tail follows and thins out
+    // a crescent swept in front of the blade: the head runs ahead, the tail follows and thins out
     private class SlashArc : MonoBehaviour {
         private const int Segments = 18;
-        private const float Life = 0.13f;
+        private const float Life = 0.11f;
 
         private Mesh mesh;
         private Vector3[] verts;
@@ -357,11 +359,10 @@ public class FrenyMotion : MonoBehaviour {
             go.transform.SetParent(owner, false);
             go.transform.localPosition = new Vector3(center.x, center.y, -0.01f);
             SlashArc arc = go.AddComponent<SlashArc>();
-            arc.radius = radius * (greatSword ? GreatSwordScale : 1f);
-            // the trail of the blade's tip, around her hand
+            arc.radius = radius;
             arc.from = from;
             arc.to = to;
-            arc.squashY = 1f;
+            arc.squashY = 1.1f;
             arc.tint = greatSword ? new Color(0.65f, 0.85f, 1f) : new Color(1f, 0.97f, 0.88f);
             arc.Build(body);
         }
@@ -400,7 +401,7 @@ public class FrenyMotion : MonoBehaviour {
             for (int i = 0; i <= Segments; i++) {
                 float k = i / (float)Segments;                     // 0 = tail, 1 = head
                 float a = Mathf.Lerp(from, to, Mathf.Lerp(tail, head, k)) * Mathf.Deg2Rad;
-                float width = Mathf.Lerp(0.04f, 0.32f, k * k) * radius;
+                float width = Mathf.Lerp(0.04f, 0.4f, k * k) * radius;
                 Vector3 dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a) * squashY, 0f);
                 verts[i * 2] = dir * radius;
                 verts[i * 2 + 1] = dir * (radius - width);

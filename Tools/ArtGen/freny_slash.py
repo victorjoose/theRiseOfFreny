@@ -1,6 +1,7 @@
 # Generates Assets/Sprites/Characters/Player/Player slash.png from "Player melee.png" (frame 2 body,
 # blade removed) with a longer blade redrawn at each angle. Usage:
-#   python3 freny_slash.py "Player melee.png" "Player slash.png" 70,35,5,-25,-45 15
+#   python3 freny_slash.py "Player melee.png" "Player slash.png" 25,0,0,0,0 15
+# (a quick draw that ends with the blade held straight out; the slash effect in front is FrenyMotion's)
 # Cells are 280x200 (70x50 art pixels at 4x); the .meta pivots them at x=100px like the 200px sheets.
 # builds "Player slash.png": Freny's arm held out forward (melee frame 2 without its sword)
 # and a longer blade redrawn at each angle of one forward cut
