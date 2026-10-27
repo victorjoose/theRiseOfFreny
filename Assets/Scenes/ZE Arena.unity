@@ -29127,8 +29127,8 @@ MonoBehaviour:
   potionIcon: {fileID: -146668759384179144, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   ammoIcon: {fileID: -6624225963862695163, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   shellsIcon: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
-  rageHelmetIcon: {fileID: -1480233837858187749, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
-  armorHelmetIcon: {fileID: -2503445470904615350, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  rageHelmetIcon: {fileID: -6195256354666351195, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  armorHelmetIcon: {fileID: -6371926176569892122, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   armorHeart: {fileID: 21300000, guid: 2e17e6cf835045fdbc3b1bab52a82c63, type: 3}
   diamondFrames:
   - {fileID: -2460661597379837166, guid: 503970e533e628f49908628b78e709fc, type: 3}

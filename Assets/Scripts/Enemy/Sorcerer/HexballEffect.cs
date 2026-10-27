@@ -7,9 +7,13 @@ public class HexballEffect : MonoBehaviour
 {
     [SerializeField] private float speed = 3f;
     private Vector3 direction = Vector3.right;
+    // set by the Sorcerer when it casts: hearts taken, the shove on Freny, and the arena's speed-up
+    [NonSerialized] public int damage = 2;
+    [NonSerialized] public float knockback = 5f;
+    [NonSerialized] public float speedMultiplier = 1f;
 
     public Vector3 Direction => direction;
-    public float Speed => speed;
+    public float Speed => speed * speedMultiplier;
 
     // live hexballs, read by the autopilot to dodge (instead of FindObjectsOfType)
     public static readonly List<HexballEffect> Active = new List<HexballEffect>();
@@ -39,18 +43,22 @@ public class HexballEffect : MonoBehaviour
 
     private void Update()
     {
-        transform.Translate(direction * (speed * Time.deltaTime), Space.World);
+        transform.Translate(direction * (Speed * Time.deltaTime), Space.World);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
-            IDamageable hit = other.GetComponent<IDamageable>();
+            Player player = other.GetComponent<Player>();
 
-            if (hit != null)
+            if (player != null)
             {
-                hit.Damage();
+                if (player.TryDamage(damage) && knockback > 0f)
+                {
+                    float side = direction.x >= 0f ? 1f : -1f;
+                    player.Knockback(new Vector2(side * knockback, knockback * 0.5f));
+                }
                 Fx.Burst(transform.position, new Color(0.7f, 0.4f, 1f), 12, 2.5f, 0.1f, 0.4f);
                 Sfx.Play("hexball_impact", transform.position);
                 Destroy(this.gameObject);

@@ -638,20 +638,27 @@ public class Player : MonoBehaviour, IDamageable {
 
     // false when the hit was ignored (dead or still blinking from the last one)
     public bool TryDamage() {
+        return TryDamage(1);
+    }
+
+    // a heavier hit (the Golem, the Sorcerer's hexball): armor takes the points first, then life
+    public bool TryDamage(int amount) {
         if (isDead || IsInvulnerable) {
             return false;
         }
         invulnerableUntil = Time.time + invulnerableTime;
         AddRage(RagePerHurt);
-        if (Armor > 0) {
+        int toArmor = Mathf.Min(Armor, Mathf.Max(1, amount));
+        int toLife = Mathf.Max(1, amount) - toArmor;
+        Armor -= toArmor;
+        if (toLife <= 0) {
             // the armor takes the hit: she blinks as usual but keeps her life
-            Armor--;
             _playerAnim.Hit();
             Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.75f, 0.78f, 0.85f), 12, 2.5f, 0.08f, 0.4f);
             Sfx.Play("sword_hit", transform.position);
             return true;
         }
-        Health = Mathf.Max(Health - 1, 0);
+        Health = Mathf.Max(Health - toLife, 0);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, true);
         }
