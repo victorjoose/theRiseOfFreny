@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Sets up a campaign stage when its scene loads, the same way ArenaBootstrap does for the arena:
-// the player gets the input layer, dash, the run (respawn, pits, exit) and the temporary HUD, and
-// the old Savepoint sprites become checkpoints. The scenes themselves only need the level.
+// the player gets the input layer, dash, the run (respawn, pits, exit), the temporary HUD and the
+// minimap, the VHS overlay is switched on, the old Savepoint sprites become checkpoints and the
+// vases, barrels and crates of the tilemaps become breakable. The scenes themselves only need the level.
 public static class CampaignBootstrap {
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -32,6 +33,16 @@ public static class CampaignBootstrap {
         GetOrAdd<Dash>(playerObj);
         GetOrAdd<CampaignRun>(playerObj);
         GetOrAdd<CampaignHud>(playerObj);
+        GetOrAdd<CampaignMinimap>(playerObj);
+        if (ArenaAssets.Instance == null) {
+            // the item, grenade and vase sprites live on the arena's director; without them the
+            // dropped items were plain discs
+            GameObject items = Resources.Load<GameObject>("ItemAssets");
+            if (items != null) {
+                Object.Instantiate(items).name = items.name;
+            }
+        }
+        VhsOverlay.Enable(Camera.main);
         if (Object.FindAnyObjectByType<GameManager>() == null) {
             // holds the potion bought from the Merchant, as in the arena (buying one threw without it)
             new GameObject("GameManager").AddComponent<GameManager>();
@@ -51,6 +62,8 @@ public static class CampaignBootstrap {
                 }
             }
         }
+
+        Breakable.FromTilemaps();
     }
 
     private static void MakeCheckpoint(GameObject obj) {
