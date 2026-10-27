@@ -18,6 +18,7 @@ public class Bat : Enemy {
     protected override Color DeathColor => new Color(0.35f, 0.3f, 0.4f);
     protected override string SoundName => "bat";
     protected override bool WalksOnGround => false; // flies: no floor, no falling
+    protected override bool Small => true;
 
     public override void Init() {
         base.Init();
@@ -70,7 +71,7 @@ public class Bat : Enemy {
         if (chasing && dxToPlayer <= biteDistance && dyToPlayer <= 0.8f && Time.time >= nextBiteTime) {
             PlaySound("attack");
             HitPlayer();
-            nextBiteTime = Time.time + biteCooldown * Tuning.EnemyCooldown.Value;
+            nextBiteTime = Time.time + biteCooldown * Tuning.EnemyCooldown.Value * DifficultyCooldown;
         }
     }
 

@@ -57,7 +57,7 @@ public class Sorcerer : Enemy {
                 laughed = true; // the Sorcerer Supreme laughs at Freny when the fight starts
                 PlaySound("laugh");
             }
-            nextCastTime = Time.time + castCooldown * Tuning.EnemyCooldown.Value;
+            nextCastTime = Time.time + castCooldown * Tuning.EnemyCooldown.Value * DifficultyCooldown;
         }
     }
 

@@ -39,7 +39,7 @@ public class ArenaDirector : MonoBehaviour {
     // changes the peak and can start the run part-way up the curve
     public float Difficulty => Mathf.Clamp01(ArenaDifficulty.StartAt + Elapsed / (Tuning.RampSeconds.Value * ArenaDifficulty.RampFactor));
     public int MaxAlive => Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, Tuning.PeakEnemies.Value * ArenaDifficulty.PeakFactor, Difficulty)));
-    public float SpawnInterval => Mathf.Lerp(6f, 1.5f, Difficulty);
+    public float SpawnInterval => Mathf.Lerp(6f, 1.5f, Difficulty) * ArenaDifficulty.SpawnIntervalFactor;
 
     private static readonly Color PortalColor = new Color(0.6f, 0.3f, 1f);
     private static readonly Color ChestPortalColor = new Color(1f, 0.85f, 0.2f);

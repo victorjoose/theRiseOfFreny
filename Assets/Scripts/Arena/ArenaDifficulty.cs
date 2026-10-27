@@ -26,50 +26,35 @@ public static class ArenaDifficulty {
         }
     }
 
-    // seconds-to-peak multiplier: Easy ramps up slower
-    public static float RampFactor {
-        get {
-            switch (Current) {
-                case ArenaLevel.Easy: return 1.6f;
-                case ArenaLevel.Hard: return 0.7f;
-                case ArenaLevel.Freny: return 0.45f;
-                default: return 1f;
-            }
+    // Medium is what José played and found "normal"; Hard and Freny add enemies and speed, never
+    // health (one-hit enemies stay one-hit, the fights keep their pace)
+    private static float Pick(float easy, float medium, float hard, float freny) {
+        switch (Current) {
+            case ArenaLevel.Easy: return easy;
+            case ArenaLevel.Hard: return hard;
+            case ArenaLevel.Freny: return freny;
+            default: return medium;
         }
     }
+
+    // seconds-to-peak multiplier: Easy ramps up slower
+    public static float RampFactor => Pick(1.6f, 1f, 0.7f, 0.5f);
 
     // enemies alive at the peak
-    public static float PeakFactor {
-        get {
-            switch (Current) {
-                case ArenaLevel.Easy: return 0.6f;
-                case ArenaLevel.Hard: return 1.3f;
-                case ArenaLevel.Freny: return 1.6f;
-                default: return 1f;
-            }
-        }
-    }
+    public static float PeakFactor => Pick(0.6f, 1f, 1.5f, 2f);
+
+    // time between spawns
+    public static float SpawnIntervalFactor => Pick(1.25f, 1f, 0.8f, 0.6f);
 
     // where the run starts on the 0..1 difficulty curve
-    public static float StartAt {
-        get {
-            switch (Current) {
-                case ArenaLevel.Hard: return 0.15f;
-                case ArenaLevel.Freny: return 0.35f;
-                default: return 0f;
-            }
-        }
-    }
+    public static float StartAt => Pick(0f, 0f, 0.15f, 0.3f);
 
     // added to every enemy's unlock point: on Easy the strong ones come much later
-    public static float UnlockShift {
-        get {
-            switch (Current) {
-                case ArenaLevel.Easy: return 0.15f;
-                case ArenaLevel.Hard: return -0.1f;
-                case ArenaLevel.Freny: return -0.2f;
-                default: return 0f;
-            }
-        }
-    }
+    public static float UnlockShift => Pick(0.15f, 0f, -0.1f, -0.2f);
+
+    // enemy movement speed: the small one-hit enemies (Bug, Bat) speed up the most
+    public static float SpeedFactor(bool small) => small ? Pick(0.85f, 1f, 1.25f, 1.45f) : Pick(0.9f, 1f, 1.1f, 1.25f);
+
+    // time between enemy attacks and casts
+    public static float CooldownFactor => Pick(1.25f, 1f, 0.9f, 0.75f);
 }
