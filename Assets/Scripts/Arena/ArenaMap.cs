@@ -422,6 +422,9 @@ public class ArenaMap {
             foreach (Step step in steps[best]) {
                 // a hop costs 1; walking to its edge costs a little, so the nearer edge wins ties
                 float stepCost = 1f + Mathf.Abs(step.x - arriveX[best]) / 40f;
+                if (step.kind == StepKind.Drop && step.from.y - step.to.y > Player.SafeFallHeight) {
+                    stepCost += 6f; // a drop that costs a heart: only when there is no other way down
+                }
                 float total = cost[best] + stepCost;
                 if (total < cost[step.to.index]) {
                     cost[step.to.index] = total;

@@ -34,13 +34,16 @@ public class Bat : Enemy {
             return;
         }
 
+        // an enemy that hit it comes first, then Freny
+        UpdateRival();
+        Enemy foe = Rival;
         distance = Vector2.Distance(transform.position, player_t.position);
-        bool chasing = player.Health > 0 && (distance <= radius * Tuning.EnemyAggro.Value || isHit);
+        bool chasing = foe != null || (player.Health > 0 && (distance <= radius * Tuning.EnemyAggro.Value || isHit));
         SetInCombat(chasing);
 
         // a smaller bob while chasing, so it stays where the sword and the bullets reach
         float bob = Mathf.Sin(Time.time * hoverFrequency + phase) * hoverAmplitude * (chasing ? 0.3f : 1f);
-        Vector3 body = player.BodyCenter;
+        Vector3 body = foe != null ? (Vector3)foe.Center : player.BodyCenter;
         Vector3 centerOffset = (Vector3)Center - transform.position; // its own body vs its pivot
         Vector3 goal;
         if (chasing) {
@@ -70,7 +73,11 @@ public class Bat : Enemy {
         float dyToPlayer = Mathf.Abs(Center.y - body.y);
         if (chasing && dxToPlayer <= biteDistance && dyToPlayer <= 0.8f && Time.time >= nextBiteTime) {
             PlaySound("attack");
-            HitPlayer();
+            if (foe != null) {
+                foe.HitBy(this, HitDamage);
+            } else {
+                HitPlayer();
+            }
             nextBiteTime = Time.time + biteCooldown * Tuning.EnemyCooldown.Value * DifficultyCooldown;
         }
     }

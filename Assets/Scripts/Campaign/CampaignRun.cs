@@ -94,6 +94,7 @@ public class CampaignRun : MonoBehaviour {
             if (player.TryDamage() && !player.IsDead) {
                 Sfx.Play("pit_fall");
                 transform.position = lastSafe;
+                player.ResetFall();
                 if (rb) {
                     rb.SetVel(Vector2.zero);
                 }

@@ -3,7 +3,7 @@
 #   Player slash.png              the cut: melee frame 2 (sword raised, being drawn), then melee
 #                                 frame 3 (sword straight out) with the blade made longer
 #   Resources/FrenyPoses/poses    poses FrenyMotion swaps in over the Animator's frame:
-#                                 crouch, crouch slash, crouch ranged, air ranged
+#                                 crouch, crouch slash, crouch ranged, air ranged, climb
 #
 #   python3 freny_poses.py <repo root>      then rerun freny_heads.py for their helmets
 #
@@ -79,7 +79,8 @@ def poses():
         ('Freny crouch slash_0', {**CROUCH, **moved(SWORD_DRAW, -2, 8)}),
         ('Freny crouch slash_1', {**CROUCH, **moved(crouch_sword, 2, 4)}),
     ] + [('Freny crouch ranged_%d' % i, {**CROUCH, **moved(g, 0, 8)}) for i, g in enumerate(GUN)] \
-      + [('Freny air ranged_%d' % i, frame('Player jump ranged', i)) for i in range(5)]
+      + [('Freny air ranged_%d' % i, frame('Player jump ranged', i)) for i in range(5)] \
+      + [('Freny climb_%d' % i, frame('Player climb', i)) for i in range(2)]
 
 
 def draw(pix):
