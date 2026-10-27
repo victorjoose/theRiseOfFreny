@@ -27,6 +27,16 @@ public static class ArenaBootstrap {
         }
         ArenaBounds.Enable(Camera.main); // the screen is the whole arena
 
+        // the campaign's invisible posts at platform edges turned (and made jump) the enemies walking
+        // into them and blocked Freny; arena enemies turn at edges by themselves
+        foreach (ChangeGroundArea area in Object.FindObjectsOfType<ChangeGroundArea>(true)) {
+            if (area.gameObject.scene == scene) {
+                area.gameObject.SetActive(false);
+            }
+        }
+        // (enemies are kinematic bodies and would shove Freny: each one ignores her collider in
+        // Enemy.Init while the arena is active, so she walks through them)
+
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {
             return;

@@ -16,6 +16,7 @@ public class Bat : Enemy {
     private float phase;
 
     protected override Color DeathColor => new Color(0.35f, 0.3f, 0.4f);
+    protected override bool WalksOnGround => false; // flies: no floor, no falling
 
     public override void Init() {
         base.Init();

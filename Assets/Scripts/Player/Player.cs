@@ -105,6 +105,12 @@ public class Player : MonoBehaviour, IDamageable {
     // the gun can fire: not on the sword/gun cooldown and, for the revolver, not reloading
     public bool GunReady => AttackReady && (UsingShotgun || !Reloading);
     public float ReloadProgress => Reloading ? Mathf.Clamp01(1f - (reloadReadyAt - Time.time) / revolverReloadTime) : 1f;
+    // body and jump, for the autopilot's platform map (the same numbers the physics uses)
+    public float JumpHeight => jumpHeight;
+    public float MaxSpeed => _speed * runMultiplier;
+    public float BodyHalfWidth => col2d ? col2d.bounds.extents.x : 0.28f;
+    public float BodyHeight => col2d ? col2d.bounds.size.y : 1.3f;
+    public float VerticalSpeed => rg2d ? rg2d.Vel().y : 0f;
     // meters for the HUD: 1 = ready / full, 0 = just used / empty
     public float AttackReadiness => attackCooldown > 0f ? 1f - Mathf.Clamp01((attackReadyAt - Time.time) / attackCooldown) : 1f;
     public float RunMeter => IsRunning
