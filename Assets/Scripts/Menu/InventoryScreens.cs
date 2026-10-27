@@ -340,6 +340,7 @@ public static class InventoryScreens {
         price.rectTransform.anchorMin = new Vector2(1f, 0f);
         price.rectTransform.offsetMin = new Vector2(-PriceWidth, 0f);
         price.rectTransform.offsetMax = new Vector2(-12f, 0f);
+        price.horizontalOverflow = HorizontalWrapMode.Overflow;   // "comprado" on one line
         return price;
     }
 
@@ -441,7 +442,7 @@ public static class InventoryScreens {
     }
 
     private const float IconBox = 30f;      // icons are trimmed (MenuArt.Trim), so they all fill it
-    private const float PriceWidth = 104f;
+    private const float PriceWidth = 116f;
 
     private static string ItemName(FrenyUpgrade upgrade) {
         switch (upgrade) {
