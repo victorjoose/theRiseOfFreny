@@ -49,9 +49,9 @@ public class MenuPage {
 
     public Selectable First => rows.Count > 0 ? rows[0][0] : null;
 
-    public Button Button(string label, Action onClick, bool interactable = true) {
+    public Button Button(string label, Action onClick, bool interactable = true, float height = MenuKit.RowHeight) {
         Button button = MenuKit.MakeButton(Content, label, onClick);
-        MenuKit.Size(button, -1f, MenuKit.RowHeight);
+        MenuKit.Size(button, -1f, height);
         button.interactable = interactable;
         if (interactable) {
             rows.Add(new Selectable[] { button });
@@ -62,7 +62,7 @@ public class MenuPage {
     // a taller button with a second, smaller line (save slots)
     public Button BigButton(string label, string detail, Action onClick, bool interactable = true) {
         Button button = MenuKit.MakeButton(Content, label, onClick);
-        MenuKit.Size(button, -1f, 70f);
+        MenuKit.Size(button, -1f, 64f);
         Text text = button.GetComponentInChildren<Text>();
         text.supportRichText = true;
         text.text = label + "\n<size=" + MenuKit.SmallTextSize + ">" + detail + "</size>";

@@ -50,7 +50,7 @@ public static class SettingsScreens {
 
     public static MenuPage Controls(MenuStack stack) {
         MenuPage page = new MenuPage(stack.transform, "Controles", 720f, new Vector2(0.5f, 0.5f), 5f);
-        page.Label("Andar: setas / A D / analógico / direcional.  Esc cancela a troca.", MenuKit.SmallTextSize);
+        page.Label("Andar: setas, A/D ou analógico. Esc cancela.", MenuKit.SmallTextSize);
 
         MenuKeyCapture capture = stack.GetComponent<MenuKeyCapture>();
         if (capture == null) {

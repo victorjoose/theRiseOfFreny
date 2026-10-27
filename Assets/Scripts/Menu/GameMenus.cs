@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -22,6 +23,7 @@ public class GameMenus : MonoBehaviour {
     private Canvas pauseCanvas;
     private MenuStack pauseStack;
     private Canvas touchCanvas;
+    private readonly List<Canvas> hiddenHuds = new List<Canvas>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap() {
@@ -37,7 +39,7 @@ public class GameMenus : MonoBehaviour {
 
     public static bool IsGameplayScene(string scene) {
         return CampaignLevels.IsStage(scene) || scene == ArenaScene ||
-               (scene != MainMenuScene && !scene.StartsWith("UI - ") && FindFirstObjectByType<Player>() != null);
+               (scene != MainMenuScene && !scene.StartsWith("UI - ") && FindAnyObjectByType<Player>() != null);
     }
 
     // where "Main menu" goes; false while the menu scene is not in the build
@@ -165,6 +167,7 @@ public class GameMenus : MonoBehaviour {
         Time.timeScale = 0f;
         AudioListener.pause = true;
         InputBindings.BlockGameplay(true);
+        HideHuds();
 
         if (pauseCanvas == null) {
             pauseCanvas = MenuKit.CreateCanvas("Pause Menu", 30000, transform);
@@ -191,8 +194,26 @@ public class GameMenus : MonoBehaviour {
             pauseCanvas.gameObject.SetActive(false);
         }
         AudioListener.pause = false;
+        foreach (Canvas hud in hiddenHuds) {
+            if (hud != null) {
+                hud.enabled = true;
+            }
+        }
+        hiddenHuds.Clear();
         InputBindings.BlockGameplay(false);
         GameSpeed.Apply();
+    }
+
+    // the scene's HUD canvases (hearts, score, combo) sort above the shade in some scenes
+    private void HideHuds() {
+        hiddenHuds.Clear();
+        foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None)) {
+            if (canvas.isRootCanvas && canvas.enabled && canvas.renderMode != RenderMode.WorldSpace &&
+                !canvas.transform.IsChildOf(transform)) {
+                canvas.enabled = false;
+                hiddenHuds.Add(canvas);
+            }
+        }
     }
 
     private MenuPage PausePage() {

@@ -8,6 +8,7 @@ using UnityEngine.UI;
 public class MainMenu : MonoBehaviour {
 
     private static readonly string[] OldButtons = { "Start", "Options", "Quit" };
+    private const float CompactRow = 38f;
 
     private MenuStack stack;
     private bool onlineWasOpen;
@@ -26,7 +27,7 @@ public class MainMenu : MonoBehaviour {
             foreach (RectTransform child in root.GetComponentsInChildren<RectTransform>(true)) {
                 if (child.name == "Title") {
                     child.localScale = Vector3.one * 0.62f;
-                    child.anchoredPosition = new Vector2(child.anchoredPosition.x, 340f);
+                    child.anchoredPosition = new Vector2(child.anchoredPosition.x, 360f);
                 }
             }
         }
@@ -70,29 +71,29 @@ public class MainMenu : MonoBehaviour {
     }
 
     private MenuPage MainPage() {
-        MenuPage page = new MenuPage(stack.transform, "", 440f, new Vector2(0.5f, 0.5f), 6f);
+        MenuPage page = new MenuPage(stack.transform, "", 440f, new Vector2(0.5f, 0.5f), 4f);
         // under the title, on the right half of the art (title centre: x = 0.716 of the screen)
         page.Panel.anchorMin = page.Panel.anchorMax = new Vector2(0.716f, 0f);
         page.Panel.pivot = new Vector2(0.5f, 0f);
         page.Panel.anchoredPosition = new Vector2(0f, 24f);
-        page.Panel.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(22, 22, 16, 16);
+        page.Panel.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(20, 20, 14, 14);
         SaveData save = SaveSystem.Current;
 
         if (save.HasProgress) {
             page.BigButton("Continuar", save.ShortSummary, GameMenus.Continue);
         } else {
-            page.Button("Começar", () => GameMenus.StartStage(CampaignLevels.All[0].id));
+            page.Button("Começar", () => GameMenus.StartStage(CampaignLevels.All[0].id), true, CompactRow);
         }
-        page.Button("Novo jogo", () => stack.Push(SlotsPage(true)));
-        page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)));
-        page.Button("Fases", () => stack.Push(StagesPage()));
-        page.Button("Arena", GameMenus.StartArena, Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene));
-        page.Button("Configurações", () => stack.Push(SettingsScreens.Settings(stack)));
+        page.Button("Novo jogo", () => stack.Push(SlotsPage(true)), true, CompactRow);
+        page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)), true, CompactRow);
+        page.Button("Fases", () => stack.Push(StagesPage()), true, CompactRow);
+        page.Button("Arena", GameMenus.StartArena, Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene), CompactRow);
+        page.Button("Configurações", () => stack.Push(SettingsScreens.Settings(stack)), true, CompactRow);
         if (Online.OnlineServices.Instance != null && Online.OnlineServices.Instance.State != Online.OnlineServices.Status.Disabled) {
-            page.Button("Online e ranking", () => Online.OnlineHUD.Instance?.SetOpen(true));
+            page.Button("Online e ranking", () => Online.OnlineHUD.Instance?.SetOpen(true), true, CompactRow);
         }
         if (GameMenus.CanQuit) {
-            page.Button("Sair", GameMenus.Quit);
+            page.Button("Sair", GameMenus.Quit, true, CompactRow);
         }
         return page;
     }
