@@ -43,6 +43,9 @@ public class FrenyMotion : MonoBehaviour {
     // "Player slash.png": her own sword held straight out (melee frame 3, blade lengthened)
     private static readonly Vector2 Hand = new Vector2(0.34f, -0.5f);        // grip, in the Sprite's space
     private static readonly Vector2 CrouchHand = new Vector2(0.38f, -0.66f); // the same, crouched
+    // where the sword sprite's grip goes: her fist in "Player slash", and crouched
+    private static readonly Vector2 SlashGrip = new Vector2(0.46f, -0.34f);
+    private static readonly Vector2 CrouchGrip = new Vector2(0.36f, -0.68f);
     // the cut: a crescent in front of the blade, swept from above her shoulder to below her hips
     private const float ArcAhead = 0.42f, ArcRadius = 0.5f, ArcLift = 0.1f;
     private const float ArcFrom = 80f, ArcTo = -80f;
@@ -75,6 +78,11 @@ public class FrenyMotion : MonoBehaviour {
     // poses the Animator has no state for, drawn over its frame: crouching (and slashing or
     // shooting crouched) and shooting in the air. Tools/ArtGen/freny_poses.py builds them.
     private Dictionary<string, Sprite> poses;
+
+    // the sword she swings is the item itself (Items 100x100_1, or _3 for the long sword), held
+    // in her fist while the cut lasts; the slash frames have an empty fist
+    private SpriteRenderer sword;
+    private Sprite normalSword, longSword;
 
     private void Start() {
         player = GetComponent<Player>();
@@ -110,8 +118,18 @@ public class FrenyMotion : MonoBehaviour {
         head.transform.SetParent(body.transform, false);
         head.sharedMaterial = body.sharedMaterial;
         head.sortingLayerID = body.sortingLayerID;
-        head.sortingOrder = body.sortingOrder + 1;
+        head.sortingOrder = body.sortingOrder + 2;
         head.enabled = false;
+
+        Dictionary<string, Sprite> swords = LoadHeads("FrenyPoses/swords");
+        swords.TryGetValue("Freny sword", out normalSword);
+        swords.TryGetValue("Freny great sword", out longSword);
+        sword = new GameObject("Sword").AddComponent<SpriteRenderer>();
+        sword.transform.SetParent(body.transform, false);
+        sword.sharedMaterial = body.sharedMaterial;
+        sword.sortingLayerID = body.sortingLayerID;
+        sword.sortingOrder = body.sortingOrder + 1;
+        sword.enabled = false;
     }
 
     private static Dictionary<string, Sprite> LoadHeads(string path) {
@@ -186,6 +204,7 @@ public class FrenyMotion : MonoBehaviour {
         }
         dead = true;
         head.enabled = false;
+        sword.enabled = false;
         Ragdoll.Spawn(body, player ? player.whatIsGround : (LayerMask)~0, rb ? rb.Vel() : Vector2.zero);
     }
 
@@ -324,6 +343,7 @@ public class FrenyMotion : MonoBehaviour {
         }
 
         UpdatePose(crouching, climbing, grounded, sinceSlash, vy, dt);
+        UpdateSword(crouching, sinceSlash);
         UpdateHead();
 
         lastVx = vx;
@@ -340,8 +360,7 @@ public class FrenyMotion : MonoBehaviour {
             climbed += Mathf.Abs(vy) * dt;
             pose = "Freny climb_" + (int)(climbed / ClimbStride) % 2;
         } else if (crouching) {
-            pose = sinceSlash < 0.25f ? (sinceSlash < 0.035f ? "Freny crouch slash_0" : "Freny crouch slash_1")
-                : sinceShot < 0.3f ? "Freny crouch ranged_" + Mathf.Min(2, (int)(sinceShot * 10f))
+            pose = sinceSlash >= CrouchCut && sinceShot < 0.3f ? "Freny crouch ranged_" + Mathf.Min(2, (int)(sinceShot * 10f))
                 : "Freny crouch_0";
         } else if (!grounded && sinceShot < 0.33f) {
             pose = "Freny air ranged_" + Mathf.Min(4, (int)(sinceShot * 15f));
@@ -349,6 +368,26 @@ public class FrenyMotion : MonoBehaviour {
         if (pose != null && poses.TryGetValue(pose, out Sprite sprite)) {
             body.sprite = sprite;
         }
+    }
+
+    private const float CrouchCut = 0.25f;  // how long a crouched cut holds the sword out
+
+    // the icon exactly as drawn, raised forward at 45 degrees, while the crescent cuts in front
+    private void UpdateSword(bool crouching, float sinceSlash) {
+        string frame = body.sprite ? body.sprite.name : "";
+        bool cutting = crouching ? sinceSlash < CrouchCut : frame.StartsWith("Player slash_");
+        Sprite held = GreatSword ? longSword : normalSword;
+        sword.enabled = cutting && body.enabled && held != null;
+        if (!sword.enabled) {
+            return;
+        }
+        Vector2 grip = crouching ? CrouchGrip : SlashGrip;
+        if (body.flipX) {
+            grip.x = -grip.x;
+        }
+        sword.sprite = held;
+        sword.flipX = body.flipX;
+        sword.transform.localPosition = grip;
     }
 
     // LadderClimber (campaign) holds her on a ladder; it is looked up by name so this file doesn't
@@ -439,7 +478,7 @@ public class FrenyMotion : MonoBehaviour {
             MeshRenderer mr = gameObject.AddComponent<MeshRenderer>();
             mr.sharedMaterial = VertexColorMaterial;
             mr.sortingLayerID = body.sortingLayerID;
-            mr.sortingOrder = body.sortingOrder + 2; // over the head layer
+            mr.sortingOrder = body.sortingOrder + 3; // over the sword and the head
             Update();
         }
 
