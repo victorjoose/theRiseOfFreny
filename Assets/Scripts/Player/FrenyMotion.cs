@@ -63,6 +63,12 @@ public class FrenyMotion : MonoBehaviour {
     private float nextGhost;
     private bool dead;
 
+    // the helmet is its own layer over the body frames: Rage and Berserker (armor) repaint it.
+    // Tools/ArtGen/freny_heads.py cuts one head per body frame, named after that frame.
+    private SpriteRenderer head;
+    private Dictionary<string, Sprite> rageHeads, berserkerHeads;
+    public SpriteRenderer HeadRenderer => head;
+
     private void Start() {
         player = GetComponent<Player>();
         rb = GetComponent<Rigidbody2D>();
@@ -74,6 +80,7 @@ public class FrenyMotion : MonoBehaviour {
             return;
         }
         BuildRig();
+        BuildHead();
         foreach (Transform child in GetComponentsInChildren<Transform>(true)) {
             if (child.name == "Sword_Hit_Box") {
                 swordBox = child;
@@ -86,6 +93,43 @@ public class FrenyMotion : MonoBehaviour {
 
     private void OnDestroy() {
         MeleeAttack.FrenyHit -= OnSwordHit;
+    }
+
+    private void BuildHead() {
+        rageHeads = LoadHeads("FrenyHeads/rage");
+        berserkerHeads = LoadHeads("FrenyHeads/berserker");
+        head = new GameObject("Head").AddComponent<SpriteRenderer>();
+        head.transform.SetParent(body.transform, false);
+        head.sharedMaterial = body.sharedMaterial;
+        head.sortingLayerID = body.sortingLayerID;
+        head.sortingOrder = body.sortingOrder + 1;
+        head.enabled = false;
+    }
+
+    private static Dictionary<string, Sprite> LoadHeads(string path) {
+        Dictionary<string, Sprite> heads = new Dictionary<string, Sprite>();
+        foreach (Sprite s in Resources.LoadAll<Sprite>(path)) {
+            heads[s.name] = s;
+        }
+        return heads;
+    }
+
+    // Rage wins over the Berserker armor; the grey helmet is the body frame itself
+    private void UpdateHead() {
+        Dictionary<string, Sprite> set = player == null ? null
+            : player.Raging ? rageHeads
+            : player.Armor > 0 ? berserkerHeads
+            : null;
+        Sprite frame = body.sprite;
+        if (set == null || frame == null || !set.TryGetValue(frame.name, out Sprite helmet)) {
+            head.enabled = false; // no buff, or a frame without a helmet (the white hit flash)
+            return;
+        }
+        head.sprite = helmet;
+        head.flipX = body.flipX;
+        head.enabled = body.enabled; // blinks with her
+        // Rage: the red helmet glows
+        head.color = player.Raging ? Color.Lerp(Color.white, new Color(1f, 0.6f, 0.55f), 0.5f + 0.5f * Mathf.Sin(Time.time * 10f)) : Color.white;
     }
 
     // the rig pivots at the feet, so squashing and leaning keep her standing on the floor
@@ -129,6 +173,7 @@ public class FrenyMotion : MonoBehaviour {
             return;
         }
         dead = true;
+        head.enabled = false;
         Ragdoll.Spawn(body, player ? player.whatIsGround : (LayerMask)~0, rb ? rb.Vel() : Vector2.zero);
     }
 
@@ -261,6 +306,8 @@ public class FrenyMotion : MonoBehaviour {
             }
         }
 
+        UpdateHead();
+
         lastVx = vx;
         lastVy = vy;
         wasGrounded = grounded;
@@ -337,7 +384,7 @@ public class FrenyMotion : MonoBehaviour {
             MeshRenderer mr = gameObject.AddComponent<MeshRenderer>();
             mr.sharedMaterial = VertexColorMaterial;
             mr.sortingLayerID = body.sortingLayerID;
-            mr.sortingOrder = body.sortingOrder + 1;
+            mr.sortingOrder = body.sortingOrder + 2; // over the head layer
             Update();
         }
 

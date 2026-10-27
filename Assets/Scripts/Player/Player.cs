@@ -96,7 +96,6 @@ public class Player : MonoBehaviour, IDamageable {
     private float lastRageAction;
     private const float RageSeconds = 20f;
     private const int RageMeleeDamage = 2;
-    private static readonly Color RageTint = new Color(1f, 0.55f, 0.5f);
     private float stunnedUntil;
     private float runUntil;
     private float runReadyAt;
@@ -242,8 +241,6 @@ public class Player : MonoBehaviour, IDamageable {
         if (_sprite) {
             // blink while invulnerable
             _sprite.enabled = !IsInvulnerable || Mathf.Repeat(Time.time, 0.16f) < 0.08f;
-            // Rage: she glows red until it runs out
-            _sprite.color = Raging ? RageTint : Color.white;
         }
         if (!Raging && Rage > 0f && Time.time - lastRageAction > RageCalmDelay) {
             Rage = Mathf.Max(0f, Rage - RageDrainPerSecond * Time.deltaTime);
