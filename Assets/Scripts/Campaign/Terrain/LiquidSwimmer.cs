@@ -12,7 +12,7 @@ public class LiquidSwimmer : MonoBehaviour {
     [SerializeField] private float swimJumpSpeed = 7.5f;
     [SerializeField] private float acidSideFactor = 0.25f;
     [SerializeField] private float acidSinkSpeed = 0.45f;
-    [SerializeField] private float acidHurtInterval = 1f;
+    [SerializeField] private float acidHurtInterval = 0.8f; // with the hurt blink, about a heart a second
 
     private Player player;
     private Rigidbody2D body;

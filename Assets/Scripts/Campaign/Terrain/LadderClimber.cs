@@ -75,10 +75,17 @@ public class LadderClimber : MonoBehaviour {
     private void StepOntoTop(Ladder from) {
         float top = from.Area.max.y - 0.5f; // the top of the last rung cell
         int ground = LayerMask.GetMask("Ground");
-        RaycastHit2D hit = Physics2D.Raycast(new Vector2(body.position.x, top + 1.5f), Vector2.down, 2.3f, ground);
-        if (hit.collider != null && bodyCollider != null && hit.point.y > top - 0.6f) {
+        // straight above the ladder first, then the floor beside it (the side she leans to first;
+        // ladders often stick out of a hole with the floor next to them)
+        float facing = horizontal != 0f ? Mathf.Sign(horizontal) : (transform.localScale.x >= 0f ? 1f : -1f);
+        foreach (float dx in new[] { 0f, facing, -facing }) {
+            float x = from.Area.center.x + dx;
+            RaycastHit2D hit = Physics2D.Raycast(new Vector2(x, top + 1.5f), Vector2.down, 3f, ground);
+            if (hit.collider == null || bodyCollider == null || hit.point.y < top - 1.2f || hit.point.y > top + 1.2f) {
+                continue;
+            }
             float feetBelowRoot = body.position.y - bodyCollider.bounds.min.y;
-            body.position = new Vector2(body.position.x, hit.point.y + feetBelowRoot + 0.02f);
+            body.position = new Vector2(dx == 0f ? body.position.x : x, hit.point.y + feetBelowRoot + 0.02f);
             body.SetVel(new Vector2(horizontal * sideSpeed, 0f));
             return;
         }
