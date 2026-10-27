@@ -207,7 +207,7 @@ public class GameMenus : MonoBehaviour {
     // the scene's HUD canvases (hearts, score, combo) sort above the shade in some scenes
     private void HideHuds() {
         hiddenHuds.Clear();
-        foreach (Canvas canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None)) {
+        foreach (Canvas canvas in FindCompat.All<Canvas>()) {
             if (canvas.isRootCanvas && canvas.enabled && canvas.renderMode != RenderMode.WorldSpace &&
                 !canvas.transform.IsChildOf(transform)) {
                 canvas.enabled = false;

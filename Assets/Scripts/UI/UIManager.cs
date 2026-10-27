@@ -70,7 +70,7 @@ public class UIManager : MonoBehaviour {
 
     public void HandleComboManager(Enemy enemy) {
         if (!comboManager) {
-            comboManager = FindObjectOfType<ComboManager>();
+            comboManager = FindAnyObjectByType<ComboManager>();
         }
 
         if (!comboManager) {

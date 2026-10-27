@@ -10,7 +10,6 @@ public class ArenaChest : MonoBehaviour, IDamageable {
     [SerializeField] private int coinCount = 5;
     [SerializeField] private int minCoins = 10;     // total value, split over the coins
     [SerializeField] private int maxCoins = 25;
-    [SerializeField] private int shells = 4;          // unused (shells now come with the shotgun reward)
     [SerializeField] private float coinsWeight = 45f;  // chances of each reward
     [SerializeField] private float grenadesWeight = 30f;
     [SerializeField] private float shotgunWeight = 25f;

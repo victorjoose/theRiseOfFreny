@@ -24,7 +24,7 @@ public class ArenaHud : MonoBehaviour {
         input = GetComponent<FrenyInput>();
         autopilot = GetComponent<ArenaAutopilot>();
         run = GetComponent<ArenaRunManager>();
-        director = FindObjectOfType<ArenaDirector>();
+        director = FindAnyObjectByType<ArenaDirector>();
     }
 
     private void Update() {

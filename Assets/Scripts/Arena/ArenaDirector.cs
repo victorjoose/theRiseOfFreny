@@ -43,7 +43,7 @@ public class ArenaDirector : MonoBehaviour {
     private static readonly Color ChestPortalColor = new Color(1f, 0.85f, 0.2f);
 
     private void Start() {
-        foreach (EnemySpawner spawner in FindObjectsOfType<EnemySpawner>()) {
+        foreach (EnemySpawner spawner in FindCompat.All<EnemySpawner>()) {
             spawner.SetDirected();
             spawners.Add(spawner);
         }

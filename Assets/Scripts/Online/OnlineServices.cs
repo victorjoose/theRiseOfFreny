@@ -169,11 +169,11 @@ namespace Online {
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
-            _player = FindFirstObjectByType<Player>();
+            _player = FindAnyObjectByType<Player>();
             _input = _player != null ? _player.GetComponent<FrenyInput>() : null;
-            _runnerPlayer = FindFirstObjectByType<RPlayer>();
-            _ui = FindFirstObjectByType<UIManager>();
-            _runnerScore = FindFirstObjectByType<ScoreManager>();
+            _runnerPlayer = FindAnyObjectByType<RPlayer>();
+            _ui = FindAnyObjectByType<UIManager>();
+            _runnerScore = FindAnyObjectByType<ScoreManager>();
             _sawAlive = false;
             // Campaign stages are not runs: a death there just respawns at the checkpoint.
             _reported = CampaignLevels.IsStage(scene.name);

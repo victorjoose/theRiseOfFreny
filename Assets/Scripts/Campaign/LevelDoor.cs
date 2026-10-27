@@ -22,7 +22,7 @@ public class LevelDoor : MonoBehaviour {
             if (string.IsNullOrEmpty(bossName)) {
                 return false;
             }
-            foreach (Enemy enemy in FindObjectsOfType<Enemy>()) {
+            foreach (Enemy enemy in FindCompat.All<Enemy>()) {
                 if (enemy.name.StartsWith(bossName) && !enemy.IsDead) {
                     return true;
                 }
