@@ -24,12 +24,14 @@ public class FrenyMotion : MonoBehaviour {
 
     [Header("Slash")]
     public float windup = 0.05f;           // the arm draws back before the cut
-    public float arcReach = 0.3f;          // how far in front of her the cut is centred
-    public float arcRadius = 0.85f;
+    public float arcReach = 0.4f;          // how far in front of her the cut is centred
+    public float swordReach = 1.25f;       // hitbox length along the blade: a long sword, not a dagger
+    public float arcRadius = 1.05f;
     public float hitStop = 0.06f;
 
     private const float SpringStiff = 320f, SpringDamp = 16f;    // squash: bouncy
     private const float AngleStiff = 220f, AngleDamp = 19f;      // lean: a little overshoot
+    private const float SettleStiff = 900f, SettleDamp = 60f;    // standing still: straighten up fast, no wobble
 
     private Player player;
     private Rigidbody2D rb;
@@ -181,7 +183,9 @@ public class FrenyMotion : MonoBehaviour {
         float angleTarget = -Mathf.Clamp(vx * leanPerSpeed, -maxLean, maxLean);
         float lungeTarget = 0f;
         if (grounded) {
-            angleTarget -= Mathf.Clamp((vx - lastVx) / dt, -40f, 40f) * accelLean * 0.05f;
+            // lean into speeding up only: a braking lean read as her slowly straightening herself out
+            float accel = (Mathf.Abs(vx) - Mathf.Abs(lastVx)) / dt;
+            angleTarget -= Mathf.Sign(vx) * Mathf.Clamp(accel, 0f, 40f) * accelLean * 0.05f;
             if (Mathf.Abs(vx) < 0.1f) {
                 squashTarget = Mathf.Sin(Time.time * 2.4f) * breathe; // breathing
             }
@@ -213,7 +217,8 @@ public class FrenyMotion : MonoBehaviour {
         // ---- springs (frozen during the hit-stop)
         if (Time.time >= frozenUntil) {
             squash.Step(squashTarget, SpringStiff, SpringDamp, dt);
-            angle.Step(angleTarget, AngleStiff, AngleDamp, dt);
+            bool settling = grounded && Mathf.Abs(vx) < 0.1f && Mathf.Abs(angleTarget) < 0.5f;
+            angle.Step(angleTarget, settling ? SettleStiff : AngleStiff, settling ? SettleDamp : AngleDamp, dt);
             lunge.Step(lungeTarget, SpringStiff, 22f, dt);
         }
         squash.x = Mathf.Clamp(squash.x, -0.35f, 0.35f);
@@ -235,9 +240,12 @@ public class FrenyMotion : MonoBehaviour {
         rig.localScale = new Vector3(1f - squash.x * 0.8f, 1f + squash.x, 1f);
         rig.localPosition = rigBase + new Vector3(lunge.x, 0f, 0f) + flipOffset + shake;
 
-        // the Melee Attack clip keys the hitbox scale at 1, which undid the great sword's wider reach
-        if (swordBox && FrenyProgress.HasGreatSword) {
-            swordBox.localScale = new Vector3(1.5f, 1f, 1f);
+        // the Melee Attack clip keys the hitbox scale at 1 every frame, so the reach is set after it.
+        // The box's local y runs along the blade (its offset too), so y is the reach; the great sword
+        // is also wider (x), as Player.ApplyUpgrades intended
+        if (swordBox) {
+            bool great = FrenyProgress.HasGreatSword;
+            swordBox.localScale = new Vector3(great ? 1.5f : 1f, swordReach * (great ? 1.25f : 1f), 1f);
         }
 
         lastVx = vx;
