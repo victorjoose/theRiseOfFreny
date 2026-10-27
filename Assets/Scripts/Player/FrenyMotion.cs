@@ -23,7 +23,7 @@ public class FrenyMotion : MonoBehaviour {
     public float breathe = 0.018f;
 
     [Header("Slash")]
-    public float windup = 0.05f;           // the arm draws back before the cut
+    public float windup = 0f;              // delay before the arc appears
     public float swordReach = 1.0f;        // the sword hitbox length, in units ahead of her hand
     public float hitStop = 0.06f;
 
@@ -296,7 +296,7 @@ public class FrenyMotion : MonoBehaviour {
     // a crescent swept in front of her: the head runs ahead, the tail follows and thins out
     private class SlashArc : MonoBehaviour {
         private const int Segments = 18;
-        private const float Life = 0.2f;
+        private const float Life = 0.13f;
 
         private Mesh mesh;
         private Vector3[] verts;
