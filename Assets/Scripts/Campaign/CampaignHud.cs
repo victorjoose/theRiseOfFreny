@@ -33,6 +33,8 @@ public class CampaignHud : MonoBehaviour {
             combat.swordIcon = icons.swordIcon;
             combat.greatSwordIcon = icons.greatSwordIcon;
             combat.grenadeIcon = icons.grenadeIcon;
+            combat.rageHelmetIcon = icons.rageHelmetIcon;
+            combat.armorHelmetIcon = icons.armorHelmetIcon;
         }
     }
 

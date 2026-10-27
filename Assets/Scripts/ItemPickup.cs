@@ -1,20 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// An item lying on the floor: a potion, revolver bullets, shotgun shells, grenades or a shotgun.
-// Enemies drop one now and then where they die; a chest can hold grenades or a shotgun. Built at
-// runtime (no prefab): a sprite, a trigger and the same small arc and landing as the coins. Freny
-// collects it by touching it; an item she has no use for (a potion at full health with one already
-// carried, a full reserve) stays where it is until it fades.
+// An item lying on the floor: a potion, revolver bullets, shotgun shells, grenades, a shotgun, a
+// great sword (a few big swings), the Berserker helmet (armor) or a diamond (25 coins). Enemies drop
+// one now and then where they die; chests and vases hold them too. Built at runtime (no prefab): a
+// sprite, a trigger and the same small arc and float as the coins. Freny collects it by touching it;
+// an item she has no use for (a potion at full health, a full reserve, full armor) stays where it is
+// until it fades.
 public class ItemPickup : MonoBehaviour {
 
-    public enum Kind { Potion, Bullets, Shells, Grenades, Shotgun }
+    public enum Kind { Potion, Bullets, Shells, Grenades, Shotgun, GreatSword, Armor, Diamond }
 
     // enemy drops, rolled once per death on top of its coin
     private const float PotionChance = 0.20f;
-    private const float BulletsChance = 0.30f;
+    private const float BulletsChance = 0.25f;
     private const float ShellsChance = 0.10f;   // only when she has the shotgun
     private const float GrenadeChance = 0.06f;
+    private const float GreatSwordChance = 0.10f; // only when she can use one
+    private const float ArmorChance = 0.10f;      // only when her armor is not full
+    private const float DiamondChance = 0.04f;
+    public const int DiamondValue = 25;           // coins
+    private const float DiamondFrameTime = 0.08f;
     private const int GrenadesPerDrop = 1;
     private const int BulletsPerDrop = 4;
     private const int ShellsPerDrop = 3;
@@ -86,14 +92,44 @@ public class ItemPickup : MonoBehaviour {
         Player player = FindPlayer();
         float roll = Random.value;
         Vector2 toss = new Vector2(Random.Range(-1.2f, 1.2f), Random.Range(4f, 5.5f));
-        if (roll < PotionChance) {
+        if ((roll -= PotionChance) < 0f) {
             Spawn(Kind.Potion, 1, position, toss);
-        } else if (roll < PotionChance + BulletsChance) {
+        } else if ((roll -= BulletsChance) < 0f) {
             Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
-        } else if (roll < PotionChance + BulletsChance + GrenadeChance) {
+        } else if ((roll -= GrenadeChance) < 0f) {
             Spawn(Kind.Grenades, GrenadesPerDrop, position, toss);
-        } else if (roll < PotionChance + BulletsChance + GrenadeChance + ShellsChance && player != null && player.ShotgunOwned) {
-            Spawn(Kind.Shells, ShellsPerDrop, position, toss);
+        } else if ((roll -= ShellsChance) < 0f) {
+            if (player != null && player.ShotgunOwned) {
+                Spawn(Kind.Shells, ShellsPerDrop, position, toss);
+            }
+        } else if ((roll -= GreatSwordChance) < 0f) {
+            if (player != null && player.WantsGreatSword) {
+                Spawn(Kind.GreatSword, 1, position, toss);
+            }
+        } else if ((roll -= ArmorChance) < 0f) {
+            if (player != null && player.WantsArmor) {
+                Spawn(Kind.Armor, 1, position, toss);
+            }
+        } else if ((roll -= DiamondChance) < 0f) {
+            Spawn(Kind.Diamond, 1, position, toss);
+        }
+    }
+
+    // a broken vase: often nothing, sometimes a small reward
+    public static void RollVaseDrop(Vector3 position) {
+        Player player = FindPlayer();
+        float roll = Random.value;
+        Vector2 toss = new Vector2(Random.Range(-0.8f, 0.8f), Random.Range(4.5f, 5.5f));
+        if ((roll -= 0.12f) < 0f) {
+            Spawn(Kind.Diamond, 1, position, toss);
+        } else if ((roll -= 0.18f) < 0f) {
+            Spawn(Kind.Potion, 1, position, toss);
+        } else if ((roll -= 0.18f) < 0f) {
+            Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
+        } else if ((roll -= 0.08f) < 0f) {
+            Spawn(Kind.Grenades, GrenadesPerDrop, position, toss);
+        } else if ((roll -= 0.06f) < 0f && player != null && player.WantsArmor) {
+            Spawn(Kind.Armor, 1, position, toss);
         }
     }
 
@@ -108,7 +144,12 @@ public class ItemPickup : MonoBehaviour {
     }
 
     private static float WorldSizeFor(Kind kind) {
-        return kind == Kind.Shotgun ? WorldSize * 1.35f : WorldSize;
+        switch (kind) {
+            case Kind.Shotgun: return WorldSize * 1.35f;
+            case Kind.GreatSword: return WorldSize * 1.5f;
+            case Kind.Diamond: return WorldSize * 0.75f;
+            default: return WorldSize;
+        }
     }
 
     private static Sprite SpriteFor(Kind kind) {
@@ -121,6 +162,9 @@ public class ItemPickup : MonoBehaviour {
                 case Kind.Shells: sprite = assets.shellsIcon != null ? assets.shellsIcon : assets.ammoIcon != null ? assets.ammoIcon : assets.shotgunIcon; break;
                 case Kind.Grenades: sprite = assets.grenadeIcon; break;
                 case Kind.Shotgun: sprite = assets.shotgunIcon; break;
+                case Kind.GreatSword: sprite = assets.greatSwordIcon; break;
+                case Kind.Armor: sprite = assets.armorHelmetIcon; break;
+                case Kind.Diamond: sprite = assets.diamondFrames != null && assets.diamondFrames.Length > 0 ? assets.diamondFrames[0] : null; break;
             }
         }
         return sprite != null ? sprite : FallbackSprite();
@@ -133,6 +177,8 @@ public class ItemPickup : MonoBehaviour {
             case Kind.Potion: return assets != null && assets.potionIcon != null ? Color.white : new Color(0.95f, 0.25f, 0.3f);
             case Kind.Bullets: return assets != null && assets.ammoIcon != null ? Color.white : new Color(1f, 0.85f, 0.35f);
             case Kind.Shells: return assets != null && assets.shellsIcon != null ? Color.white : new Color(1f, 0.55f, 0.45f);
+            case Kind.Diamond: return assets != null && assets.diamondFrames != null && assets.diamondFrames.Length > 0 ? Color.white : new Color(0.4f, 0.65f, 1f);
+            case Kind.Armor: return assets != null && assets.armorHelmetIcon != null ? Color.white : new Color(0.6f, 0.6f, 0.65f);
             default: return Color.white;
         }
     }
@@ -167,6 +213,9 @@ public class ItemPickup : MonoBehaviour {
         if (sprite) {
             // blinks for its last seconds, so it is clear it is about to go
             sprite.enabled = dieAt - Time.time > BlinkFor || Mathf.Repeat(Time.time, 0.3f) < 0.18f;
+            if (kind == Kind.Diamond) {
+                AnimateDiamond();
+            }
         }
         if (!tossing) {
             // floats where the arc peaked, bobbing like the coins, so it is easy to see and reach
@@ -201,6 +250,16 @@ public class ItemPickup : MonoBehaviour {
         transform.position = next;
     }
 
+    // the diamond sparkles like the coin spins (same frames as its sheet, the size set at Spawn)
+    private void AnimateDiamond() {
+        ArenaAssets assets = ArenaAssets.Instance;
+        if (assets == null || assets.diamondFrames == null || assets.diamondFrames.Length < 2) {
+            return;
+        }
+        int frame = (int)((Time.time + bobPhase) / DiamondFrameTime) % assets.diamondFrames.Length;
+        sprite.sprite = assets.diamondFrames[frame];
+    }
+
     private void Hover(float y) {
         tossing = false;
         hoverY = y;
@@ -218,6 +277,9 @@ public class ItemPickup : MonoBehaviour {
             case Kind.Shells: return player.WantsShells;
             case Kind.Grenades: return player.WantsGrenades;
             case Kind.Shotgun: return !player.ShotgunOwned || player.WantsShells;
+            case Kind.GreatSword: return player.WantsGreatSword;
+            case Kind.Armor: return player.WantsArmor;
+            case Kind.Diamond: return true;
             default: return false;
         }
     }
@@ -229,6 +291,9 @@ public class ItemPickup : MonoBehaviour {
             case Kind.Shells: return "os cartuchos";
             case Kind.Grenades: return "as granadas";
             case Kind.Shotgun: return "a escopeta";
+            case Kind.GreatSword: return "o espadão";
+            case Kind.Armor: return "a armadura";
+            case Kind.Diamond: return "o diamante";
             default: return "o item";
         }
     }
@@ -243,7 +308,7 @@ public class ItemPickup : MonoBehaviour {
             return;
         }
         Fx.Burst(transform.position, TintFor(kind) == Color.white ? new Color(1f, 0.95f, 0.7f) : TintFor(kind), 10, 2f, 0.07f, 0.35f);
-        Sfx.Play(kind == Kind.Potion ? "potion" : kind == Kind.Shotgun ? "pistol_reload" : "pickup_ammo", transform.position);
+        Sfx.Play(PickupSound(kind), transform.position);
         Destroy(gameObject);
     }
 
@@ -254,7 +319,21 @@ public class ItemPickup : MonoBehaviour {
             case Kind.Shells: if (!player.WantsShells) return false; player.AddShells(amount); return true;
             case Kind.Grenades: return player.AddGrenades(amount);
             case Kind.Shotgun: return player.GiveShotgun(amount);
+            case Kind.GreatSword: return player.GiveGreatSword();
+            case Kind.Armor: return player.GiveArmor();
+            case Kind.Diamond: player.AddCoins(DiamondValue * amount); return true;
             default: return false;
+        }
+    }
+
+    private static string PickupSound(Kind kind) {
+        switch (kind) {
+            case Kind.Potion: return "potion";
+            case Kind.Shotgun: return "pistol_reload";
+            case Kind.GreatSword: return "weapon_switch";
+            case Kind.Armor: return "upgrade";
+            case Kind.Diamond: return "coin";
+            default: return "pickup_ammo";
         }
     }
 }

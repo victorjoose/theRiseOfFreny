@@ -12,9 +12,11 @@ public class MeleeAttack : MonoBehaviour
     [SerializeField] private float rehitDelay = 0.5f; // shorter than any attack cooldown
     private readonly Dictionary<IDamageable, float> lastHit = new Dictionary<IDamageable, float>();
     private bool ownerIsEnemy;
+    private Player owner;
 
     private void Awake() {
         ownerIsEnemy = GetComponentInParent<Enemy>() != null;
+        owner = GetComponentInParent<Player>();
     }
 
     private void OnTriggerEnter2D(Collider2D other) {
@@ -41,7 +43,12 @@ public class MeleeAttack : MonoBehaviour
             lastHit.Clear(); // forget enemies that died long ago
         }
         lastHit[hit] = Time.time;
-        hit.Damage();
+        int damage = owner ? owner.MeleeDamage : 1;
+        if (damage > 1 && hit is Enemy enemy) {
+            enemy.Damage(damage);
+        } else {
+            hit.Damage();
+        }
         FrenyHit?.Invoke(other.ClosestPoint(transform.position));
         Sfx.Play("sword_hit", other.transform.position);
     }

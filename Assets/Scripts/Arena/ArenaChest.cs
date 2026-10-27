@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Treasure chest dropped into the arena by the director. It has to be broken: a sword swing or a
-// bullet makes it burst into one reward: a handful of coins, grenades, or a shotgun (shells when
+// bullet makes it burst into one reward: a handful of coins (often with a diamond), grenades, or a shotgun (shells when
 // she already has one), so the weapons get used without buying them first.
 public class ArenaChest : MonoBehaviour, IDamageable {
 
@@ -15,6 +15,7 @@ public class ArenaChest : MonoBehaviour, IDamageable {
     [SerializeField] private float shotgunWeight = 35f;
     [SerializeField] private int grenadesInside = 2;
     [SerializeField] private int shotgunShells = 6;
+    [SerializeField] private float diamondChance = 0.5f; // a coin chest also holds a diamond this often
     [SerializeField] private float scatter = 2.2f;  // sideways speed of the outermost coins (about 1.3 units of spread)
     [SerializeField] private float lifetime = 20f;  // disappears if nobody breaks it
 
@@ -64,6 +65,9 @@ public class ArenaChest : MonoBehaviour, IDamageable {
             ItemPickup.Spawn(ItemPickup.Kind.Shotgun, shotgunShells, from, new Vector2(Random.Range(-0.8f, 0.8f), 5.5f));
         } else {
             ScatterCoins();
+            if (Random.value < diamondChance) {
+                ItemPickup.Spawn(ItemPickup.Kind.Diamond, 1, from, new Vector2(Random.Range(-0.5f, 0.5f), 6f));
+            }
         }
         Destroy(gameObject);
     }

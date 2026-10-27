@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 // What Freny carries and when it is ready again, drawn under the hearts of the uGUI HUD (laid
 // out for 1920x1080) the same way in the arena and in the campaign: weapon icons, sword charge,
-// revolver bullets, shells, grenade, and the run and dash meters. Lives on the FrenyHud prefab
+// revolver bullets, shells, grenade, the jump/run/dash meters and Rage. It also adds the armor
+// hearts after the life hearts and swaps the portrait's helmet (red in Rage, Berserker with armor). Lives on the FrenyHud prefab
 // (campaign) or on the player (arena, added by ArenaBootstrap; icons come from ArenaAssets).
 public class CombatHud : MonoBehaviour {
 
@@ -11,14 +14,21 @@ public class CombatHud : MonoBehaviour {
     public Sprite swordIcon;
     public Sprite greatSwordIcon;
     public Sprite grenadeIcon;
+    public Sprite rageHelmetIcon;
+    public Sprite armorHelmetIcon;
 
     private static readonly Color ReadyColor = new Color(0.35f, 0.9f, 0.35f);
     private static readonly Color ChargingColor = new Color(1f, 0.6f, 0.2f);
     private static readonly Color ActiveColor = new Color(0.3f, 0.8f, 1f);
+    private static readonly Color RageColor = new Color(1f, 0.25f, 0.2f);
+    private static readonly Color ArmorColor = new Color(0.7f, 0.8f, 1f);
 
     private Player player;
     private Dash dash;
     private GUIStyle labelStyle;
+    private Image portrait;          // the uGUI helmet next to the hearts ("Head" sprite)
+    private Sprite portraitDefault;
+    private readonly List<Image> armorHearts = new List<Image>();
 
     private void OnGUI() {
         if (player == null) {
@@ -47,7 +57,11 @@ public class CombatHud : MonoBehaviour {
 
     private void DrawWeapons(float x, float y, float size, float scale) {
         float swordX = x;
-        DrawIcon(FrenyProgress.HasGreatSword ? Icon(greatSwordIcon, a => a.greatSwordIcon) : Icon(swordIcon, a => a.swordIcon), ref x, y, size);
+        DrawIcon(player.GreatSwordActive ? Icon(greatSwordIcon, a => a.greatSwordIcon) : Icon(swordIcon, a => a.swordIcon), ref x, y, size);
+        if (player.GreatSwordSwings > 0 && !FrenyProgress.HasGreatSword) {
+            // swings left with the dropped great sword
+            ShadowLabel(new Rect(swordX + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.GreatSwordSwings}");
+        }
         float swordReady = player.AttackReadiness;
         DrawMeter(new Rect(swordX, y + size + 2f, size, 6f * scale), swordReady, swordReady >= 1f ? ReadyColor : ChargingColor);
         float revolverX = x;
@@ -89,6 +103,70 @@ public class CombatHud : MonoBehaviour {
             y += step;
             DrawLabeledMeter(new Rect(x, y, width, height), $"Dash ({Key(GameAction.Dash)})", dash.Readiness,
                 dash.Readiness >= 1f ? ReadyColor : ChargingColor, scale);
+        }
+        // kills fill it; full, it drains over the 20 s of Rage
+        y += step;
+        DrawLabeledMeter(new Rect(x, y, width, height), player.Raging ? $"FÚRIA! {Mathf.CeilToInt(player.RageLeft * 20f)}s" : "Fúria",
+            player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : new Color(0.75f, 0.3f, 0.25f), scale);
+    }
+
+    // ---- the uGUI part: helmet and armor hearts ------------------------------------------------
+
+    private void LateUpdate() {
+        if (player == null || UIManager.Instance == null) {
+            return;
+        }
+        UpdatePortrait();
+        UpdateArmorHearts();
+    }
+
+    private void UpdatePortrait() {
+        if (portrait == null) {
+            foreach (Image image in UIManager.Instance.GetComponentsInChildren<Image>(true)) {
+                if (image.sprite != null && image.sprite.name == "Head") {
+                    portrait = image;
+                    portraitDefault = image.sprite;
+                    break;
+                }
+            }
+            if (portrait == null) {
+                return;
+            }
+        }
+        Sprite want = player.Raging ? Icon(rageHelmetIcon, a => a.rageHelmetIcon)
+            : player.Armor > 0 ? Icon(armorHelmetIcon, a => a.armorHelmetIcon)
+            : null;
+        if (want == null) {
+            want = portraitDefault;
+        }
+        if (portrait.sprite != want) {
+            portrait.sprite = want;
+            portrait.preserveAspect = true;
+        }
+    }
+
+    // copies of the last life heart, tinted steel, one per armor point
+    private void UpdateArmorHearts() {
+        Image[] bars = UIManager.Instance.healthBars;
+        if (armorHearts.Count == 0) {
+            if (bars == null || bars.Length < 2 || bars[0] == null || bars[bars.Length - 1] == null) {
+                return;
+            }
+            RectTransform first = bars[0].rectTransform;
+            RectTransform last = bars[bars.Length - 1].rectTransform;
+            Vector2 spacing = (last.anchoredPosition - first.anchoredPosition) / (bars.Length - 1);
+            for (int i = 0; i < Player.ArmorMax; i++) {
+                Image heart = Instantiate(bars[bars.Length - 1], last.parent);
+                heart.name = "Armor_Heart_" + (i + 1);
+                heart.rectTransform.anchoredPosition = last.anchoredPosition + spacing * (i + 1);
+                heart.color = ArmorColor;
+                armorHearts.Add(heart);
+            }
+        }
+        for (int i = 0; i < armorHearts.Count; i++) {
+            if (armorHearts[i]) {
+                armorHearts[i].enabled = i < player.Armor;
+            }
         }
     }
 

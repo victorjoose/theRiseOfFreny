@@ -21,6 +21,8 @@ public class ArenaDirector : MonoBehaviour {
     [SerializeField] private Entry[] enemies;
     [SerializeField] private GameObject chestPrefab;
     [SerializeField] private float chestInterval = 30f;
+    [SerializeField] private float vaseInterval = 12f;   // a breakable vase now and then (ArenaVase)
+    [SerializeField] private int maxVases = 3;
     [SerializeField] private float portalSeconds = 1f;
     [SerializeField] private float firstSpawnDelay = 2f;
     [SerializeField] private float minDistanceFromHero = 3.5f;
@@ -30,6 +32,7 @@ public class ArenaDirector : MonoBehaviour {
     private float runStart;
     private float nextSpawnTime;
     private float nextChestTime;
+    private float nextVaseTime;
     private int pendingSpawns; // portals already open
     private Player hero;
     private readonly Dictionary<ArenaMap.Platform, Transform[]> patrols = new Dictionary<ArenaMap.Platform, Transform[]>();
@@ -54,6 +57,7 @@ public class ArenaDirector : MonoBehaviour {
         runStart = Time.time;
         nextSpawnTime = Time.time + firstSpawnDelay;
         nextChestTime = Time.time + chestInterval;
+        nextVaseTime = Time.time + firstSpawnDelay;
     }
 
     private void Update() {
@@ -72,6 +76,13 @@ public class ArenaDirector : MonoBehaviour {
         if (chestPrefab != null && Time.time >= nextChestTime) {
             StartCoroutine(SpawnChest());
             nextChestTime = Time.time + chestInterval;
+        }
+
+        if (Time.time >= nextVaseTime) {
+            nextVaseTime = Time.time + vaseInterval;
+            if (ArenaVase.Active.Count < maxVases && RandomSpot(false, 1f, out Vector3 floorPoint, out ArenaMap.Platform _)) {
+                ArenaVase.Create(floorPoint);
+            }
         }
     }
 

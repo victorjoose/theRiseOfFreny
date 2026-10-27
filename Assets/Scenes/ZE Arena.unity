@@ -29123,7 +29123,26 @@ MonoBehaviour:
   shotgunIcon: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   swordIcon: {fileID: -8525561222273819436, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   greatSwordIcon: {fileID: 3846876039218944220, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
-  grenadeIcon: {fileID: -1480233837858187749, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  grenadeIcon: {fileID: 3195551602420287392, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   potionIcon: {fileID: -146668759384179144, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
-  ammoIcon: {fileID: 3195551602420287392, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
-  shellsIcon: {fileID: 0}
+  ammoIcon: {fileID: -6624225963862695163, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  shellsIcon: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  rageHelmetIcon: {fileID: -1480233837858187749, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  armorHelmetIcon: {fileID: -2503445470904615350, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  diamondFrames:
+  - {fileID: -2460661597379837166, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 6079737458816991786, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 1872218367400966772, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -2289143206104811047, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 3490040531484478452, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 6883681904686537452, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -4312653276089908103, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -8304758559536610069, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -3885586220472502402, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 8994047393420413090, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  vaseFrames:
+  - {fileID: -1464969257878587310, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: -7769640327568660602, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: 9085784148898614916, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: -3722326352137931972, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: 2538706624457070843, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}

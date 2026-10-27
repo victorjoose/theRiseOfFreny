@@ -11,10 +11,16 @@ public class ArenaAssets : MonoBehaviour {
     public Sprite swordIcon;
     public Sprite greatSwordIcon;
     public Sprite grenadeIcon;
-    // item pickups (ItemPickup); left empty, bullets and shells reuse the gun icons tinted, the potion is a red disc
+    // item pickups (ItemPickup): bullets show the revolver, shells the shotgun; an empty potion is a red disc
     public Sprite potionIcon;
     public Sprite ammoIcon;
     public Sprite shellsIcon;
+    // the HUD portrait's helmet during Rage (red) and with armor (Berserker)
+    public Sprite rageHelmetIcon;
+    public Sprite armorHelmetIcon;
+    // the diamond's sparkle and the vase breaking, frame by frame (Items/Diamond 60x60, Items/Vase 100x100)
+    public Sprite[] diamondFrames;
+    public Sprite[] vaseFrames;
 
     private void Awake() {
         Instance = this;
