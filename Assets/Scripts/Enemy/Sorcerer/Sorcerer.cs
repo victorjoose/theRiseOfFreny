@@ -38,12 +38,13 @@ public class Sorcerer : Enemy {
         }
         StickToGround(); // stands still, but on the floor (one spawned over a gap floated there)
         ClampToArena();
-        if (player_t == null || player == null || player.Health <= 0) {
+        UpdateRival(); // an enemy that hit it gets the hexballs until the fight ends
+        if (Rival == null && (player_t == null || player == null || player.Health <= 0)) {
             return;
         }
 
-        Vector2 offset = player_t.position - transform.position;
-        if (offset.magnitude > castRange * Tuning.EnemyAggro.Value) {
+        Vector2 offset = AimPoint - transform.position;
+        if (Rival == null && offset.magnitude > castRange * Tuning.EnemyAggro.Value) {
             return;
         }
 
@@ -61,6 +62,9 @@ public class Sorcerer : Enemy {
         }
     }
 
+    // Freny, or the enemy it is fighting
+    private Vector3 AimPoint => Rival != null ? (Vector3)Rival.Center : player_t.position;
+
     public void Attack() {
         if (isDead || hexballEffectPrefab == null) {
             return;
@@ -77,10 +81,11 @@ public class Sorcerer : Enemy {
         if (effect) {
             // slow at the start of an arena run, twice as fast at full difficulty
             effect.speedMultiplier = ArenaBounds.Active ? Mathf.Lerp(0.8f, 2f, ArenaDirector.CurrentDifficulty) : 1f;
+            effect.caster = this; // it hits any other enemy in its way, and they blame this sorcerer
         }
-        if (effect && player_t) {
-            Vector3 target = player_t.position;
-            if (predictive) {
+        if (effect && (player_t || Rival != null)) {
+            Vector3 target = AimPoint;
+            if (predictive && Rival == null) {
                 if (playerRb == null) {
                     playerRb = player_t.GetComponent<Rigidbody2D>();
                 }
