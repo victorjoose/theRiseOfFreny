@@ -36,6 +36,8 @@ public class ArenaVase : MonoBehaviour, IDamageable {
         box.size = renderer.sprite.bounds.size * new Vector2(0.55f, 0.65f);
         box.offset = new Vector2(0f, -renderer.sprite.bounds.size.y * 0.16f);
 
+        HitBody.MakeHittable(obj);
+
         ArenaVase vase = obj.AddComponent<ArenaVase>();
         vase.sprite = renderer;
         Fx.Dust(floorPoint, 4);

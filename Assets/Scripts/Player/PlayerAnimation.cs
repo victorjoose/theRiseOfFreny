@@ -35,8 +35,18 @@ public class PlayerAnimation : MonoBehaviour {
         _anim.SetBool("Stunned", stunned);
     }
 
+    // the sword's hitbox is switched on by the Melee Attack clip, and only Idle, Walk, Jump and
+    // Landing have a Melee transition: a swing during the 0.8 s Hit flinch, a shot or the previous
+    // swing lost its trigger, so the sword did nothing after she was hurt. The state plays directly.
+    private static readonly int MeleeState = Animator.StringToHash("Base Layer.Melee Attack");
+
     public void Melee() {
-        Fire("Melee");
+        if (_anim.HasState(0, MeleeState)) {
+            _anim.ResetTrigger("Melee");
+            _anim.Play(MeleeState, 0, 0f);
+        } else {
+            Fire("Melee");
+        }
         _motion.Slash();
     }
 

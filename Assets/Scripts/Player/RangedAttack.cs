@@ -15,6 +15,11 @@ public class RangedAttack : MonoBehaviour {
         Vector3 scale = transform.localScale;
         scale.x = Mathf.Abs(scale.x) * (direction.x < 0 ? -1 : 1);
         transform.localScale = scale;
+        // a shot fired up (W) turns the sprite to point along its path
+        if (Mathf.Abs(direction.y) > Mathf.Abs(direction.x)) {
+            transform.rotation = Quaternion.Euler(0f, 0f, direction.y > 0 ? 90f : -90f);
+            transform.localScale = new Vector3(Mathf.Abs(scale.x), scale.y, scale.z);
+        }
     }
 
     private void Start() {
@@ -23,6 +28,12 @@ public class RangedAttack : MonoBehaviour {
             if (player) {
                 SetDirection(player.transform.localScale.x < 0 ? Vector3.left : Vector3.right);
             }
+        }
+        // the prefab's dynamic body fell asleep after half a second of transform-only motion, and a
+        // sleeping body never touches a chest or a vase (they have no moving body of their own)
+        Rigidbody2D body = GetComponent<Rigidbody2D>();
+        if (body) {
+            body.sleepMode = RigidbodySleepMode2D.NeverSleep;
         }
         Destroy(gameObject, 3.0f);
     }

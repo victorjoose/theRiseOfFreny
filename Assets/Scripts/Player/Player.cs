@@ -34,16 +34,20 @@ public class Player : MonoBehaviour, IDamageable {
     private const float FallDamageStep = 5f;
     private const int FallDamageMax = 3;
 
-    // sprint (Shift)
+    // sprint (Shift): a stamina bar that drains while sprinting and refills from wherever it
+    // stopped, so letting go at half keeps that half
     private float runMultiplier = 1.6f;
-    private float runDuration = 1.5f;     // a short burst...
-    private float runCooldown = 2.5f;     // ...then it needs to recover
+    private float runDuration = 1.5f;     // a full bar lasts this long...
+    private float runCooldown = 2.5f;     // ...and refills from empty in this long
+    private const float RunMinStamina = 0.2f; // below this a new sprint doesn't start (no stutter)
 
     [Header("Combat")]
     public int MaxHealth = 4;
-    [SerializeField] private float attackCooldown = 1.0f;  // shared by sword and gun
+    [SerializeField] private float attackCooldown = 0.5f;  // the sword; the guns have their own
+    [SerializeField] private float pistolCooldown = 0.2f;  // between revolver shots
+    [SerializeField] private float shotgunCooldown = 0.6f;
     [SerializeField] private float invulnerableTime = 0.8f; // blinking after a hit: two enemies landing together take one heart
-    [SerializeField] private float stunTime = 0.5f;        // crouched and helpless after a knockback
+    [SerializeField] private float stunTime = 0.3f;        // crouched and helpless after a knockback
     [SerializeField] private float knockbackDrag = 14f;    // how fast the shove dies out (units/s²)
     [SerializeField] private int shellsPerRun = 6;         // shotgun shells at the start of a run; chests add more
     [SerializeField] private int revolverCapacity = 4;     // shots before the revolver has to be reloaded
@@ -86,6 +90,12 @@ public class Player : MonoBehaviour, IDamageable {
     private float jumpPressedTime = -10f;
     private float jumpStartTime = -10f;
     private float attackReadyAt;
+    private float gunReadyAt;
+    private float meleePressedTime = -10f;  // a swing pressed while knocked down happens when she gets up
+    private float rangedPressedTime = -10f;
+    private const float AttackBuffer = 0.3f;
+    private float dropThroughUntil;         // Down + Jump on a pass-through platform
+    private Collider2D dropThroughPlatform;
     private float reloadReadyAt = -1f;  // -1: not reloading
     private float invulnerableUntil;
     private float greatSwordGraceUntil;
@@ -105,8 +115,7 @@ public class Player : MonoBehaviour, IDamageable {
     private const float RageSeconds = 20f;
     private const int RageMeleeDamage = 2;
     private float stunnedUntil;
-    private float runUntil;
-    private float runReadyAt;
+    private float runStamina = 1f;
     private float nextGrenadeTime;
     private float nextDustTime;
 
@@ -136,15 +145,15 @@ public class Player : MonoBehaviour, IDamageable {
     public bool JumpReady => isGrounded || Time.time - lastGroundedTime <= coyoteTime || CanAirJump;
     public bool AttackReady => Time.time >= attackReadyAt;
     public bool FacingRight => transform.localScale.x > 0;
-    public bool RunReady => !IsRunning && Time.time >= runReadyAt;
+    public bool RunReady => !IsRunning && runStamina >= RunMinStamina;
     public bool GrenadeReady => Time.time >= nextGrenadeTime;      // the cooldown between throws
     public bool CanThrowGrenade => Grenades > 0 && GrenadeReady;
     public bool UsingShotgun => ShotgunOwned && ShotgunEquipped && ShotgunShells > 0;
     public bool Reloading => reloadReadyAt > 0f;
     public bool RevolverDry => RevolverBullets <= 0 && RevolverReserve <= 0 && !Reloading;
-    // the gun can fire: not on the sword/gun cooldown and, for the revolver, loaded and not reloading
+    // the gun can fire: not on its own cooldown and, for the revolver, loaded and not reloading
     public bool GunReady => GunReadyFor(UsingShotgun);
-    public bool GunReadyFor(bool shotgun) => AttackReady && (shotgun
+    public bool GunReadyFor(bool shotgun) => Time.time >= gunReadyAt && (shotgun
         ? ShotgunOwned && ShotgunShells > 0
         : !Reloading && RevolverBullets > 0);
     // a dropped potion only heals: at full health it stays on the floor until needed or it expires
@@ -178,11 +187,20 @@ public class Player : MonoBehaviour, IDamageable {
     // the middle of her body (the transform sits near the head), where flyers should aim
     public Vector3 BodyCenter => col2d ? (Vector3)col2d.bounds.center : transform.position;
     public float VerticalSpeed => rg2d ? rg2d.Vel().y : 0f;
+    // where the sorcerers aim: her head when she stands. Crouched, a shot from her height passes
+    // over her (the crouched collider top is about 0.4 lower), so ducking dodges it
+    public Vector3 HeadPoint {
+        get {
+            if (col2d == null || standSize == Vector2.zero) {
+                return transform.position;
+            }
+            float top = (standOffset.y + standSize.y * 0.5f) * Mathf.Abs(transform.lossyScale.y);
+            return new Vector3(col2d.bounds.center.x, transform.position.y + top - 0.12f, 0f);
+        }
+    }
     // meters for the HUD: 1 = ready / full, 0 = just used / empty
     public float AttackReadiness => attackCooldown > 0f ? 1f - Mathf.Clamp01((attackReadyAt - Time.time) / attackCooldown) : 1f;
-    public float RunMeter => IsRunning
-        ? Mathf.Clamp01((runUntil - Time.time) / runDuration)                 // stamina left while sprinting
-        : 1f - Mathf.Clamp01((runReadyAt - Time.time) / runCooldown);        // recovery
+    public float RunMeter => runStamina;
     // the GameManager is looked up once in Start (FindObjectOfType walks the whole scene,
     // and the autopilot asks this on every decision)
     public bool HasPotion => _gameManager != null && _gameManager.HasPotion;
@@ -264,9 +282,17 @@ public class Player : MonoBehaviour, IDamageable {
             Rage = Mathf.Max(0f, Rage - RageDrainPerSecond * Time.deltaTime);
         }
 
+        UpdateDropThrough();
         CheckGround();
+        if (_input.Current.meleePressed) {
+            meleePressedTime = Time.time;
+        }
+        if (_input.Current.rangedPressed) {
+            rangedPressedTime = Time.time;
+        }
         if (UpdateStun()) {
-            return; // knocked down: no control until she gets up
+            RecoverStamina();
+            return; // knocked down: no control until she gets up (a swing pressed now is kept)
         }
 
         Movement();
@@ -343,7 +369,8 @@ public class Player : MonoBehaviour, IDamageable {
     // ==== movement =============================================================================
 
     private void CheckGround() {
-        isGrounded = Physics2D.OverlapCircle(Feet, checkRadius, whatIsGround);
+        // dropping through a platform: the feet circle still overlaps it, but she is falling
+        isGrounded = dropThroughPlatform == null && Physics2D.OverlapCircle(Feet, checkRadius, whatIsGround);
         if (isGrounded) {
             // the feet circle still touches the ground for a moment after take-off
             bool justTookOff = Time.time - jumpStartTime <= 0.15f;
@@ -370,7 +397,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
         int hearts = Mathf.Min(FallDamageMax, 1 + Mathf.FloorToInt((drop - SafeFallHeight) / FallDamageStep));
         Fx.Dust(Feet, 12);
-        TryDamage(hearts);
+        TryDamage(hearts, false); // the armor doesn't soften a fall
     }
 
     // after a teleport (pit, checkpoint): the fall starts again from here
@@ -439,29 +466,40 @@ public class Player : MonoBehaviour, IDamageable {
         transform.localScale = scale;
     }
 
-    // Shift: a short sprint, then a cooldown so it can't be held all the time
+    // Shift: a sprint that drains the stamina bar; it refills (from where it stopped) when she lets go
     private void Run() {
         PlayerInputFrame input = _input.Current;
         bool wantsRun = input.runHeld && input.move != 0f;
         if (IsRunning) {
-            if (!wantsRun || Time.time >= runUntil) {
+            runStamina = Mathf.Max(0f, runStamina - Time.deltaTime / runDuration);
+            if (!wantsRun || runStamina <= 0f) {
                 EndRun();
             }
-        } else if (wantsRun && RunReady && isGrounded) {
-            // in the air the same key is the dash (see Dash)
-            IsRunning = true;
-            runUntil = Time.time + runDuration;
-            Fx.Dust(Feet, 4);
+        } else {
+            RecoverStamina();
+            if (wantsRun && RunReady && isGrounded) {
+                // in the air the same key is the dash (see Dash)
+                IsRunning = true;
+                Fx.Dust(Feet, 4);
+            }
+        }
+    }
+
+    private void RecoverStamina() {
+        if (!IsRunning) {
+            runStamina = Mathf.Min(1f, runStamina + Time.deltaTime / runCooldown);
         }
     }
 
     private void EndRun() {
         IsRunning = false;
-        runReadyAt = Time.time + runCooldown;
     }
 
     // TowerFall style: fixed height, with coyote time and a jump buffer so it feels responsive
     private void Jump() {
+        if (_input.Current.jumpPressed && _input.Current.crouchHeld && TryDropThrough()) {
+            return;
+        }
         if (_input.Current.jumpPressed) {
             jumpPressedTime = Time.time;
         }
@@ -487,6 +525,40 @@ public class Player : MonoBehaviour, IDamageable {
         }
 
         _playerAnim.Jump(!isGrounded || isJumping);
+    }
+
+    // Down + Jump on a pass-through platform (one with a PlatformEffector2D): she drops to the
+    // one below. Solid floors ignore it and she just jumps.
+    private bool TryDropThrough() {
+        if (!isGrounded || col2d == null) {
+            return false;
+        }
+        Collider2D floor = Physics2D.OverlapCircle(Feet, checkRadius, whatIsGround);
+        if (floor == null || !floor.usedByEffector || floor.GetComponent<PlatformEffector2D>() == null) {
+            return false;
+        }
+        EndDropThrough();
+        dropThroughPlatform = floor;
+        dropThroughUntil = Time.time + 0.35f;
+        Physics2D.IgnoreCollision(col2d, floor, true);
+        jumpPressedTime = -10f;
+        isGrounded = false;
+        lastGroundedTime = -10f;  // no coyote jump back up
+        rg2d.SetVel(new Vector2(rg2d.Vel().x, -2f));
+        return true;
+    }
+
+    private void UpdateDropThrough() {
+        if (dropThroughPlatform != null && Time.time >= dropThroughUntil) {
+            EndDropThrough();
+        }
+    }
+
+    private void EndDropThrough() {
+        if (dropThroughPlatform != null && col2d != null) {
+            Physics2D.IgnoreCollision(col2d, dropThroughPlatform, false);
+        }
+        dropThroughPlatform = null;
     }
 
     // a hit from a heavy enemy shoves Freny back and knocks her down for stunTime
@@ -525,9 +597,10 @@ public class Player : MonoBehaviour, IDamageable {
 
     // the sword and the gun both work mid-air and crouched
     private void Attack() {
-        if (!_input.Current.meleePressed || !AttackReady) {
+        if (Time.time - meleePressedTime > AttackBuffer || !AttackReady) {
             return;
         }
+        meleePressedTime = -10f;
         _playerAnim.Melee();
         Sfx.Play("sword_swing", transform.position);
         attackReadyAt = Time.time + attackCooldown;
@@ -555,22 +628,31 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
+    // up held (W / arrow up): she fires straight up, from above her head
+    public bool AimingUp => _input != null && _input.Current.aimUpHeld && !IsCrouching;
+
     private void Shoot() {
-        if (!_input.Current.rangedPressed || !GunReady) {
+        bool pressed = Time.time - rangedPressedTime <= AttackBuffer;
+        if (!pressed || !GunReady) {
             return;
         }
+        rangedPressedTime = -10f;
 
         _playerAnim.Ranged();
         Vector3 muzzle = playerRevolverShootPosition ? playerRevolverShootPosition.position : transform.position;
-        if (IsCrouching) {
+        Vector3 forward = FacingRight ? Vector3.right : Vector3.left;
+        if (AimingUp) {
+            muzzle = new Vector3(transform.position.x, col2d ? col2d.bounds.max.y + 0.1f : transform.position.y + 0.8f, 0f);
+            forward = Vector3.up;
+        } else if (IsCrouching) {
             muzzle += Vector3.down * CrouchMuzzleDrop;
         }
-        Vector3 forward = FacingRight ? Vector3.right : Vector3.left;
         Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);
 
         // the shotgun fires three bullets in a fan, one shell per shot
-        Sfx.Play(UsingShotgun ? "shotgun_shot" : "pistol_shot", muzzle);
-        if (UsingShotgun) {
+        bool shotgun = UsingShotgun;
+        Sfx.Play(shotgun ? "shotgun_shot" : "pistol_shot", muzzle);
+        if (shotgun) {
             ShotgunShells--;
             FireBullet(muzzle, Quaternion.Euler(0f, 0f, 10f) * forward);
             FireBullet(muzzle, forward);
@@ -579,7 +661,7 @@ public class Player : MonoBehaviour, IDamageable {
             RevolverBullets--;
             FireBullet(muzzle, forward);
         }
-        attackReadyAt = Time.time + attackCooldown;
+        gunReadyAt = Time.time + (shotgun ? shotgunCooldown : pistolCooldown) * FrenyProgress.AttackCooldownMultiplier;
     }
 
     private const float CrouchMuzzleDrop = 0.32f; // the crouched gun sits 8 art pixels lower
@@ -709,14 +791,19 @@ public class Player : MonoBehaviour, IDamageable {
         return TryDamage(1);
     }
 
-    // a heavier hit (the Golem, the Sorcerer's hexball): armor takes the points first, then life
+    // a heavier hit (the Golem, the Sorcerer's hexball): armor takes the points first, then life.
+    // A fall skips the armor (armorAbsorbs false).
     public bool TryDamage(int amount) {
+        return TryDamage(amount, true);
+    }
+
+    public bool TryDamage(int amount, bool armorAbsorbs) {
         if (isDead || IsInvulnerable) {
             return false;
         }
         invulnerableUntil = Time.time + invulnerableTime;
         AddRage(RagePerHurt);
-        int toArmor = Mathf.Min(Armor, Mathf.Max(1, amount));
+        int toArmor = armorAbsorbs ? Mathf.Min(Armor, Mathf.Max(1, amount)) : 0;
         int toLife = Mathf.Max(1, amount) - toArmor;
         Armor -= toArmor;
         if (toLife <= 0) {

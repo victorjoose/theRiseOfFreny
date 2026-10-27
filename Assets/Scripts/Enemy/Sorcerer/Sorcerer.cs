@@ -5,7 +5,10 @@ using UnityEngine;
 public class Sorcerer : Enemy {
     public GameObject hexballEffectPrefab;
     [SerializeField] private float castRange = 100f;  // the sorcerer always knows where Freny is and keeps casting
-    [SerializeField] private float castCooldown = 2.5f;
+    [SerializeField] private float castCooldown = 1.6f;
+    // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second)
+    private const int HomingScore = 15000;
+    private const float HomingTurn = 70f;
     // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where she is
     [SerializeField] private bool predictive = false;
     private float nextCastTime;
@@ -62,8 +65,8 @@ public class Sorcerer : Enemy {
         }
     }
 
-    // Freny, or the enemy it is fighting
-    private Vector3 AimPoint => Rival != null ? (Vector3)Rival.Center : player_t.position;
+    // Freny's head (crouching dodges a level shot), or the enemy it is fighting
+    private Vector3 AimPoint => Rival != null ? (Vector3)Rival.Center : player != null ? player.HeadPoint : player_t.position;
 
     public void Attack() {
         if (isDead || hexballEffectPrefab == null) {
@@ -79,9 +82,15 @@ public class Sorcerer : Enemy {
         // aim at Freny wherever she is (below, above, diagonal), not only left or right
         HexballEffect effect = hexball.GetComponent<HexballEffect>();
         if (effect) {
-            // slow at the start of an arena run, twice as fast at full difficulty
-            effect.speedMultiplier = ArenaBounds.Active ? Mathf.Lerp(0.8f, 2f, ArenaDirector.CurrentDifficulty) : 1f;
+            // quick from the start of an arena run, and faster with the difficulty and the overtime
+            effect.speedMultiplier = ArenaBounds.Active
+                ? Mathf.Lerp(1.4f, 2.6f, ArenaDirector.CurrentDifficulty) * Mathf.Min(1.3f, 1f + 0.03f * ArenaDirector.CurrentOvertime)
+                : 1.4f;
             effect.caster = this; // it hits any other enemy in its way, and they blame this sorcerer
+            if (Rival == null && ArenaBounds.Active && UIManager.Instance && UIManager.Instance.Score >= HomingScore) {
+                effect.homingTarget = player;
+                effect.homingTurn = HomingTurn;
+            }
         }
         if (effect && (player_t || Rival != null)) {
             Vector3 target = AimPoint;

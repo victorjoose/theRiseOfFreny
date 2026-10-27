@@ -79,6 +79,8 @@ public class Breakable : MonoBehaviour, IDamageable {
         box.size = visible.size;
         box.offset = visible.center;
 
+        HitBody.MakeHittable(obj);
+
         Breakable breakable = obj.AddComponent<Breakable>();
         breakable.kind = kind;
         breakable.sprite = renderer;

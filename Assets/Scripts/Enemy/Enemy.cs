@@ -17,6 +17,27 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     protected virtual void OnDisable() {
         Active.Remove(this);
+        chasers.Remove(this);
+    }
+
+    // in the arena every enemy knows where Freny is, but only ArenaDirector.MaxChasers of them
+    // go after her from afar at once; the others patrol until a place frees up. Those that see
+    // her up close (their own sight) or were hit always fight.
+    private static readonly HashSet<Enemy> chasers = new HashSet<Enemy>();
+
+    // true when it should chase Freny; nearby = she is in its own sight, or it was provoked
+    protected bool JoinChase(bool nearby) {
+        bool chase = nearby || (ArenaBounds.Active && (chasers.Contains(this) || chasers.Count < ArenaDirector.MaxChasers));
+        if (chase) {
+            chasers.Add(this);
+        } else {
+            chasers.Remove(this);
+        }
+        return chase;
+    }
+
+    protected void LeaveChase() {
+        chasers.Remove(this);
     }
 
     public GameObject coinPrefab;
@@ -129,7 +150,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // the one-hit enemies (Bug, Bat), which the arena's harder levels speed up the most
     protected virtual bool Small => false;
     // arena difficulty on attack rhythm (1 outside the arena)
-    protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor : 1f;
+    protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp : 1f;
 
     // colour of the particles when this enemy is hit or dies
     protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
@@ -203,6 +224,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (rival != null) {
             // fighting another enemy: it goes after that one, wherever Freny is
             distance = Vector2.Distance(Center, rival.Center);
+            LeaveChase(); // busy with that one: its place goes to another
             if (!isPlayerInRange) {
                 isPlayerInRange = true;
                 SetInCombat(true);
@@ -230,7 +252,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             bool provoked = isHit && distance <= provokedRadius;
             // walkers also go after her on a platform above or below (they jump and drop, see AttackMode)
             bool reachable = sameLevel || (Climbs && dy <= ClimbSight);
-            bool shouldChase = player.Health > 0 && reachable && (dx <= sight || provoked);
+            bool nearby = reachable && (dx <= sight || provoked);
+            // from afar only walkers that climb come for her (they work their way up or down)
+            bool shouldChase = player.Health > 0 && (sameLevel || Climbs || nearby) && JoinChase(nearby);
+            if (player.Health <= 0) {
+                LeaveChase();
+            }
 
             if (shouldChase && !isPlayerInRange) {
                 isPlayerInRange = true;
@@ -507,7 +534,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         transform.position = Vector2.MoveTowards(transform.position, goal, MoveSpeed * Time.deltaTime);
     }
 
-    protected float MoveSpeed => speed * Tuning.EnemySpeed.Value * (ArenaBounds.Active ? ArenaDifficulty.SpeedFactor(Small) : 1f);
+    protected float MoveSpeed => speed * Tuning.EnemySpeed.Value * (ArenaBounds.Active ? ArenaDifficulty.SpeedFactor(Small) * ArenaDirector.SpeedRamp : 1f);
 
     public void ChangeDirection() {
         if (pointA == null || pointB == null) {
@@ -899,6 +926,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // Killed by another enemy, it still drops its coins but gives Freny no XP, score or Rage
     protected void Die(bool byPlayer) {
         isDead = true;
+        LeaveChase();
         if (attackRoutine != null) {
             StopCoroutine(attackRoutine);
             attackRoutine = null;

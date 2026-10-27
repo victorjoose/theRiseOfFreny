@@ -38,7 +38,12 @@ public class Bat : Enemy {
         UpdateRival();
         Enemy foe = Rival;
         distance = Vector2.Distance(transform.position, player_t.position);
-        bool chasing = foe != null || (player.Health > 0 && (distance <= radius * Tuning.EnemyAggro.Value || isHit));
+        // in the arena it comes for her from anywhere while there is room among the chasers
+        bool nearby = distance <= radius * Tuning.EnemyAggro.Value || isHit;
+        bool chasing = foe != null || (player.Health > 0 && JoinChase(nearby));
+        if (foe != null || player.Health <= 0) {
+            LeaveChase();
+        }
         SetInCombat(chasing);
 
         // a smaller bob while chasing, so it stays where the sword and the bullets reach
