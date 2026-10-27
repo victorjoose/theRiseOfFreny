@@ -130,7 +130,7 @@ public static class FrenyProgress {
             case FrenyUpgrade.MaxHealth: return "Vida máxima +1";
             case FrenyUpgrade.MoveSpeed: return "Velocidade +8%";
             case FrenyUpgrade.AttackSpeed: return "Recarga -10%";
-            case FrenyUpgrade.DoubleJump: return "Pulo duplo";
+            case FrenyUpgrade.DoubleJump: return "Pulo duplo (pule de novo no ar)";
             case FrenyUpgrade.Shotgun: return "Escopeta (3 tiros)";
             case FrenyUpgrade.GreatSword: return "Espadão (golpe mais largo)";
             case FrenyUpgrade.Grenade: return "Granada (G)";
