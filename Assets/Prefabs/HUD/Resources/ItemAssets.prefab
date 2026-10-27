@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5810000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5810000002}
+  - component: {fileID: 5810000003}
+  m_Layer: 0
+  m_Name: ItemAssets
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5810000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5810000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5810000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5810000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc7711350d9b4c05aad4a763b1ebf8d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  revolverIcon: {fileID: -6624225963862695163, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  shotgunIcon: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  swordIcon: {fileID: -8525561222273819436, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  greatSwordIcon: {fileID: 3846876039218944220, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  grenadeIcon: {fileID: 3195551602420287392, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  potionIcon: {fileID: -146668759384179144, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  ammoIcon: {fileID: -6624225963862695163, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  shellsIcon: {fileID: 2874249764911737835, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  rageHelmetIcon: {fileID: -6195256354666351195, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  armorHelmetIcon: {fileID: -6371926176569892122, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  armorHeart: {fileID: 21300000, guid: 2e17e6cf835045fdbc3b1bab52a82c63, type: 3}
+  diamondFrames:
+  - {fileID: -2460661597379837166, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 6079737458816991786, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 1872218367400966772, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -2289143206104811047, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 3490040531484478452, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 6883681904686537452, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -4312653276089908103, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -8304758559536610069, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: -3885586220472502402, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  - {fileID: 8994047393420413090, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  vaseFrames:
+  - {fileID: -1464969257878587310, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: -7769640327568660602, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: 9085784148898614916, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: -3722326352137931972, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
+  - {fileID: 2538706624457070843, guid: 2e1fa6e94f8646d489ef6164889b44f9, type: 3}
