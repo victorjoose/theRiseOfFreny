@@ -168,7 +168,7 @@ MonoBehaviour:
   coinPrefab: {fileID: 1839722716228608488, guid: 71247d32d6f48964d842d8570fb2e767,
     type: 3}
   health: 2
-  speed: 1
+  speed: 2
   coins: 3
   pointA: {fileID: 0}
   pointB: {fileID: 0}

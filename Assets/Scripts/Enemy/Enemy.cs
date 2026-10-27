@@ -686,9 +686,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
     }
 
+    // hearts one hit takes (the Golem hits for 2)
+    protected virtual int HitDamage => 1;
+
     // damages Freny and, for heavy hitters, shoves her away from the enemy (she stays down for a moment)
     protected void HitPlayer() {
-        if (!player.TryDamage()) {
+        if (!player.TryDamage(HitDamage)) {
             return;
         }
         if (knockback > 0f) {

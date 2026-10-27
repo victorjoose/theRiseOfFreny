@@ -74,6 +74,10 @@ public class Sorcerer : Enemy {
 
         // aim at Freny wherever she is (below, above, diagonal), not only left or right
         HexballEffect effect = hexball.GetComponent<HexballEffect>();
+        if (effect) {
+            // slow at the start of an arena run, twice as fast at full difficulty
+            effect.speedMultiplier = ArenaBounds.Active ? Mathf.Lerp(0.8f, 2f, ArenaDirector.CurrentDifficulty) : 1f;
+        }
         if (effect && player_t) {
             Vector3 target = player_t.position;
             if (predictive) {

@@ -40,6 +40,10 @@ public class ArenaDirector : MonoBehaviour {
     public float Elapsed => Time.time - runStart;
     // the arena difficulty picked in the menu (ArenaDifficulty) speeds the ramp up or down,
     // changes the peak and can start the run part-way up the curve
+    // the running arena's difficulty (0 outside the arena), for things spawned without a director
+    // reference: the Sorcerer's hexball speeds up with it
+    public static float CurrentDifficulty { get; private set; }
+
     public float Difficulty => Mathf.Clamp01(ArenaDifficulty.StartAt + Elapsed / (Tuning.RampSeconds.Value * ArenaDifficulty.RampFactor));
     public int MaxAlive => Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, Tuning.PeakEnemies.Value * ArenaDifficulty.PeakFactor, Difficulty)));
     public float SpawnInterval => Mathf.Lerp(6f, 1.5f, Difficulty) * ArenaDifficulty.SpawnIntervalFactor;
@@ -61,6 +65,7 @@ public class ArenaDirector : MonoBehaviour {
     }
 
     private void Update() {
+        CurrentDifficulty = Difficulty;
         if (enemies == null || enemies.Length == 0 || (spawners.Count == 0 && Map == null)) {
             return;
         }
@@ -84,6 +89,10 @@ public class ArenaDirector : MonoBehaviour {
                 ArenaVase.Create(floorPoint);
             }
         }
+    }
+
+    private void OnDestroy() {
+        CurrentDifficulty = 0f;
     }
 
     private int AliveEnemies() {
