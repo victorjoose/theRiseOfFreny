@@ -121,7 +121,8 @@ public class Player : MonoBehaviour, IDamageable {
         ? ShotgunOwned && ShotgunShells > 0
         : !Reloading && RevolverBullets > 0);
     // a potion on the floor is worth picking up: she is hurt, or has room to carry one
-    public bool WantsPotion => !isDead && (Health < MaxHealth || (_gameManager != null && !_gameManager.HasPotion));
+    // a dropped potion only heals: at full health it stays on the floor until needed or it expires
+    public bool WantsPotion => !isDead && Health < MaxHealth;
     public bool WantsBullets => RevolverReserve < revolverReserveMax;
     public bool WantsShells => ShotgunOwned && ShotgunShells < shellsMax;
     public bool WantsGrenades => Grenades < grenadesMax;
@@ -532,15 +533,11 @@ public class Player : MonoBehaviour, IDamageable {
         if (isDead) {
             return false;
         }
-        if (Health < MaxHealth) {
-            Heal(Mathf.Max(1, healPoints));
-            return true;
+        if (Health >= MaxHealth) {
+            return false;
         }
-        if (_gameManager != null && !_gameManager.HasPotion) {
-            _gameManager.HasPotion = true; // full health: carried for later (Q)
-            return true;
-        }
-        return false;
+        Heal(Mathf.Max(1, healPoints));
+        return true;
     }
 
     // Worms style: hold G to charge, release to lob the grenade forward in an arc whose range
