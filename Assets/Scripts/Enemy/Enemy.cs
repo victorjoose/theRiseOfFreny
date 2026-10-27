@@ -85,6 +85,29 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private const float MaxFallSpeed = 12f;
     private const float StepUp = 0.35f;      // a floor this little above the feet is a step, anything higher is a wall
 
+    // ---- moving between platforms: walkers jump up to a platform, hop a gap or drop off an edge to
+    // reach Freny, then catch their breath; after a swing they rest and back off before closing in again
+    [SerializeField]
+    protected float maxJumpHeight = 3.2f;    // the highest platform above its feet it can jump onto
+    [SerializeField]
+    protected float jumpCooldown = 1.2f;
+    [SerializeField]
+    protected float landPause = 0.45f;       // stands still a moment after landing
+    [SerializeField]
+    protected float restAfterAttack = 0.5f;  // stands still after a swing...
+    [SerializeField]
+    protected Vector2 backOffTime = new Vector2(0.6f, 1.2f); // ...then walks away for a moment
+    private const float ClimbSight = 4.5f;   // notices Freny this far above or below
+    private bool airborne;                   // jumping or dropping (Update moves it, not Movement)
+    private bool rising;                     // the upward part of a jump
+    private bool fellSinceTakeoff;
+    private float airborneSince;
+    private Vector2 airVelocity;
+    private float nextJumpTime;
+    private float restUntil;
+    private float backOffUntil;
+    private Transform ownPatrolA, ownPatrolB; // the patrol ends after it changed platforms
+
     // the collider's shape relative to the root, cached once. Feet and Center are computed from the
     // transform with it, not read from col.bounds: the bounds lag one physics step behind a transform
     // move, so at high frame rates an enemy was already past the floor before its bounds said so
@@ -186,7 +209,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             bool playerBehind = (player_t.position.x > transform.position.x) != FacingRight;
             float sight = radius * Tuning.EnemyAggro.Value * (playerBehind ? rearSightFactor : 1f);
             bool provoked = isHit && distance <= provokedRadius;
-            bool shouldChase = player.Health > 0 && sameLevel && (dx <= sight || provoked);
+            // walkers also go after her on a platform above or below (they jump and drop, see AttackMode)
+            bool reachable = sameLevel || (Climbs && dy <= ClimbSight);
+            bool shouldChase = player.Health > 0 && reachable && (dx <= sight || provoked);
 
             if (shouldChase && !isPlayerInRange) {
                 isPlayerInRange = true;
@@ -198,9 +223,13 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
 
         Vector3 before = transform.position;
-        Movement();
-        if (WalksOnGround) {
-            StickToGround();
+        if (airborne) {
+            MoveInAir();
+        } else {
+            Movement();
+            if (WalksOnGround) {
+                StickToGround();
+            }
         }
         ClampToArena();
         bool moving = Mathf.Abs(transform.position.x - before.x) > 0.0001f;
@@ -208,7 +237,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             // Walk/Idle follow real movement, so the walk cycle never plays while standing still
             anim.SetBool("Moving", moving);
         }
-        if (moving && Time.time >= nextDustTime) {
+        if (moving && !airborne && Time.time >= nextDustTime) {
             Fx.Dust(Feet, 1);
             PlaySound("step");
             nextDustTime = Time.time + 0.2f;
@@ -441,6 +470,14 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (attackRoutine != null) {
             return;
         }
+        if (Time.time < restUntil) {
+            FacePlayer(); // catching its breath after a swing or a landing
+            return;
+        }
+        if (Time.time < backOffUntil) {
+            BackOff();
+            return;
+        }
 
         FacePlayer();
 
@@ -452,15 +489,31 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return;
         }
 
-        // inside the radius but too far to attack: walk towards the player, never leaving the patrol area
+        // inside the radius but too far to attack: walk towards the player. Walkers follow her to
+        // other platforms; the others never leave their patrol area
         float targetX = ArenaBounds.ClampX(player_t.position.x, 0.5f);
-        if (pointA && pointB) {
+        if (pointA && pointB && !Climbs) {
             PatrolRange(out float min, out float max);
             targetX = Mathf.Clamp(targetX, min, max);
         }
         float step = targetX - transform.position.x;
-        if (Mathf.Abs(step) < 0.01f || !GroundAhead(Mathf.Sign(step))) {
-            return; // at the player's x, or the platform ends here: hold the edge and keep facing her
+        float dir = step >= 0f ? 1f : -1f;
+        float herFeet = playerCol ? playerCol.bounds.min.y : player_t.position.y - 1f;
+        float myFeet = Feet.y;
+        bool canJump = Climbs && Time.time >= nextJumpTime;
+        if (canJump && herFeet > myFeet + 0.6f && TryJumpUp(dir)) {
+            return; // she is on a platform above
+        }
+        if (Mathf.Abs(step) < 0.01f) {
+            return;
+        }
+        if (!GroundAhead(dir)) {
+            if (canJump && herFeet < myFeet - 0.6f) {
+                StartAirborne(new Vector2(dir * MoveSpeed, 0f), false); // she is below: step off the edge
+            } else if (canJump) {
+                TryJumpAcross(dir); // a gap at this height
+            }
+            return; // otherwise hold the edge and keep facing her
         }
         Vector2 target = new Vector2(targetX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, target, MoveSpeed * Time.deltaTime);
@@ -495,7 +548,142 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             HitPlayer();
         }
         nextAttackTime = Time.time + attackCooldown * Tuning.EnemyCooldown.Value * DifficultyCooldown;
+        // not frantic: rest a moment, then step back before closing in again
+        restUntil = Time.time + restAfterAttack * DifficultyCooldown;
+        backOffUntil = restUntil + Random.Range(backOffTime.x, backOffTime.y) * DifficultyCooldown;
         attackRoutine = null;
+    }
+
+    // walks away from Freny for a moment (stops at the platform's edge)
+    private void BackOff() {
+        float dir = player_t.position.x > transform.position.x ? -1f : 1f;
+        transform.localScale = new Vector3(-dir, 1, 1);
+        if (!GroundAhead(dir)) {
+            return;
+        }
+        Vector2 target = (Vector2)transform.position + new Vector2(dir, 0f);
+        transform.position = Vector2.MoveTowards(transform.position, target, MoveSpeed * 0.7f * Time.deltaTime);
+    }
+
+    // ---- jumping and dropping between platforms --------------------------------------------------
+
+    // ground enemies that chase from platform to platform (the Sorcerer stands, the Bat flies)
+    protected virtual bool Climbs => WalksOnGround && !(this is Sorcerer);
+
+    // a platform above, ahead of it (or right over it): jump onto it
+    private bool TryJumpUp(float dir) {
+        Vector3 feet = Feet;
+        float[] offsets = { 1.2f, 2f, 0.6f, 2.8f };
+        for (int side = 0; side < 2; side++) {
+            float d = side == 0 ? dir : -dir;
+            foreach (float off in offsets) {
+                float x = feet.x + d * off;
+                if (ArenaBounds.Active && ArenaBounds.ClampX(x, 0.6f) != x) {
+                    continue;
+                }
+                Vector2 from = new Vector2(x, feet.y + maxJumpHeight + 0.2f);
+                RaycastHit2D hit = Physics2D.Raycast(from, Vector2.down, maxJumpHeight - 0.3f, GroundMask);
+                if (hit.collider == null || hit.point.y < feet.y + 0.6f) {
+                    continue;
+                }
+                // room to stand on it
+                if (Physics2D.Raycast(hit.point + Vector2.up * 0.05f, Vector2.up, HalfHeight * 2f + 0.1f, GroundMask).collider != null) {
+                    continue;
+                }
+                JumpTo(new Vector2(x, hit.point.y), hit.point.y - feet.y + 0.5f);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // a gap at the same height: hop to the floor on the other side
+    private bool TryJumpAcross(float dir) {
+        Vector3 feet = Feet;
+        for (float off = 1.4f; off <= 3.2f; off += 0.6f) {
+            float x = feet.x + dir * off;
+            if (ArenaBounds.Active && ArenaBounds.ClampX(x, 0.6f) != x) {
+                return false;
+            }
+            RaycastHit2D hit = Physics2D.Raycast(new Vector2(x, feet.y + 1f), Vector2.down, 2f, GroundMask);
+            if (hit.collider != null && Mathf.Abs(hit.point.y - feet.y) < 1f) {
+                JumpTo(new Vector2(x + dir * 0.3f, hit.point.y), Mathf.Max(0.8f, hit.point.y - feet.y + 0.6f));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // a ballistic hop whose apex is `apex` above the feet, landing at `landing`
+    private void JumpTo(Vector2 landing, float apex) {
+        Vector3 feet = Feet;
+        float up = Mathf.Sqrt(2f * FallGravity * apex);
+        float down = Mathf.Max(0.05f, apex - (landing.y - feet.y));
+        float time = up / FallGravity + Mathf.Sqrt(2f * down / FallGravity);
+        float vx = (landing.x - feet.x) / time;
+        transform.localScale = new Vector3(vx > 0f ? -1 : 1, 1, 1);
+        StartAirborne(new Vector2(vx, up), true);
+        Fx.Dust(feet, 3);
+    }
+
+    private void StartAirborne(Vector2 velocity, bool jump) {
+        airborne = true;
+        rising = jump;
+        fellSinceTakeoff = false;
+        airborneSince = Time.time;
+        airVelocity = velocity;
+        fallVelocity = 0f;
+    }
+
+    // Update calls this instead of Movement while it jumps or drops
+    private void MoveInAir() {
+        float dt = Time.deltaTime;
+        if (rising) {
+            transform.position += new Vector3(airVelocity.x, airVelocity.y, 0f) * dt;
+            airVelocity.y -= FallGravity * dt;
+            if (airVelocity.y <= 0f) {
+                rising = false;
+                fellSinceTakeoff = true;
+            }
+            return;
+        }
+        // falling (or walking off the edge): drift sideways, StickToGround is the gravity
+        transform.position += new Vector3(airVelocity.x, 0f, 0f) * dt;
+        StickToGround();
+        if (fallVelocity > 0f) {
+            fellSinceTakeoff = true;
+        } else if (fellSinceTakeoff || Time.time - airborneSince > 1.5f) {
+            Land();
+        }
+    }
+
+    private void Land() {
+        airborne = false;
+        airVelocity = Vector2.zero;
+        restUntil = Mathf.Max(restUntil, Time.time + landPause);
+        nextJumpTime = Time.time + jumpCooldown;
+        Fx.Dust(Feet, 3);
+        PlaySound("step");
+        // a new platform: patrol around here from now on
+        if (ownPatrolA == null) {
+            ownPatrolA = new GameObject(name + " PatrolA").transform;
+            ownPatrolB = new GameObject(name + " PatrolB").transform;
+        }
+        Vector3 feet = Feet;
+        ownPatrolA.position = new Vector3(feet.x - 3f, feet.y, 0f);
+        ownPatrolB.position = new Vector3(feet.x + 3f, feet.y, 0f);
+        pointA = ownPatrolA;
+        pointB = ownPatrolB;
+        currentTarget = (Random.value < 0.5f ? ownPatrolA : ownPatrolB).position;
+    }
+
+    private void OnDestroy() {
+        if (ownPatrolA) {
+            Destroy(ownPatrolA.gameObject);
+        }
+        if (ownPatrolB) {
+            Destroy(ownPatrolB.gameObject);
+        }
     }
 
     // damages Freny and, for heavy hitters, shoves her away from the enemy (she stays down for a moment)
