@@ -327,6 +327,39 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         return Physics2D.Raycast(from, Vector2.down, 1.3f, GroundMask).collider != null;
     }
 
+    // a wall or spikes right ahead. Enemies move by their transform, so nothing physical stops them:
+    // without this they walked through walls and out of the stage, and into spikes
+    protected bool Blocked(float direction) {
+        if (col == null) {
+            return false;
+        }
+        Vector3 feet = Feet;
+        float x = feet.x + direction * (HalfWidth + 0.15f);
+        return WallAhead(direction) || Hazard.At(new Vector2(x, feet.y + 0.1f));
+    }
+
+    // solid ground (not a one-way ledge) beside the body, above step height
+    protected bool WallAhead(float direction) {
+        if (col == null) {
+            return false;
+        }
+        Vector3 feet = Feet;
+        float reach = HalfWidth + 0.12f;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.useTriggers = false;
+        filter.SetLayerMask(GroundMask);
+        float top = feet.y + Mathf.Max(StepUp + 0.05f, HalfHeight * 2f - 0.1f);
+        for (float y = feet.y + StepUp + 0.05f; y <= top + 0.001f; y += Mathf.Max(0.2f, (top - feet.y - StepUp) * 0.5f)) {
+            int count = Physics2D.Raycast(new Vector2(feet.x, y), new Vector2(direction, 0f), filter, groundHits, reach);
+            for (int i = 0; i < count; i++) {
+                if (!groundHits[i].collider.usedByEffector) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     // puts the feet (the collider's bottom edge) on `floorPoint`. Spawners call this right after
     // Instantiate, before Start: the root sits above the feet by the collider's offset, so placing the
     // root on the floor left the Bug's feet 0.46 inside it
@@ -466,8 +499,8 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
         float dir = goalX > transform.position.x ? 1f : -1f;
         transform.localScale = new Vector3(-dir, 1, 1);
-        if (!GroundAhead(dir)) {
-            ChangeDirection(); // the platform ends here
+        if (!GroundAhead(dir) || Blocked(dir)) {
+            ChangeDirection(); // the platform ends here, or a wall or spikes
             return;
         }
         Vector2 goal = new Vector2(goalX, transform.position.y);
@@ -525,6 +558,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         if (Mathf.Abs(step) < 0.01f) {
             return;
+        }
+        if (Blocked(dir)) {
+            if (canJump && WallAhead(dir)) {
+                TryJumpUp(dir); // over the wall if it is low enough
+            }
+            return; // never into a wall or onto spikes
         }
         if (!GroundAhead(dir)) {
             if (canJump && herFeet < myFeet - 0.6f) {
@@ -585,7 +624,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private void BackOff() {
         float dir = Target.position.x > transform.position.x ? -1f : 1f;
         transform.localScale = new Vector3(-dir, 1, 1);
-        if (!GroundAhead(dir)) {
+        if (!GroundAhead(dir) || Blocked(dir)) {
             return;
         }
         Vector2 target = (Vector2)transform.position + new Vector2(dir, 0f);
@@ -666,6 +705,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private void MoveInAir() {
         float dt = Time.deltaTime;
         if (rising) {
+            if (airVelocity.x != 0f && WallAhead(Mathf.Sign(airVelocity.x))) {
+                airVelocity.x = 0f;
+            }
             transform.position += new Vector3(airVelocity.x, airVelocity.y, 0f) * dt;
             airVelocity.y -= FallGravity * dt;
             if (airVelocity.y <= 0f) {
@@ -675,6 +717,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return;
         }
         // falling (or walking off the edge): drift sideways, StickToGround is the gravity
+        if (airVelocity.x != 0f && WallAhead(Mathf.Sign(airVelocity.x))) {
+            airVelocity.x = 0f; // slide down the wall instead of into it
+        }
         transform.position += new Vector3(airVelocity.x, 0f, 0f) * dt;
         StickToGround();
         if (fallVelocity > 0f) {

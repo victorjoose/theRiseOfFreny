@@ -62,13 +62,14 @@ def render(path,outpng,marks=True):
         sprs=re.findall(r'm_Data: \{fileID: (-?\d+)(?:, guid: (\w+))?',sa)
         mats=b.split('m_TileMatrixArray:')[1].split('m_TileColorArray')[0]
         ox,oy=world(g)
-        layers.append((order.get(g,(0,1))[0],gos[g]['name'],cells,sprs,ox,oy))
+        solid=any(c2==19719996 and re.search(r'm_GameObject: \{fileID: (-?\d+)',b2).group(1)==g for f2,(c2,b2,s2) in d.items())
+        layers.append((order.get(g,(0,1))[0],gos[g]['name'],cells,sprs,ox,oy,solid))
         allcells+= [(int(x)+ox,int(y)+oy) for x,y,_,_ in cells]
     xs=[c[0] for c in allcells]; ys=[c[1] for c in allcells]
     x0,x1,y0,y1=min(xs)-1,max(xs)+2,min(ys)-1,max(ys)+3
     W=int((x1-x0)*PX); H=int((y1-y0)*PX)
     im=Image.new('RGBA',(W,H),(20,16,28,255))
-    for so,name,cells,sprs,ox,oy in sorted(layers,key=lambda l:l[0]):
+    for so,name,cells,sprs,ox,oy,solid in sorted(layers,key=lambda l:l[0]):
         for x,y,si,mi in cells:
             f,gd=sprs[int(si)]
             if not gd: continue
@@ -80,6 +81,22 @@ def render(path,outpng,marks=True):
             im.alpha_composite(t,(max(px,0),max(py,0)))
     from PIL import ImageEnhance
     a=im.split()[3]; im=ImageEnhance.Brightness(im.convert('RGB')).enhance(float(os.environ.get('BRIGHT','2.6'))).convert('RGBA')
+    if os.environ.get('COLL'):
+        # env COLL=1: solid tiles (tilemaps with a collider) tinted red, to spot invisible walls
+        ov=Image.new('RGBA',im.size,(0,0,0,0))
+        for so,name,cells,sprs,ox,oy,solid in layers:
+            if not solid: continue
+            for x,y,si,mi in cells:
+                f,gd=sprs[int(si)]
+                if not gd: continue
+                try: crop,w,h=sprites(gd)[f]
+                except KeyError: continue
+                pw,ph=max(1,int(w*PX)),max(1,int(h*PX))
+                m=crop.resize((pw,ph),Image.NEAREST).split()[3].point(lambda v:110 if v>40 else 0)
+                red=Image.new('RGBA',(pw,ph),(255,0,0,0)); red.putalpha(m)
+                px=int((int(x)+ox-x0)*PX); py=int(H-(int(y)+oy-y0)*PX-ph)
+                ov.alpha_composite(red,(max(px,0),max(py,0)))
+        im.alpha_composite(ov)
     if marks:
         dr=ImageDraw.Draw(im)
         def mk(x,y,col,label):
