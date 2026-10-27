@@ -9,6 +9,10 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+/[Rr]ecordings/
+
+# Unity 6 temp folders
+.utmp/
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
@@ -26,6 +30,7 @@
 # Visual Studio cache directory
 .vs/
 .idea/
+.vscode/
 
 # Gradle cache directory
 .gradle/
@@ -83,3 +88,19 @@ crashlytics-build.properties
 # raw sound libraries (several GB): keep them out of git; only the cut clips in Assets/Audio are committed
 /[Aa]ssets/[Ss]ounds/
 /[Aa]ssets/[Ss]ounds.meta
+
+# OS junk
+.DS_Store
+._*
+[Tt]humbs.db
+[Dd]esktop.ini
+
+# Backups of art tools
+*.blend1
+*.blend2
+*.kra~
+*.psd~
+
+# Python caches from Tools/
+__pycache__/
+*.pyc
