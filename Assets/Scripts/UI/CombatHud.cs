@@ -65,13 +65,22 @@ public class CombatHud : MonoBehaviour {
         float swordReady = player.AttackReadiness;
         DrawMeter(new Rect(swordX, y + size + 2f, size, 6f * scale), swordReady, swordReady >= 1f ? ReadyColor : ChargingColor);
         float revolverX = x;
-        DrawIcon(Icon(revolverIcon, a => a.revolverIcon), ref x, y, size, !player.UsingShotgun && !player.RevolverDry);
+        bool pistolSelected = !player.UsingShotgun;
+        if (pistolSelected) {
+            DrawFrame(new Rect(revolverX - 4f * scale, y - 4f * scale, size + 8f * scale, size + 8f * scale), scale);
+        }
+        DrawIcon(Icon(revolverIcon, a => a.revolverIcon), ref x, y, size, pistolSelected && !player.RevolverDry);
+        ShadowLabel(new Rect(revolverX + 2f * scale, y - 2f * scale, 30f * scale, 26f * scale), Key(GameAction.Pistol));
         DrawBullets(revolverX, y + size + 2f, size, scale);
         // spare bullets: the revolver is no longer infinite
         ShadowLabel(new Rect(revolverX + size - 14f * scale, y + size + 10f * scale, 70f * scale, 26f * scale), $"+{player.RevolverReserve}");
         if (player.ShotgunOwned) {
             float sx = x;
+            if (player.UsingShotgun) {
+                DrawFrame(new Rect(sx - 4f * scale, y - 4f * scale, size + 8f * scale, size + 8f * scale), scale);
+            }
             DrawIcon(Icon(shotgunIcon, a => a.shotgunIcon), ref x, y, size, player.UsingShotgun);
+            ShadowLabel(new Rect(sx + 2f * scale, y - 2f * scale, 30f * scale, 26f * scale), Key(GameAction.Shotgun));
             ShadowLabel(new Rect(sx + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.ShotgunShells}");
         }
         if (player.Grenades > 0) {
@@ -85,6 +94,29 @@ public class CombatHud : MonoBehaviour {
                 // power bar while G is held
                 DrawMeter(new Rect(gx, y + size + 2f, size, 6f * scale), player.GrenadeCharge, Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge));
             }
+        }
+    }
+
+    // the gun in hand: a bright frame around its icon, and its name for a moment after a switch
+    private bool lastShotgun;
+    private float switchedAt = -10f;
+
+    private void DrawFrame(Rect r, float scale) {
+        bool shotgun = player.UsingShotgun;
+        if (shotgun != lastShotgun) {
+            lastShotgun = shotgun;
+            switchedAt = Time.time;
+        }
+        float t = Mathf.Max(2f, 3f * scale);
+        Color old = GUI.color;
+        GUI.color = ReadyColor;
+        GUI.DrawTexture(new Rect(r.x, r.y, r.width, t), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(r.x, r.yMax - t, r.width, t), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(r.x, r.y, t, r.height), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(r.xMax - t, r.y, t, r.height), Texture2D.whiteTexture);
+        GUI.color = old;
+        if (Time.time - switchedAt < 1.2f) {
+            ShadowLabel(new Rect(r.x, r.y - 30f * scale, 160f * scale, 28f * scale), shotgun ? "Escopeta" : "Pistola");
         }
     }
 
