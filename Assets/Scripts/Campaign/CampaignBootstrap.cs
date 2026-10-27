@@ -37,6 +37,12 @@ public static class CampaignBootstrap {
             new GameObject("GameManager").AddComponent<GameManager>();
         }
 
+        // ledges, spikes, ladders and props get their behaviour from the tiles, then enemies saved
+        // inside the ground are lifted out of it
+        StageTerrain.Build(scene);
+        StageTerrain.SettleEnemies(scene);
+        GetOrAdd<LadderClimber>(playerObj);
+
         // stages generated outside the Editor (1-6) are saved without the merged collider shape
         foreach (CompositeCollider2D composite in FindCompat.All<CompositeCollider2D>()) {
             if (composite.pathCount == 0) {
