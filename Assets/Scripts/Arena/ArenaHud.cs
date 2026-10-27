@@ -37,6 +37,9 @@ public class ArenaHud : MonoBehaviour {
     }
 
     private void OnGUI() {
+        if (GameMenus.Paused) {
+            return;
+        }
         if (player == null || input == null) {
             return;
         }

@@ -48,6 +48,9 @@ public class CampaignHud : MonoBehaviour {
     }
 
     private void OnGUI() {
+        if (GameMenus.Paused) {
+            return;
+        }
         if (player == null || run == null) {
             return;
         }

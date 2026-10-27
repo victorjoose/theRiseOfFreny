@@ -23,6 +23,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // The player's three save slots (coins, XP, upgrades, stages), private to them.
+    // "slots" is the JSON written by CloudProgressSync.
+    match /progress/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+                            && request.resource.data.keys().hasOnly(['slots', 'updatedAt'])
+                            && request.resource.data.slots is string
+                            && request.resource.data.slots.size() <= 200000;
+      allow delete: if false;
+    }
+
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
