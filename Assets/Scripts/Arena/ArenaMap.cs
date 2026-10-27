@@ -13,6 +13,7 @@ public class ArenaMap {
         public float y;              // the top surface
         public float xMin, xMax;
         public Collider2D collider;  // the collider the samples came from (edges are refined on it)
+        public bool tower;           // a raised ledge against the arena's side wall (the towers)
 
         public float Width => xMax - xMin;
 
@@ -21,7 +22,7 @@ public class ArenaMap {
         }
 
         public override string ToString() {
-            return $"P{index} (y {y:0.0}, x {xMin:0.0} a {xMax:0.0})";
+            return $"P{index} (y {y:0.0}, x {xMin:0.0} a {xMax:0.0}{(tower ? ", torre" : "")})";
         }
     }
 
@@ -57,6 +58,7 @@ public class ArenaMap {
     private const float DropOvershoot = 0.25f; // how far past the edge the body centre goes before it falls
     private const float MinRise = 0.3f;        // lower than this is a step, not a platform to climb
     private const float RiseMargin = 0.3f;     // a platform this close to the jump's apex is not climbed (no time left to move onto it)
+    private const float MinHeadroom = 0.6f;    // free height above a top for it to count as a surface
     private const float SteerRoom = 0.35f;     // the feet rise this much above the platform before she moves onto it (headroom checked up to there)
 
     private static readonly RaycastHit2D[] hits = new RaycastHit2D[16];
@@ -65,6 +67,27 @@ public class ArenaMap {
                                  float bodyHalfWidth, float bodyHeight, float jumpHeight) {
         return new ArenaMap(ground, left, right, bottom, top, bodyHalfWidth, bodyHeight, jumpHeight);
     }
+
+    // one map per arena scene, shared by the autopilot and the director (built the first time either asks)
+    private static ArenaMap shared;
+    private static int sharedScene = -1;
+
+    public static ArenaMap Shared(Player player) {
+        if (!ArenaBounds.Active || player == null) {
+            return null;
+        }
+        int scene = player.gameObject.scene.handle;
+        if (shared == null || sharedScene != scene) {
+            LayerMask ground = player.whatIsGround.value != 0 ? player.whatIsGround : (LayerMask)LayerMask.GetMask("Ground");
+            shared = Build(ground, ArenaBounds.Left, ArenaBounds.Right, ArenaBounds.Bottom, ArenaBounds.Top,
+                player.BodyHalfWidth, player.BodyHeight, player.JumpHeight);
+            sharedScene = scene;
+            Debug.Log($"[Arena] Mapa da arena: {shared.Describe()}");
+        }
+        return shared;
+    }
+
+    public Platform Floor { get; private set; }
 
     private ArenaMap(LayerMask ground, float left, float right, float bottom, float top,
                      float bodyHalfWidth, float bodyHeight, float jumpHeight) {
@@ -92,10 +115,57 @@ public class ArenaMap {
         return filter;
     }
 
-    private void FindPlatforms(float bottom, float top) {
+    private struct Surface {
+        public float y;
+        public Collider2D collider;
+    }
+
+    private static readonly List<Surface> surfaces = new List<Surface>();
+    private static readonly List<float> crossingY = new List<float>();
+    private static readonly List<Collider2D> crossingCol = new List<Collider2D>();
+
+    // Every surface someone can stand on along the vertical at x. A ray reports each collider once,
+    // so it is cast again just below every hit: the tilemap composites are hollow outlines, which
+    // lets the next ray find the same collider's next edge (a tower's pocket ledge under its roof,
+    // the floor under a tower). Along one collider the crossings alternate going down: into the
+    // solid (a top), out of it (a ceiling). A solid polygon only reports its top, since a ray that
+    // starts inside it ignores it. A top with less than MinHeadroom free above it is not a surface.
+    private void SurfacesAt(float x, float castTop, float bottom) {
+        surfaces.Clear();
+        crossingY.Clear();
+        crossingCol.Clear();
         ContactFilter2D filter = GroundFilter();
+        float y0 = castTop;
+        for (int guard = 0; guard < 32 && y0 > bottom; guard++) {
+            int n = Physics2D.Raycast(new Vector2(x, y0), Vector2.down, filter, hits, y0 - bottom + 0.5f);
+            if (n == 0) {
+                break;
+            }
+            RaycastHit2D nearest = hits[0];
+            for (int i = 1; i < n; i++) {
+                if (hits[i].distance < nearest.distance) {
+                    nearest = hits[i];
+                }
+            }
+            float y = nearest.point.y;
+            int before = 0;
+            for (int i = 0; i < crossingCol.Count; i++) {
+                if (crossingCol[i] == nearest.collider) {
+                    before++;
+                }
+            }
+            float above = crossingY.Count > 0 ? crossingY[crossingY.Count - 1] : castTop;
+            if (before % 2 == 0 && above - y >= MinHeadroom && y >= bottom + 0.3f) {
+                surfaces.Add(new Surface { y = y, collider = nearest.collider });
+            }
+            crossingY.Add(y);
+            crossingCol.Add(nearest.collider);
+            y0 = y - 0.01f;
+        }
+    }
+
+    private void FindPlatforms(float bottom, float top) {
         float castTop = top + 1f;
-        float castLength = top - bottom + 2f;
         List<Platform> open = new List<Platform>();
         List<bool> continued = new List<bool>();
 
@@ -103,15 +173,11 @@ public class ArenaMap {
             for (int k = 0; k < continued.Count; k++) {
                 continued[k] = false;
             }
-            int n = Physics2D.Raycast(new Vector2(x, castTop), Vector2.down, filter, hits, castLength);
-            for (int i = 0; i < n; i++) {
-                float y = hits[i].point.y;
-                if (y < bottom + 0.3f) {
-                    continue; // under the screen: nobody stands there (the floor's own bottom edge)
-                }
+            SurfacesAt(x, castTop, bottom);
+            foreach (Surface surface in surfaces) {
                 int found = -1;
                 for (int k = 0; k < open.Count; k++) {
-                    if (!continued[k] && open[k].collider == hits[i].collider && Mathf.Abs(open[k].y - y) <= 0.08f) {
+                    if (!continued[k] && open[k].collider == surface.collider && Mathf.Abs(open[k].y - surface.y) <= 0.08f) {
                         found = k;
                         break;
                     }
@@ -120,7 +186,7 @@ public class ArenaMap {
                     open[found].xMax = x;
                     continued[found] = true;
                 } else {
-                    open.Add(new Platform { y = y, xMin = x, xMax = x, collider = hits[i].collider });
+                    open.Add(new Platform { y = surface.y, xMin = x, xMax = x, collider = surface.collider });
                     continued.Add(true);
                 }
             }
@@ -143,6 +209,17 @@ public class ArenaMap {
         Platforms.Sort((a, b) => a.y != b.y ? a.y.CompareTo(b.y) : a.xMin.CompareTo(b.xMin));
         for (int i = 0; i < Platforms.Count; i++) {
             Platforms[i].index = i;
+        }
+
+        // the floor is the widest of the lowest surfaces; towers are raised ledges against a side wall
+        foreach (Platform platform in Platforms) {
+            if (Floor == null || platform.y < Floor.y - 0.5f || (Mathf.Abs(platform.y - Floor.y) <= 0.5f && platform.Width > Floor.Width)) {
+                Floor = platform;
+            }
+        }
+        foreach (Platform platform in Platforms) {
+            bool atWall = platform.xMin <= left + 0.35f || platform.xMax >= right - 0.35f;
+            platform.tower = Floor != null && platform != Floor && atWall && platform.y >= Floor.y + 3f;
         }
     }
 
@@ -353,6 +430,24 @@ public class ArenaMap {
         }
         first = hop;
         return true;
+    }
+
+    // free height above the surface at x (up to `limit`)
+    public float HeadroomAt(float x, float y, float limit = 6f) {
+        RaycastHit2D hit = Physics2D.Raycast(new Vector2(x, y + 0.05f), Vector2.up, limit, ground);
+        return hit.collider != null ? hit.point.y - y : limit;
+    }
+
+    // platforms Freny can get to from `from` (the director only puts walkers and chests there)
+    public List<Platform> ReachableFrom(Platform from) {
+        List<Platform> reachable = new List<Platform>();
+        int[] hopCounts = HopsFrom(from);
+        foreach (Platform platform in Platforms) {
+            if (hopCounts[platform.index] != int.MaxValue) {
+                reachable.Add(platform);
+            }
+        }
+        return reachable;
     }
 
     public string Describe() {

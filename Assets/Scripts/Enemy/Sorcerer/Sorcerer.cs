@@ -10,6 +10,10 @@ public class Sorcerer : Enemy {
     [SerializeField] private bool predictive = false;
     private float nextCastTime;
     private Rigidbody2D playerRb;
+    // set by the arena director for a sorcerer on a tower, which Freny can't climb to: after this
+    // many casts it vanishes in a portal (0 = stays until killed)
+    [System.NonSerialized] public int castsBeforeLeaving;
+    private int casts;
 
     private Transform SorcererCastPosition;
 
@@ -51,6 +55,7 @@ public class Sorcerer : Enemy {
             return;
         }
 
+        casts++;
         Vector3 castPosition = SorcererCastPosition ? SorcererCastPosition.position : transform.position;
         GameObject hexball = Instantiate(hexballEffectPrefab, castPosition, Quaternion.identity);
         Fx.Burst(castPosition, DeathColor, 8, 1.5f, 0.08f, 0.4f);
@@ -69,6 +74,10 @@ public class Sorcerer : Enemy {
                 }
             }
             effect.SetDirection(target - castPosition);
+        }
+        if (castsBeforeLeaving > 0 && casts >= castsBeforeLeaving) {
+            Fx.Portal(Feet + Vector3.up * 0.6f, 0.6f, DeathColor);
+            Despawn();
         }
     }
 

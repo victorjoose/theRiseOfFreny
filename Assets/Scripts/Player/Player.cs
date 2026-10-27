@@ -41,9 +41,14 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private int shellsPerRun = 6;         // shotgun shells at the start of a run; chests add more
     [SerializeField] private int revolverCapacity = 4;     // shots before the revolver has to be reloaded
     [SerializeField] private float revolverReloadTime = 1.6f;
+    [SerializeField] private int revolverReserveStart = 16; // spare bullets at the start of a run: the gun is no longer infinite
+    [SerializeField] private int revolverReserveMax = 40;
+    [SerializeField] private int shellsMax = 30;
 
     [Header("Grenade (G)")]
     [SerializeField] private float grenadeCooldown = 8f;
+    [SerializeField] private int grenadesFromUpgrade = 2;  // the shop's grenade upgrade starts each run with these
+    [SerializeField] private int grenadesMax = 6;
     [SerializeField] private float grenadeAngle = 55f;     // degrees above the horizontal
     [SerializeField] private float grenadeMinSpeed = 5f;
     [SerializeField] private float grenadeMaxSpeed = 13f;
@@ -55,6 +60,9 @@ public class Player : MonoBehaviour, IDamageable {
     public int ShotgunShells { get; private set; }
     public int RevolverBullets { get; private set; }
     public int RevolverCapacity => revolverCapacity;
+    public int RevolverReserve { get; private set; }       // spare bullets; reloading takes them from here
+    public int Grenades { get; private set; }
+    public bool ShotgunOwned { get; private set; }          // bought in the shop, or found in a chest this run
     public bool ShotgunEquipped { get; private set; } = true; // 1 = pistol, 2 = shotgun
     public bool IsRunning { get; private set; }
     public bool ChargingGrenade { get; private set; }
@@ -100,11 +108,21 @@ public class Player : MonoBehaviour, IDamageable {
     public bool AttackReady => Time.time >= attackReadyAt;
     public bool FacingRight => transform.localScale.x > 0;
     public bool RunReady => !IsRunning && Time.time >= runReadyAt;
-    public bool GrenadeReady => Time.time >= nextGrenadeTime;
-    public bool UsingShotgun => FrenyProgress.HasShotgun && ShotgunEquipped && ShotgunShells > 0;
+    public bool GrenadeReady => Time.time >= nextGrenadeTime;      // the cooldown between throws
+    public bool CanThrowGrenade => Grenades > 0 && GrenadeReady;
+    public bool UsingShotgun => ShotgunOwned && ShotgunEquipped && ShotgunShells > 0;
     public bool Reloading => reloadReadyAt > 0f;
-    // the gun can fire: not on the sword/gun cooldown and, for the revolver, not reloading
-    public bool GunReady => AttackReady && (UsingShotgun || !Reloading);
+    public bool RevolverDry => RevolverBullets <= 0 && RevolverReserve <= 0 && !Reloading;
+    // the gun can fire: not on the sword/gun cooldown and, for the revolver, loaded and not reloading
+    public bool GunReady => GunReadyFor(UsingShotgun);
+    public bool GunReadyFor(bool shotgun) => AttackReady && (shotgun
+        ? ShotgunOwned && ShotgunShells > 0
+        : !Reloading && RevolverBullets > 0);
+    // a potion on the floor is worth picking up: she is hurt, or has room to carry one
+    public bool WantsPotion => !isDead && (Health < MaxHealth || (_gameManager != null && !_gameManager.HasPotion));
+    public bool WantsBullets => RevolverReserve < revolverReserveMax;
+    public bool WantsShells => ShotgunOwned && ShotgunShells < shellsMax;
+    public bool WantsGrenades => Grenades < grenadesMax;
     public float ReloadProgress => Reloading ? Mathf.Clamp01(1f - (reloadReadyAt - Time.time) / revolverReloadTime) : 1f;
     // body and jump, for the autopilot's platform map (the same numbers the physics uses)
     public float JumpHeight => jumpHeight;
@@ -161,8 +179,12 @@ public class Player : MonoBehaviour, IDamageable {
         FrenyProgress.Changed += ApplyUpgrades;
 
         Health = MaxHealth;
-        ShotgunShells = FrenyProgress.HasShotgun ? shellsPerRun : 0;
+        // the run's loadout: a loaded revolver with spare bullets; the shop's shotgun and grenades
+        // add theirs (and again when bought mid-run, see GrantUpgradeLoadout)
         RevolverBullets = revolverCapacity;
+        RevolverReserve = revolverReserveStart;
+        loadoutReady = true;
+        GrantUpgradeLoadout();
         // coins persist between runs and scenes (GDD: persistência)
         coins = FrenyProgress.Coins;
         if (UIManager.Instance) {
@@ -223,8 +245,28 @@ public class Player : MonoBehaviour, IDamageable {
         rg2d.SetVel(velocity);
     }
 
+    private bool loadoutReady;
+    private bool shotgunGranted;
+    private bool grenadesGranted;
+
+    private void GrantUpgradeLoadout() {
+        if (!loadoutReady) {
+            return;
+        }
+        if (FrenyProgress.HasShotgun && !shotgunGranted) {
+            shotgunGranted = true;
+            ShotgunOwned = true;
+            ShotgunShells = Mathf.Max(ShotgunShells, shellsPerRun);
+        }
+        if (FrenyProgress.HasGrenade && !grenadesGranted) {
+            grenadesGranted = true;
+            Grenades = Mathf.Min(grenadesMax, Grenades + grenadesFromUpgrade);
+        }
+    }
+
     // applies in the arena, by hand and in the campaign
     public void ApplyUpgrades() {
+        GrantUpgradeLoadout();
         int oldMax = MaxHealth;
         MaxHealth = _baseMaxHealth + FrenyProgress.BonusMaxHealth;
         _speed = _baseSpeed * FrenyProgress.SpeedMultiplier;
@@ -371,7 +413,7 @@ public class Player : MonoBehaviour, IDamageable {
     private void SelectWeapon() {
         if (_input.Current.selectPistol) {
             ShotgunEquipped = false;
-        } else if (_input.Current.selectShotgun && FrenyProgress.HasShotgun) {
+        } else if (_input.Current.selectShotgun && ShotgunOwned) {
             ShotgunEquipped = true;
         }
     }
@@ -386,14 +428,17 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     // the revolver holds revolverCapacity shots; empty, it reloads by itself over revolverReloadTime
+    // with bullets from the reserve. With no reserve left it stays empty until she picks some up.
     private void Reload() {
         if (Reloading) {
             if (Time.time >= reloadReadyAt) {
                 reloadReadyAt = -1f;
-                RevolverBullets = revolverCapacity;
+                int take = Mathf.Min(revolverCapacity, RevolverReserve);
+                RevolverBullets = take;
+                RevolverReserve -= take;
                 Fx.Spray(transform.position + Vector3.up * 0.6f, Vector3.up, new Color(1f, 0.9f, 0.5f), 4, 1.5f, 0.3f);
             }
-        } else if (RevolverBullets <= 0) {
+        } else if (RevolverBullets <= 0 && RevolverReserve > 0) {
             reloadReadyAt = Time.time + revolverReloadTime;
         }
     }
@@ -430,21 +475,70 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     public void AddShells(int amount) {
-        if (FrenyProgress.HasShotgun) {
-            ShotgunShells += amount;
+        if (ShotgunOwned) {
+            ShotgunShells = Mathf.Min(shellsMax, ShotgunShells + amount);
         }
+    }
+
+    // ---- pickups (ItemPickup): each returns false when she has no use for it, so it stays on the floor
+
+    public bool AddBullets(int amount) {
+        if (!WantsBullets) {
+            return false;
+        }
+        RevolverReserve = Mathf.Min(revolverReserveMax, RevolverReserve + amount);
+        return true;
+    }
+
+    public bool AddGrenades(int amount) {
+        if (!WantsGrenades) {
+            return false;
+        }
+        Grenades = Mathf.Min(grenadesMax, Grenades + amount);
+        return true;
+    }
+
+    // a shotgun found in a chest: hers for the rest of the run; one she already has just gets the shells
+    public bool GiveShotgun(int shells) {
+        if (ShotgunOwned) {
+            if (!WantsShells) {
+                return false;
+            }
+            AddShells(shells);
+            return true;
+        }
+        ShotgunOwned = true;
+        ShotgunEquipped = true;
+        ShotgunShells = Mathf.Min(shellsMax, shells);
+        return true;
+    }
+
+    public bool CollectPotion(int healPoints) {
+        if (isDead) {
+            return false;
+        }
+        if (Health < MaxHealth) {
+            Heal(Mathf.Max(1, healPoints));
+            return true;
+        }
+        if (_gameManager != null && !_gameManager.HasPotion) {
+            _gameManager.HasPotion = true; // full health: carried for later (Q)
+            return true;
+        }
+        return false;
     }
 
     // Worms style: hold G to charge, release to lob the grenade forward in an arc whose range
     // depends on the charge. The autopilot sends the charge it wants directly.
     private void ThrowGrenade() {
         PlayerInputFrame input = _input.Current;
-        ChargingGrenade = FrenyProgress.HasGrenade && GrenadeReady && input.grenadeHeld;
+        ChargingGrenade = CanThrowGrenade && input.grenadeHeld;
         GrenadeCharge = ChargingGrenade ? input.grenadeCharge : 0f;
 
-        if (!input.grenadePressed || !FrenyProgress.HasGrenade || !GrenadeReady) {
+        if (!input.grenadePressed || !CanThrowGrenade) {
             return;
         }
+        Grenades--;
         nextGrenadeTime = Time.time + grenadeCooldown;
         ChargingGrenade = false;
 

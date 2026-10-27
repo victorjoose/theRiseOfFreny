@@ -554,6 +554,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         ReleaseSpawnerSlot();
         DropCoin();
+        ItemPickup.RollEnemyDrop(Center); // now and then a potion or ammo too
         Destroy(gameObject, 1f);
     }
 

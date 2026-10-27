@@ -46,19 +46,22 @@ public class CombatHud : MonoBehaviour {
         float swordReady = player.AttackReadiness;
         DrawMeter(new Rect(swordX, y + size + 2f, size, 6f * scale), swordReady, swordReady >= 1f ? ReadyColor : ChargingColor);
         float revolverX = x;
-        DrawIcon(Icon(revolverIcon, a => a.revolverIcon), ref x, y, size, !player.UsingShotgun);
+        DrawIcon(Icon(revolverIcon, a => a.revolverIcon), ref x, y, size, !player.UsingShotgun && !player.RevolverDry);
         DrawBullets(revolverX, y + size + 2f, size, scale);
-        if (FrenyProgress.HasShotgun) {
+        // spare bullets: the revolver is no longer infinite
+        GUI.Label(new Rect(revolverX + size - 14f * scale, y + size - 18f * scale, 70f * scale, 20f * scale), $"+{player.RevolverReserve}");
+        if (player.ShotgunOwned) {
             float sx = x;
             DrawIcon(Icon(shotgunIcon, a => a.shotgunIcon), ref x, y, size, player.UsingShotgun);
             GUI.Label(new Rect(sx + size - 10f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.ShotgunShells}");
         }
-        if (FrenyProgress.HasGrenade) {
+        if (player.Grenades > 0) {
             Color old = GUI.color;
             GUI.color = player.GrenadeReady ? Color.white : new Color(1f, 1f, 1f, 0.35f);
             float gx = x;
             DrawIcon(Icon(grenadeIcon, a => a.grenadeIcon), ref x, y, size);
             GUI.color = old;
+            GUI.Label(new Rect(gx + size - 10f, y + size - 18f * scale, 60f * scale, 20f * scale), $"x{player.Grenades}");
             if (player.ChargingGrenade) {
                 // power bar while G is held
                 DrawMeter(new Rect(gx, y + size + 2f, size, 6f * scale), player.GrenadeCharge, Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge));
