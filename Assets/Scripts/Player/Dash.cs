@@ -65,6 +65,7 @@ public class Dash : MonoBehaviour {
             playerAnim.Dash();
         }
         Fx.Spray(transform.position, new Vector2(-direction, 0.2f), new Color(1f, 1f, 1f, 0.7f), 10, 3f, 0.5f);
+        Sfx.Play("freny_dash", transform.position);
     }
 
     private void Stop() {

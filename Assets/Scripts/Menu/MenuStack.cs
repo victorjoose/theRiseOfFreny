@@ -128,6 +128,7 @@ public class MenuStack : MonoBehaviour {
 
     private readonly List<MenuPage> pages = new List<MenuPage>();
     private int shownFrame = -1;
+    private GameObject lastSelected;   // to tick when the selection moves
 
     public MenuPage Top => pages.Count > 0 ? pages[pages.Count - 1] : null;
     public int Depth => pages.Count;
@@ -154,6 +155,7 @@ public class MenuStack : MonoBehaviour {
     }
 
     public void Back() {
+        Sfx.Ui("ui_back");
         if (pages.Count <= 1) {
             OnRootCancel?.Invoke();
             return;
@@ -187,6 +189,13 @@ public class MenuStack : MonoBehaviour {
         EventSystem events = EventSystem.current;
         if (events != null) {
             events.sendNavigationEvents = !Busy;
+        }
+        GameObject selected = events != null ? events.currentSelectedGameObject : null;
+        if (selected != lastSelected) {
+            if (selected != null && lastSelected != null && Time.frameCount != shownFrame) {
+                Sfx.Ui("ui_move");
+            }
+            lastSelected = selected;
         }
         if (Busy || Time.frameCount == shownFrame) {
             return;

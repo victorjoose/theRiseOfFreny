@@ -59,6 +59,7 @@ public class ComboManager : MonoBehaviour
 
     public void HandleComboManager() {
         SetCombo(combo += 0.1f);
+        Sfx.Play("combo", 1f, Mathf.Min(1f + (combo - 1f) * 0.5f, 1.8f)); // higher with each kill in a row
         RestartBlinkingRoutine();
     }
     public void UpdateComboText() {

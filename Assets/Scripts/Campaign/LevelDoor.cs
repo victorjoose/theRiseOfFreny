@@ -77,9 +77,13 @@ public class LevelDoor : MonoBehaviour {
 
     private void Use() {
         if (Locked) {
+            Sfx.Play("door_locked", transform.position);
             return;
         }
         used = true;
+        if (pressUp) {
+            Sfx.Play("door", transform.position); // passages at the map edge have no door to open
+        }
         if (kind == Kind.Link && !string.IsNullOrEmpty(targetScene)) {
             CampaignRun.Travel(targetScene, targetDoor);
         } else if (CampaignRun.Instance) {

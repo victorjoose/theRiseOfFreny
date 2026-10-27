@@ -18,10 +18,12 @@ public class ArenaWrap : MonoBehaviour {
             pos.x = right + margin - 0.05f;
             transform.position = pos;
             Fx.Burst(pos, Color.white, 8, 1.5f, 0.07f, 0.3f);
+            Sfx.Play("arena_wrap", pos);
         } else if (pos.x > right + margin) {
             pos.x = left - margin + 0.05f;
             transform.position = pos;
             Fx.Burst(pos, Color.white, 8, 1.5f, 0.07f, 0.3f);
+            Sfx.Play("arena_wrap", pos);
         }
     }
 }

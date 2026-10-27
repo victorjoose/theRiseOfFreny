@@ -78,6 +78,7 @@ namespace Online {
                 return;
             }
             _toast = newBest ? "New best: " + score + "!" : "Score: " + score + "  (best " + _online.Save.bestScore + ")";
+            if (newBest) Sfx.Play("new_record");
             _toastUntil = Time.unscaledTime + 4f;
             _openAt = Time.unscaledTime + AutoOpenDelay;
         }

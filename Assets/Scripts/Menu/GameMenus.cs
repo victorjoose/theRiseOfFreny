@@ -34,6 +34,7 @@ public class GameMenus : MonoBehaviour {
         DontDestroyOnLoad(obj);
         obj.AddComponent<GameMenus>();
         obj.AddComponent<MusicPlayer>();
+        obj.AddComponent<AmbiencePlayer>();
         obj.AddComponent<Online.CloudProgressSync>();
     }
 
@@ -166,6 +167,7 @@ public class GameMenus : MonoBehaviour {
         paused = true;
         Time.timeScale = 0f;
         AudioListener.pause = true;
+        Sfx.Ui("ui_pause");
         InputBindings.BlockGameplay(true);
         HideHuds();
 

@@ -38,6 +38,7 @@ public class Grenade : MonoBehaviour {
         exploded = true;
 
         Fx.Burst(transform.position, BlastColor, 40, 5f, 0.14f, 0.5f);
+        Sfx.Play("grenade_explode", transform.position);
         Fx.Burst(transform.position, new Color(0.3f, 0.3f, 0.3f, 0.8f), 16, 2f, 0.2f, 0.9f);
 
         HashSet<Enemy> hit = new HashSet<Enemy>();

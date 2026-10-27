@@ -99,6 +99,16 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // colour of the particles when this enemy is hit or dies
     protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
 
+    // prefix of this enemy's sounds in Resources/Sfx: "golem" plays golem_attack, golem_hurt,
+    // golem_death, golem_step... (see Sfx); null for none
+    protected virtual string SoundName => null;
+
+    protected void PlaySound(string what) {
+        if (SoundName != null) {
+            Sfx.Play(SoundName + "_" + what, Center);
+        }
+    }
+
     public virtual void Init() {
         anim = GetComponentInChildren<Animator>();
         sprite = GetComponentInChildren<SpriteRenderer>();
@@ -196,6 +206,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         if (moving && Time.time >= nextDustTime) {
             Fx.Dust(Feet, 1);
+            PlaySound("step");
             nextDustTime = Time.time + 0.2f;
         }
     }
@@ -469,7 +480,11 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (hasAttackTrigger) {
             anim.SetTrigger("Attack");
         }
+        PlaySound("windup");
         yield return new WaitForSeconds(attackWindup * Tuning.EnemyWindup.Value);
+        if (!isDead) {
+            PlaySound("attack");
+        }
 
         // the player can still step or dash out of the swing
         if (!isDead && player != null && player.Health > 0 && InAttackReach()) {
@@ -526,6 +541,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         SetInCombat(true);
         Fx.Burst(Center, DeathColor, 6, 2.5f, 0.08f, 0.4f);
+        if (Health > 0) {
+            PlaySound("hurt"); // the last hit plays the death instead
+        }
     }
 
     // the sprite disappears in a burst of particles instead of playing the "pieces" animation,
@@ -538,6 +556,8 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         Fx.Burst(Center, DeathColor, 28, 3.5f, 0.12f, 0.8f);
         Fx.Dust(Feet, 6);
+        PlaySound("death");
+        PlaySound("scream"); // bosses have a second layer
         foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>()) {
             renderer.enabled = false;
         }
