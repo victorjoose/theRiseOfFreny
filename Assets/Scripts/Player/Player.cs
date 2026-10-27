@@ -13,23 +13,24 @@ public class Player : MonoBehaviour, IDamageable {
     public GameObject revolverBulletPrefab;
     public Transform playerRevolverShootPosition;
     public Transform feetPos;          // ground check circle (read by the autopilot too)
-    public float checkRadius;
     public LayerMask whatIsGround;
     public GameObject gameOver;
 
     // ---- tuning -------------------------------------------------------------------------------
-    [Header("Movement")]
-    [SerializeField] private float _speed = 3.0f;
-    [SerializeField] private float jumpHeight = 2.6f;      // units; arena platforms are 2 apart
-    [SerializeField] private float gravityScale = 3f;      // heavier than Unity's default: a snappy jump
-    [SerializeField] private float fallMultiplier = 4.0f;  // extra gravity on the way down (TowerFall feel)
-    [SerializeField] private float coyoteTime = 0.1f;      // may still jump this long after walking off an edge
-    [SerializeField] private float jumpBuffer = 0.12f;     // a jump pressed this long before landing still happens
+    // Movement: the same in every scene (arena and campaign), so these are not saved in the scenes.
+    // Change them here; each scene used to keep its own copy, and the stages felt different.
+    private float _speed = 3.0f;
+    private float jumpHeight = 2.6f;      // units; arena platforms are 2 apart
+    private float gravityScale = 3f;      // heavier than Unity's default: a snappy jump
+    private float fallMultiplier = 2.0f;  // extra gravity on the way down (the arena value, playtested)
+    private float checkRadius = 0.4f;     // ground check circle at feetPos
+    private float coyoteTime = 0.1f;      // may still jump this long after walking off an edge
+    private float jumpBuffer = 0.12f;     // a jump pressed this long before landing still happens
 
-    [Header("Sprint (Shift)")]
-    [SerializeField] private float runMultiplier = 1.6f;
-    [SerializeField] private float runDuration = 1.5f;     // a short burst...
-    [SerializeField] private float runCooldown = 2.5f;     // ...then it needs to recover
+    // sprint (Shift)
+    private float runMultiplier = 1.6f;
+    private float runDuration = 1.5f;     // a short burst...
+    private float runCooldown = 2.5f;     // ...then it needs to recover
 
     [Header("Combat")]
     public int MaxHealth = 4;
@@ -122,6 +123,10 @@ public class Player : MonoBehaviour, IDamageable {
 
     private Vector3 Feet => feetPos ? feetPos.position : transform.position;
 
+    private static PhysicsMaterial2D frictionless;
+    private static PhysicsMaterial2D Frictionless =>
+        frictionless ? frictionless : (frictionless = new PhysicsMaterial2D("Freny") { friction = 0f, bounciness = 0f });
+
     // ==== lifecycle ============================================================================
 
     private void Start() {
@@ -142,6 +147,10 @@ public class Player : MonoBehaviour, IDamageable {
         }
         if (rg2d) {
             rg2d.gravityScale = gravityScale;
+        }
+        if (col2d) {
+            // no friction: she slides down walls instead of sticking to them (only the arena had this)
+            col2d.sharedMaterial = Frictionless;
         }
 
         // Freny's attribute track (FrenyProgress) multiplies the inspector values

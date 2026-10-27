@@ -118,10 +118,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             rb.SetVel(Vector2.zero);
         }
         playerCol = player ? player.GetComponent<Collider2D>() : null;
-        if (ArenaBounds.Active && playerCol != null) {
-            // arena only: a kinematic body would shove Freny around, so she walks through enemies and
-            // the fight happens with the sword and the guns. Per instance: the project's layer matrix
-            // (which Play mode edits would save) is never touched
+        if (playerCol != null) {
+            // in every mode: a kinematic body would shove Freny around, so she walks through enemies
+            // and the fight happens with the sword and the guns. Per instance: the project's layer
+            // matrix (which Play mode edits would save) is never touched
             foreach (Collider2D c in GetComponentsInChildren<Collider2D>(true)) {
                 if (!c.isTrigger) {
                     Physics2D.IgnoreCollision(playerCol, c, true);
@@ -150,7 +150,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (isDead) {
             return;
         }
-        if (FellOutOfArena()) {
+        if (FellOutOfWorld()) {
             return;
         }
 
@@ -308,10 +308,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
     }
 
-    // an enemy that somehow ended up under the arena (a hole, a bad spawn) is removed quietly, so
-    // it stops counting as alive and the director can spawn the next one
-    protected bool FellOutOfArena() {
-        if (!ArenaBounds.Active || transform.position.y >= ArenaBounds.Bottom - 3f) {
+    // an enemy that fell out of the level (a hole, a bad spawn) is removed quietly, so it stops
+    // counting as alive: below the arena screen, or below a stage's pit line (the one Freny has)
+    protected bool FellOutOfWorld() {
+        float killY = ArenaBounds.Active ? ArenaBounds.Bottom - 3f
+            : CampaignRun.Instance ? CampaignRun.Instance.PitY : float.NegativeInfinity;
+        if (transform.position.y >= killY) {
             return false;
         }
         Despawn();
