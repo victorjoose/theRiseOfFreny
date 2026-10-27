@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Procedural motion on top of Freny's sprite frames, so the pixel art feels alive without new
-// drawings: lean with speed, squash and stretch on jumps and landings, a forward sword arc (the
+// redrawing: lean with speed, squash and stretch on jumps and landings, a forward sword arc (the
 // body stays still, only the cut moves) with a hit-stop, dash afterimages, a flip on the double jump, a springy flinch when hurt and
 // a body that breaks into tumbling pieces on death (a small ragdoll).
 //
@@ -24,9 +24,7 @@ public class FrenyMotion : MonoBehaviour {
 
     [Header("Slash")]
     public float windup = 0.05f;           // the arm draws back before the cut
-    public float arcReach = 0.4f;          // how far in front of her the cut is centred
-    public float swordReach = 1.25f;       // hitbox length along the blade: a long sword, not a dagger
-    public float arcRadius = 1.05f;
+    public float swordReach = 1.0f;        // the sword hitbox length, in units ahead of her hand
     public float hitStop = 0.06f;
 
     private const float SpringStiff = 320f, SpringDamp = 16f;    // squash: bouncy
@@ -40,6 +38,12 @@ public class FrenyMotion : MonoBehaviour {
     private SpriteRenderer body;
     private Transform rig;
     private Transform swordBox;
+    private BoxCollider2D swordCollider;
+
+    // "Player slash.png": the arm held out, the long blade drawn from 70 degrees down to -45
+    private static readonly Vector2 Hand = new Vector2(0.5f, -0.3f);  // grip, in the Sprite's space
+    private const float BladeLength = 0.62f;
+    private const float BladeFrom = 70f, BladeTo = -45f;
     private Vector3 rigBase;
     private float bodyCenter = 0.6f;       // height of her middle above the feet
 
@@ -51,7 +55,6 @@ public class FrenyMotion : MonoBehaviour {
     private float flipStart = -10f;
     private float slashStart = -10f;
     private bool arcPending;
-    private int slashCount;
     private float frozenUntil;
     private float nextGhost;
     private bool dead;
@@ -70,6 +73,7 @@ public class FrenyMotion : MonoBehaviour {
         foreach (Transform child in GetComponentsInChildren<Transform>(true)) {
             if (child.name == "Sword_Hit_Box") {
                 swordBox = child;
+                swordCollider = child.GetComponent<BoxCollider2D>();
             }
         }
         MeleeAttack.FrenyHit += OnSwordHit;
@@ -103,7 +107,6 @@ public class FrenyMotion : MonoBehaviour {
     public void Slash() {
         slashStart = Time.time;
         arcPending = true;
-        slashCount++;
     }
 
     public void DashStart() {
@@ -211,7 +214,7 @@ public class FrenyMotion : MonoBehaviour {
         }
         if (arcPending && sinceSlash >= windup) {
             arcPending = false;
-            SlashArc.Spawn(transform, body, rigBase.y + bodyCenter, arcReach, arcRadius, slashCount % 2 == 0, FrenyProgress.HasGreatSword);
+            SlashArc.Spawn(transform, body, Hand, BladeLength + 0.2f, BladeFrom, BladeTo, FrenyProgress.HasGreatSword);
         }
 
         // ---- springs (frozen during the hit-stop)
@@ -240,12 +243,18 @@ public class FrenyMotion : MonoBehaviour {
         rig.localScale = new Vector3(1f - squash.x * 0.8f, 1f + squash.x, 1f);
         rig.localPosition = rigBase + new Vector3(lunge.x, 0f, 0f) + flipOffset + shake;
 
-        // the Melee Attack clip keys the hitbox scale at 1 every frame, so the reach is set after it.
-        // The box's local y runs along the blade (its offset too), so y is the reach; the great sword
-        // is also wider (x), as Player.ApplyUpgrades intended
+        // The sword hitbox covers the whole cut: from her hand forward by the reach, from above the
+        // shoulder to below the hip. The Melee Attack clip still keys the old box (and switches it
+        // on), so its shape is set here, after the Animator, every frame; the great sword reaches 30% more.
         if (swordBox) {
-            bool great = FrenyProgress.HasGreatSword;
-            swordBox.localScale = new Vector3(great ? 1.5f : 1f, swordReach * (great ? 1.25f : 1f), 1f);
+            float reach = swordReach * (FrenyProgress.HasGreatSword ? 1.3f : 1f);
+            swordBox.localPosition = Hand;
+            swordBox.localRotation = Quaternion.identity;
+            swordBox.localScale = Vector3.one;
+            if (swordCollider) {
+                swordCollider.offset = new Vector2(reach * 0.5f, 0.07f);
+                swordCollider.size = new Vector2(reach, 1.05f);
+            }
         }
 
         lastVx = vx;
@@ -292,17 +301,16 @@ public class FrenyMotion : MonoBehaviour {
         private float from, to, radius, squashY;
         private Color tint;
 
-        public static void Spawn(Transform owner, SpriteRenderer body, float height, float reach, float radius, bool alternate, bool greatSword) {
+        public static void Spawn(Transform owner, SpriteRenderer body, Vector2 center, float radius, float from, float to, bool greatSword) {
             GameObject go = new GameObject("SlashArc");
             go.transform.SetParent(owner, false);
-            go.transform.localPosition = new Vector3(reach, height * 0.92f, -0.01f);
+            go.transform.localPosition = new Vector3(center.x, center.y, -0.01f);
             SlashArc arc = go.AddComponent<SlashArc>();
             arc.radius = radius * (greatSword ? 1.3f : 1f);
-            // a forward cut in front of her, from above the shoulder down past the hip;
-            // the second swing of a combo is flatter, almost straight ahead
-            arc.from = alternate ? 60f : 80f;
-            arc.to = alternate ? -35f : -50f;
-            arc.squashY = alternate ? 0.55f : 0.8f;
+            // the trail of the blade's tip, around her hand
+            arc.from = from;
+            arc.to = to;
+            arc.squashY = 1f;
             arc.tint = greatSword ? new Color(0.65f, 0.85f, 1f) : new Color(1f, 0.97f, 0.88f);
             arc.Build(body);
         }
