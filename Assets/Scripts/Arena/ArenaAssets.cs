@@ -18,6 +18,7 @@ public class ArenaAssets : MonoBehaviour {
     // the HUD portrait's helmet during Rage (red) and with armor (Berserker)
     public Sprite rageHelmetIcon;
     public Sprite armorHelmetIcon;
+    public Sprite armorHeart;   // a full heart in grey (Interface/HealthArmor), one per armor point
     // the diamond's sparkle and the vase breaking, frame by frame (Items/Diamond 60x60, Items/Vase 100x100)
     public Sprite[] diamondFrames;
     public Sprite[] vaseFrames;

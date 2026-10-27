@@ -16,12 +16,12 @@ public class CombatHud : MonoBehaviour {
     public Sprite grenadeIcon;
     public Sprite rageHelmetIcon;
     public Sprite armorHelmetIcon;
+    public Sprite armorHeart;
 
     private static readonly Color ReadyColor = new Color(0.35f, 0.9f, 0.35f);
     private static readonly Color ChargingColor = new Color(1f, 0.6f, 0.2f);
     private static readonly Color ActiveColor = new Color(0.3f, 0.8f, 1f);
     private static readonly Color RageColor = new Color(1f, 0.25f, 0.2f);
-    private static readonly Color ArmorColor = new Color(0.7f, 0.8f, 1f);
 
     private Player player;
     private Dash dash;
@@ -145,7 +145,7 @@ public class CombatHud : MonoBehaviour {
         }
     }
 
-    // copies of the last life heart, tinted steel, one per armor point
+    // grey full hearts in the same row, right after the life hearts, one per armor point
     private void UpdateArmorHearts() {
         Image[] bars = UIManager.Instance.healthBars;
         if (armorHearts.Count == 0) {
@@ -159,7 +159,12 @@ public class CombatHud : MonoBehaviour {
                 Image heart = Instantiate(bars[bars.Length - 1], last.parent);
                 heart.name = "Armor_Heart_" + (i + 1);
                 heart.rectTransform.anchoredPosition = last.anchoredPosition + spacing * (i + 1);
-                heart.color = ArmorColor;
+                Sprite grey = Icon(armorHeart, a => a.armorHeart);
+                if (grey != null) {
+                    heart.sprite = grey;
+                } else {
+                    heart.color = new Color(0.6f, 0.62f, 0.68f); // no grey sprite: a dark tint
+                }
                 armorHearts.Add(heart);
             }
         }

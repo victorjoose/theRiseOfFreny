@@ -49,6 +49,9 @@ public class MeleeAttack : MonoBehaviour
         } else {
             hit.Damage();
         }
+        if (owner && hit is Enemy) {
+            owner.OnMeleeHit();
+        }
         FrenyHit?.Invoke(other.ClosestPoint(transform.position));
         Sfx.Play("sword_hit", other.transform.position);
     }
