@@ -75,7 +75,7 @@ public class MainMenu : MonoBehaviour {
         // under the title, on the right half of the art (title centre: x = 0.716 of the screen)
         page.Panel.anchorMin = page.Panel.anchorMax = new Vector2(0.716f, 0f);
         page.Panel.pivot = new Vector2(0.5f, 0f);
-        page.Panel.anchoredPosition = new Vector2(0f, 24f);
+        page.Panel.anchoredPosition = new Vector2(0f, 60f);
         page.Panel.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(20, 20, 14, 14);
         SaveData save = SaveSystem.Current;
 
