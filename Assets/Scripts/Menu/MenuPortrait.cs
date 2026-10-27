@@ -41,7 +41,7 @@ public class MenuPortrait : MonoBehaviour {
 
     // a layer drawn over each frame, picked by the frame's name (Freny's Berserker helmet);
     // null hides it
-    public Dictionary<string, Sprite> OverlaySprites;
+    public Dictionary<string, Sprite> OverlaySprites { get; set; }
     private Image overlay;
 
     public void Talk(float seconds) {

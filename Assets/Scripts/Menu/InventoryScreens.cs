@@ -9,7 +9,7 @@ using UnityEngine.UI;
 public static class InventoryScreens {
 
     private const float ItemRow = 38f;
-    private const float SideWidth = 320f;
+    private const float SideWidth = 360f;
 
     private static readonly FrenyUpgrade[] Equipment = {
         FrenyUpgrade.GreatSword, FrenyUpgrade.Shotgun, FrenyUpgrade.Grenade, FrenyUpgrade.DoubleJump,
@@ -53,7 +53,7 @@ public static class InventoryScreens {
         }
         string helmet = Loadout.Helmet;
         if (Loadout.Owns(helmet)) {
-            MenuChoice choice = page.Choice(Loadout.DisplayName(helmet), EquipOptions, Loadout.IsEquipped(helmet) ? 1 : 0, i => {
+            MenuChoice choice = page.Choice("Capacete", EquipOptions, Loadout.IsEquipped(helmet) ? 1 : 0, i => {
                 Loadout.SetEquipped(helmet, i == 1);
                 freny.Refresh();
                 freny.Say(i == 1 ? "Capacete na cabeça. Pode vir!" : "Hoje vou sem o capacete.");
@@ -144,7 +144,7 @@ public static class InventoryScreens {
     // one equipment slot: lit when equipped, dim when stored, almost gone when not bought
     private static Action Slot(Transform row, Sprite icon, string label, Func<bool> owned, Func<bool> equipped) {
         Image box = MenuKit.MakeImage("Slot", row, Color.white);
-        MenuKit.Size(box, 52f, 64f);
+        MenuKit.Size(box, 60f, 64f);
         Image picture = MenuKit.MakeImage("Icon", box.transform, Color.white);
         picture.sprite = icon;
         picture.preserveAspect = true;
@@ -152,12 +152,13 @@ public static class InventoryScreens {
         RectTransform pictureRect = picture.rectTransform;
         pictureRect.anchorMin = new Vector2(0f, 0.3f);
         pictureRect.anchorMax = Vector2.one;
-        pictureRect.offsetMin = new Vector2(4f, 0f);
-        pictureRect.offsetMax = new Vector2(-4f, -4f);
-        Text text = MenuKit.MakeText(box.transform, icon == null ? "2x" : "", MenuKit.TextSize, MenuKit.TextColor, TextAnchor.MiddleCenter);
+        // drawn past the box: the item sprites have wide empty margins
+        pictureRect.offsetMin = new Vector2(-8f, -4f);
+        pictureRect.offsetMax = new Vector2(8f, 6f);
+        Text text = MenuKit.MakeText(box.transform, icon == null ? "?" : "", MenuKit.TextSize, MenuKit.TextColor, TextAnchor.MiddleCenter);
         MenuKit.Stretch(text.rectTransform);
         text.rectTransform.anchorMin = new Vector2(0f, 0.3f);
-        Text name = MenuKit.MakeText(box.transform, label, 8, MenuKit.DimTextColor, TextAnchor.LowerCenter);
+        Text name = MenuKit.MakeText(box.transform, label, 7, MenuKit.DimTextColor, TextAnchor.LowerCenter);
         MenuKit.Stretch(name.rectTransform);
         name.rectTransform.offsetMin = new Vector2(0f, 3f);
         name.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -237,7 +238,9 @@ public static class InventoryScreens {
         page.Space(4f);
         Button brain = page.Button("", () => stack.Push(BrainPage(stack)), true, ItemRow);
         Hover(brain, () => speech.Say("O piloto automático da Arena aprende com pontos de nível, não com moedas."));
-        refresh.Add(() => brain.GetComponentInChildren<Text>().text = "Piloto automático (Arena) · " + PointsText());
+        Text brainText = brain.GetComponentInChildren<Text>();
+        brainText.fontSize = MenuKit.SmallTextSize;
+        refresh.Add(() => brainText.text = "Piloto automático · " + PointsText());
         page.Button("Voltar", stack.Back);
 
         refreshAll();
@@ -321,7 +324,7 @@ public static class InventoryScreens {
         name = button.GetComponentInChildren<Text>();
         name.alignment = TextAnchor.MiddleLeft;
         name.fontSize = MenuKit.SmallTextSize;
-        name.rectTransform.offsetMin = new Vector2(46f, 0f);
+        name.rectTransform.offsetMin = new Vector2(IconCenter * 2f + 4f, 0f);
         if (icon != null) {
             Image picture = MenuKit.MakeImage("Icon", button.transform, Color.white);
             picture.sprite = icon;
@@ -329,8 +332,8 @@ public static class InventoryScreens {
             picture.raycastTarget = false;
             RectTransform rect = picture.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0.5f);
-            rect.anchoredPosition = new Vector2(8f, 0f);
-            rect.sizeDelta = new Vector2(32f, 32f);
+            rect.anchoredPosition = new Vector2(IconCenter - IconSize(icon) / 2f, 0f);
+            rect.sizeDelta = Vector2.one * IconSize(icon);
         }
         Text price = MenuKit.MakeText(button.transform, "", MenuKit.SmallTextSize, MenuKit.TitleColor, TextAnchor.MiddleRight);
         MenuKit.Stretch(price.rectTransform);
@@ -425,9 +428,23 @@ public static class InventoryScreens {
             case FrenyUpgrade.Shotgun: return art.shotgun;
             case FrenyUpgrade.Grenade: return art.grenade;
             case FrenyUpgrade.MaxHealth: return art.heart;
-            case FrenyUpgrade.AttackSpeed: return art.potion;
+            case FrenyUpgrade.AttackSpeed: return art.sword;
+            case FrenyUpgrade.DoubleJump: return art.jump;
+            case FrenyUpgrade.MoveSpeed: return art.dash;
             default: return null;
         }
+    }
+
+    private const float IconCenter = 26f;   // the icon column of a shop row
+
+    // the sprites carry a lot of empty margin: drawn bigger than the row, they read at the
+    // size of the text (the heart has none; Freny's frames have the most)
+    private static float IconSize(Sprite icon) {
+        MenuArt art = MenuArt.Get;
+        if (art != null && icon == art.heart) {
+            return 26f;
+        }
+        return art != null && (icon == art.jump || icon == art.dash) ? 64f : 52f;
     }
 
     private static string ItemName(FrenyUpgrade upgrade) {

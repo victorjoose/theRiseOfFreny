@@ -31,3 +31,6 @@ MonoBehaviour:
   potion: {fileID: -146668759384179144, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   berserkerHelmet: {fileID: -6371926176569892122, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   heart: {fileID: 21300000, guid: 88122f18812e56641b0dd9062874a6a5, type: 3}
+  sword: {fileID: -8525561222273819436, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  jump: {fileID: 2585791992712628342, guid: 3d4a77280e1e7d44fbacbd2d025acdd2, type: 3}
+  dash: {fileID: 5765935125253824288, guid: ff0210d327403e642a71d341b5be6878, type: 3}

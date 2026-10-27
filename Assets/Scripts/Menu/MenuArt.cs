@@ -13,6 +13,9 @@ public class MenuArt : ScriptableObject {
     public Sprite potion;
     public Sprite berserkerHelmet;
     public Sprite heart;
+    public Sprite sword;        // Items 100x100: the small sword (Recarga)
+    public Sprite jump;         // Player jump 1_1 (Pulo duplo)
+    public Sprite dash;         // Player dash_3 (Velocidade)
 
     private static MenuArt loaded;
 
