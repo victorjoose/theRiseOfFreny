@@ -201,6 +201,26 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         projectiles.AddRange(HexballEffect.Active);
     }
 
+    private const float MaxMeleeReach = 1.8f;  // centre to centre, the normal sword
+
+    // the shotgun up close while it has shells, the revolver farther away; false when neither can fire
+    private bool Shoot(ref PlayerInputFrame frame, float dx, bool facingTarget, float towardTarget) {
+        bool shotgun = Mathf.Abs(dx) <= shotgunRange && player.GunReadyFor(true);
+        bool revolver = !shotgun && player.GunReadyFor(false);
+        if (!shotgun && !revolver) {
+            return false;
+        }
+        if (!facingTarget) {
+            Turn(ref frame, towardTarget);
+        } else {
+            frame.selectShotgun = shotgun;
+            frame.selectPistol = !shotgun;
+            frame.rangedPressed = true;
+            action = shotgun ? "Tiro de escopeta" : "Tiro";
+        }
+        return true;
+    }
+
     private PlayerInputFrame Decide() {
         PlayerInputFrame frame = new PlayerInputFrame();
         Vector2 me = transform.position;
@@ -233,7 +253,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float towardTarget = Mathf.Sign(dx);
         bool facingTarget = (dx > 0) == player.FacingRight;
         bool sameFloor = dy <= verticalTolerance && dy >= -0.7f;
-        float meleeRange = Tuning.AutoMeleeRange.Value * (player.GreatSwordActive ? 1.4f : 1f);
+        // never beyond what the sword really reaches (a saved 3.0 had her swinging at the air)
+        float meleeRange = Mathf.Min(Tuning.AutoMeleeRange.Value, MaxMeleeReach) * (player.GreatSwordActive ? 1.4f : 1f);
         float nearestEnemy = NearestEnemyDistance(me);
 
         // 1b. an enemy next to her is winding up a hit: get out of the way (a person would)
@@ -258,7 +279,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 return frame;
             }
 
-            // the sword is recharging: decide once whether to step back or hold ground
+            // the sword is recharging: the gun has its own cooldown, so shoot meanwhile
+            if (player.IsGrounded && Shoot(ref frame, dx, facingTarget, towardTarget)) {
+                return frame;
+            }
+            // nothing to shoot with: decide once whether to step back or hold ground
             if (!retreating && Random.value < Tuning.AutoKeepDistance.Value) {
                 retreating = true;
             }
@@ -271,6 +296,16 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             return frame;
         }
         retreating = false;
+
+        // 2b. a flyer right over her head: shoot straight up
+        if (target is Bat && Mathf.Abs(target.Center.x - me.x) <= 0.7f && target.Center.y - me.y > 0.9f
+            && target.Center.y - me.y <= Tuning.AutoShootRange.Value && player.GunReadyFor(false)) {
+            frame.aimUpHeld = true;
+            frame.selectPistol = true;
+            frame.rangedPressed = true;
+            action = "Tiro para cima";
+            return frame;
+        }
 
         // 3. grenade (they are counted now: found in chests or bought): a group, an enemy on a
         // platform above, or one she can't reach at all (a sorcerer on a tower), lobbed with the
@@ -293,20 +328,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
         // 4. gun (only from the ground): the shotgun up close while it has shells, the revolver
         // farther away; with no ammo at all it is the sword only
-        if (sameFloor && player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value) {
-            bool shotgun = Mathf.Abs(dx) <= shotgunRange && player.GunReadyFor(true);
-            bool revolver = !shotgun && player.GunReadyFor(false);
-            if (shotgun || revolver) {
-                if (!facingTarget) {
-                    Turn(ref frame, towardTarget);
-                } else {
-                    frame.selectShotgun = shotgun;
-                    frame.selectPistol = !shotgun;
-                    frame.rangedPressed = true;
-                    action = shotgun ? "Tiro de escopeta" : "Tiro";
-                }
-                return frame;
-            }
+        if (sameFloor && player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value
+            && Shoot(ref frame, dx, facingTarget, towardTarget)) {
+            return frame;
         }
 
         // 5. potion

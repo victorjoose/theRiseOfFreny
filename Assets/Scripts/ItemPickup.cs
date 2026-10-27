@@ -11,13 +11,13 @@ public class ItemPickup : MonoBehaviour {
 
     public enum Kind { Potion, Bullets, Shells, Grenades, Shotgun, GreatSword, Armor, Diamond }
 
-    // enemy drops, rolled once per death on top of its coin
-    private const float PotionChance = 0.20f;
-    private const float BulletsChance = 0.25f;
+    // enemy drops, rolled once per death on top of its coin (lower since the arena got busier)
+    private const float PotionChance = 0.15f;
+    private const float BulletsChance = 0.12f;  // only when her reserve isn't full
     private const float ShellsChance = 0.10f;   // only when she has the shotgun
     private const float GrenadeChance = 0.06f;
-    private const float GreatSwordChance = 0.10f; // only when she can use one
-    private const float ArmorChance = 0.10f;      // only when her armor is not full
+    private const float GreatSwordChance = 0.04f; // only when she can use one
+    private const float ArmorChance = 0.04f;      // only when her armor is not full
     private const float DiamondChance = 0.04f;
     public const int DiamondValue = 25;           // coins
     private const float DiamondFrameTime = 0.08f;
@@ -95,7 +95,9 @@ public class ItemPickup : MonoBehaviour {
         if ((roll -= PotionChance) < 0f) {
             Spawn(Kind.Potion, 1, position, toss);
         } else if ((roll -= BulletsChance) < 0f) {
-            Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
+            if (player == null || player.WantsBullets) {
+                Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
+            }
         } else if ((roll -= GrenadeChance) < 0f) {
             Spawn(Kind.Grenades, GrenadesPerDrop, position, toss);
         } else if ((roll -= ShellsChance) < 0f) {
@@ -124,11 +126,11 @@ public class ItemPickup : MonoBehaviour {
             Spawn(Kind.Diamond, 1, position, toss);
         } else if ((roll -= 0.18f) < 0f) {
             Spawn(Kind.Potion, 1, position, toss);
-        } else if ((roll -= 0.18f) < 0f) {
+        } else if ((roll -= 0.10f) < 0f) {
             Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
         } else if ((roll -= 0.08f) < 0f) {
             Spawn(Kind.Grenades, GrenadesPerDrop, position, toss);
-        } else if ((roll -= 0.06f) < 0f && player != null && player.WantsArmor) {
+        } else if ((roll -= 0.03f) < 0f && player != null && player.WantsArmor) {
             Spawn(Kind.Armor, 1, position, toss);
         }
     }

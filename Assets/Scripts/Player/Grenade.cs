@@ -51,6 +51,16 @@ public class Grenade : MonoBehaviour {
                 enemy.Damage();
             }
         }
+        // chests, vases and the stages' props break too
+        foreach (Collider2D col in Physics2D.OverlapCircleAll(transform.position, blastRadius)) {
+            if (col.GetComponent<ArenaChest>() is ArenaChest chest) {
+                chest.Damage();
+            } else if (col.GetComponent<ArenaVase>() is ArenaVase vase) {
+                vase.Damage();
+            } else if (col.GetComponent<Breakable>() is Breakable prop) {
+                prop.Damage();
+            }
+        }
         Destroy(gameObject);
     }
 }

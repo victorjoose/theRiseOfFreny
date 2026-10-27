@@ -43,10 +43,28 @@ public class ArenaDirector : MonoBehaviour {
     // the running arena's difficulty (0 outside the arena), for things spawned without a director
     // reference: the Sorcerer's hexball speeds up with it
     public static float CurrentDifficulty { get; private set; }
+    // minutes past the peak: the run keeps getting harder after the curve tops out, so a long
+    // run (20k+ points) ends up really hard instead of staying at the peak forever
+    public static float CurrentOvertime { get; private set; }
 
-    public float Difficulty => Mathf.Clamp01(ArenaDifficulty.StartAt + Elapsed / (Tuning.RampSeconds.Value * ArenaDifficulty.RampFactor));
-    public int MaxAlive => Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(1f, Tuning.PeakEnemies.Value * ArenaDifficulty.PeakFactor, Difficulty)));
-    public float SpawnInterval => Mathf.Lerp(6f, 1.5f, Difficulty) * ArenaDifficulty.SpawnIntervalFactor;
+    private float RampTime => Tuning.RampSeconds.Value * ArenaDifficulty.RampFactor;
+    public float Difficulty => Mathf.Clamp01(ArenaDifficulty.StartAt + Elapsed / RampTime);
+    public float Overtime => Mathf.Max(0f, Elapsed - RampTime * (1f - ArenaDifficulty.StartAt)) / 60f;
+    // a busy arena from the start (3), the peak at the end of the curve, then one more per
+    // minute of overtime, up to MaxEnemies
+    private const int MaxEnemies = 24;
+    public int MaxAlive => Mathf.Min(MaxEnemies, Mathf.Max(1, Mathf.RoundToInt(
+        Mathf.Lerp(3f * Mathf.Min(1f, ArenaDifficulty.PeakFactor), Tuning.PeakEnemies.Value * ArenaDifficulty.PeakFactor, Difficulty)
+        + Overtime)));
+    public float SpawnInterval => Mathf.Lerp(3f, 0.8f, Difficulty) * ArenaDifficulty.SpawnIntervalFactor / (1f + 0.15f * Overtime);
+
+    // how many enemies go after Freny from anywhere in the arena (Enemy.JoinChase); the ones that
+    // see her up close always fight, the rest patrol until a place frees up
+    public static int MaxChasers => Mathf.RoundToInt(Mathf.Lerp(4f, 6f, CurrentDifficulty) + Mathf.Min(3f, CurrentOvertime * 0.5f));
+    // enemy pace over the run, on top of the menu level (ArenaDifficulty): slower at the start,
+    // faster at the peak and still faster in overtime
+    public static float SpeedRamp => Mathf.Lerp(0.95f, 1.15f, CurrentDifficulty) * Mathf.Min(1.4f, 1f + 0.04f * CurrentOvertime);
+    public static float CooldownRamp => Mathf.Lerp(1.1f, 0.8f, CurrentDifficulty) / Mathf.Min(1.6f, 1f + 0.06f * CurrentOvertime);
 
     private static readonly Color PortalColor = new Color(0.6f, 0.3f, 1f);
     private static readonly Color ChestPortalColor = new Color(1f, 0.85f, 0.2f);
@@ -66,16 +84,20 @@ public class ArenaDirector : MonoBehaviour {
 
     private void Update() {
         CurrentDifficulty = Difficulty;
+        CurrentOvertime = Overtime;
         if (enemies == null || enemies.Length == 0 || (spawners.Count == 0 && Map == null)) {
             return;
         }
 
-        if (Time.time >= nextSpawnTime && AliveEnemies() + pendingSpawns < MaxAlive) {
+        int present = AliveEnemies() + pendingSpawns;
+        if (Time.time >= nextSpawnTime && present < MaxAlive) {
             Entry pick = Pick();
             if (pick != null && pick.prefab != null) {
                 StartCoroutine(SpawnWithPortal(pick));
             }
-            nextSpawnTime = Time.time + SpawnInterval;
+            // a half-empty arena fills up fast: no more long stretches with two enemies around
+            bool sparse = present + 1 < MaxAlive / 2;
+            nextSpawnTime = Time.time + SpawnInterval * (sparse ? 0.35f : 1f);
         }
 
         if (chestPrefab != null && Time.time >= nextChestTime) {
@@ -93,6 +115,7 @@ public class ArenaDirector : MonoBehaviour {
 
     private void OnDestroy() {
         CurrentDifficulty = 0f;
+        CurrentOvertime = 0f;
     }
 
     private int AliveEnemies() {

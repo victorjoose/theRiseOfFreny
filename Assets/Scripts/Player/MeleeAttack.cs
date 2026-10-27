@@ -17,6 +17,9 @@ public class MeleeAttack : MonoBehaviour
     private void Awake() {
         ownerIsEnemy = GetComponentInParent<Enemy>() != null;
         owner = GetComponentInParent<Player>();
+        if (owner) {
+            HitBody.KeepAwake(this); // a sleeping sword body never reached a chest or a vase
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other) {

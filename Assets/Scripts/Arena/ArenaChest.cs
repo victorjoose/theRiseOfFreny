@@ -32,6 +32,10 @@ public class ArenaChest : MonoBehaviour, IDamageable {
         Active.Remove(this);
     }
 
+    private void Awake() {
+        HitBody.MakeHittable(gameObject);
+    }
+
     private void Start() {
         Destroy(gameObject, lifetime);
         // rest on the floor instead of hanging at the spawner's height

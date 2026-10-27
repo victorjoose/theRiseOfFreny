@@ -13,6 +13,12 @@ public class HexballEffect : MonoBehaviour
     [NonSerialized] public float speedMultiplier = 1f;
     // who cast it: it flies through its caster and hurts any other enemy it crosses
     [NonSerialized] public Enemy caster;
+    // a homing hexball (high scores) steers towards this one's head, a limited turn per second,
+    // so a sidestep, a jump or ducking still beats it
+    [NonSerialized] public Player homingTarget;
+    [NonSerialized] public float homingTurn;
+    private const float HomingTime = 2.5f; // then it flies straight
+    private float bornAt;
 
     // it flies until it hits something; once it is far from Freny and still moving away it is gone
     private const float LoseDistance = 25f;
@@ -46,11 +52,13 @@ public class HexballEffect : MonoBehaviour
 
     private void Start()
     {
+        bornAt = Time.time;
         Destroy(gameObject, MaxLifetime);
     }
 
     private void Update()
     {
+        Steer();
         transform.Translate(direction * (Speed * Time.deltaTime), Space.World);
         if (HitEnemy()) {
             return;
@@ -66,6 +74,22 @@ public class HexballEffect : MonoBehaviour
                 Destroy(gameObject);
             }
         }
+    }
+
+    private void Steer()
+    {
+        if (homingTarget == null || homingTarget.IsDead || Time.time - bornAt > HomingTime) {
+            return;
+        }
+        Vector3 to = homingTarget.HeadPoint - transform.position;
+        if (to.sqrMagnitude < 0.01f || Vector2.Dot(to, direction) <= 0f) {
+            homingTarget = null; // went past her: no turning around
+            return;
+        }
+        float current = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        float wanted = Mathf.Atan2(to.y, to.x) * Mathf.Rad2Deg;
+        float angle = Mathf.MoveTowardsAngle(current, wanted, homingTurn * Time.deltaTime) * Mathf.Deg2Rad;
+        SetDirection(new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f));
     }
 
     // any enemy but its caster that it crosses takes the hit (box test from the transform, so it
