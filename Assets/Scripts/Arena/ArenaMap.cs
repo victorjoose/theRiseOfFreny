@@ -259,14 +259,24 @@ public class ArenaMap {
     }
 
     // two colliders meeting at the same height (the floor's tilemaps) are one surface
+    // (both ways: tops a few millimetres apart sort out of x order, so "b starts before a ends" alone
+    // joined platforms with a hole between them, and Freny dashed into the hole over and over)
     private void MergeNeighbours() {
-        Platforms.Sort((a, b) => a.y != b.y ? a.y.CompareTo(b.y) : a.xMin.CompareTo(b.xMin));
-        for (int i = Platforms.Count - 1; i > 0; i--) {
-            Platform a = Platforms[i - 1], b = Platforms[i];
-            if (Mathf.Abs(a.y - b.y) <= 0.08f && b.xMin <= a.xMax + 0.1f) {
-                a.xMax = Mathf.Max(a.xMax, b.xMax);
-                a.xMin = Mathf.Min(a.xMin, b.xMin);
-                Platforms.RemoveAt(i);
+        bool merged = true;
+        while (merged) {
+            merged = false;
+            for (int i = 0; i < Platforms.Count && !merged; i++) {
+                for (int j = i + 1; j < Platforms.Count; j++) {
+                    Platform a = Platforms[i], b = Platforms[j];
+                    if (Mathf.Abs(a.y - b.y) <= 0.08f && b.xMin <= a.xMax + 0.1f && a.xMin <= b.xMax + 0.1f) {
+                        a.xMax = Mathf.Max(a.xMax, b.xMax);
+                        a.xMin = Mathf.Min(a.xMin, b.xMin);
+                        a.y = Mathf.Max(a.y, b.y);
+                        Platforms.RemoveAt(j);
+                        merged = true;
+                        break;
+                    }
+                }
             }
         }
     }
