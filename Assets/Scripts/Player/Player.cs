@@ -57,7 +57,7 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private int shellsMax = 30;
 
     [Header("Grenade (G)")]
-    [SerializeField] private float grenadeCooldown = 8f;
+    [SerializeField] private float grenadeCooldown = 1f;   // only so two don't go off by accident: they are counted
     [SerializeField] private int grenadesFromUpgrade = 2;  // the shop's grenade upgrade starts each run with these
     [SerializeField] private int grenadesMax = 6;
     [SerializeField] private float grenadeAngle = 55f;     // degrees above the horizontal
