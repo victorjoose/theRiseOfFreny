@@ -15,3 +15,28 @@ jobs:
           dotnet-version: 8.0.x
       - name: Compile game scripts against UnityEngine
         run: dotnet build .ci/CompileCheck
+
+  project-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unity version is the team's pinned version
+        run: |
+          expected="6000.6.7f1"
+          actual=$(sed -n 's/^m_EditorVersion: //p' ProjectSettings/ProjectVersion.txt | tr -d '\r')
+          if [ "$actual" != "$expected" ]; then
+            echo "::error file=ProjectSettings/ProjectVersion.txt::Projeto salvo com Unity $actual; a versão do time é $expected (veja CONTRIBUTING.md)"
+            exit 1
+          fi
+      - name: Every asset has its .meta (and no orphan or duplicate .meta)
+        run: python3 .ci/check_meta.py
+      - name: Files marked for Git LFS are LFS pointers
+        run: |
+          bad=$(git ls-files -s ':(attr:filter=lfs)' | while read -r mode oid stage path; do
+            git cat-file -p "$oid" | head -c 40 | grep -q '^version https://git-lfs' || echo "$path"
+          done)
+          if [ -n "$bad" ]; then
+            echo "Arquivos que deveriam estar no Git LFS (rode Tools/git/setup.ps1 e 'git add --renormalize .'):"
+            echo "$bad"
+            exit 1
+          fi

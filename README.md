@@ -15,7 +15,9 @@ Jogo 2D de ação / RPG / plataforma feito na Unity.
 
 ## Abrindo o projeto
 
-- Unity **2022.3.3f1** (veja `ProjectSettings/ProjectVersion.txt`). Qualquer 2022.3 LTS mais nova deve abrir com upgrade automático.
+- Unity **6000.6.7f1**, exatamente essa versão (veja `ProjectSettings/ProjectVersion.txt`).
+- Antes de começar, leia o [CONTRIBUTING.md](CONTRIBUTING.md): ele explica o setup do Smart Merge e do Git LFS, o
+  fluxo de branches e as regras de `.meta`.
 - URP 2D, Cinemachine, Tilemap e 2D Animation vêm pelo Package Manager.
 - O fluxo de branches é `feature → dev → master`. O `dev` é o branch mais atualizado.
 
