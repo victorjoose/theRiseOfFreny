@@ -47,7 +47,9 @@ public class MenuPage {
         set => Root.gameObject.SetActive(value);
     }
 
-    public Selectable First => rows.Count > 0 ? rows[0][0] : null;
+    public Selectable SelectFirst;   // what is selected when the page opens (default: the first row)
+
+    public Selectable First => SelectFirst != null ? SelectFirst : rows.Count > 0 ? rows[0][0] : null;
 
     public Button Button(string label, Action onClick, bool interactable = true, float height = MenuKit.RowHeight) {
         Button button = MenuKit.MakeButton(Content, label, onClick);

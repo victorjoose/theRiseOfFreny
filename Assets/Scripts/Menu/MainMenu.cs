@@ -87,7 +87,7 @@ public class MainMenu : MonoBehaviour {
         page.Button("Novo jogo", () => stack.Push(SlotsPage(true)), true, CompactRow);
         page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)), true, CompactRow);
         page.Button("Fases", () => stack.Push(StagesPage()), true, CompactRow);
-        page.Button("Arena", GameMenus.StartArena, Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene), CompactRow);
+        page.Button("Arena", () => stack.Push(ArenaPage()), Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene), CompactRow);
         page.Button("Configurações", () => stack.Push(SettingsScreens.Settings(stack)), true, CompactRow);
         if (Online.OnlineServices.Instance != null && Online.OnlineServices.Instance.State != Online.OnlineServices.Status.Disabled) {
             page.Button("Online e ranking", () => Online.OnlineHUD.Instance?.SetOpen(true), true, CompactRow);
@@ -139,6 +139,34 @@ public class MainMenu : MonoBehaviour {
         page.Button("Não", stack.Back);
         page.Button(yes, onYes);
         return page;
+    }
+
+    // Easy / Medium / Hard / Freny (ArenaDifficulty, the arena reads it), then the run starts
+    private MenuPage ArenaPage() {
+        MenuPage page = new MenuPage(stack.transform, "Arena", 560f, new Vector2(0.5f, 0.5f));
+        Button current = null;
+        foreach (ArenaLevel level in System.Enum.GetValues(typeof(ArenaLevel))) {
+            ArenaLevel chosen = level;
+            Button button = page.BigButton(ArenaDifficulty.Label(level), ArenaBlurb(level), () => {
+                ArenaDifficulty.Current = chosen;
+                GameMenus.StartArena();
+            });
+            if (level == ArenaDifficulty.Current) {
+                current = button;
+            }
+        }
+        page.Button("Voltar", stack.Back);
+        page.SelectFirst = current;
+        return page;
+    }
+
+    private static string ArenaBlurb(ArenaLevel level) {
+        switch (level) {
+            case ArenaLevel.Easy: return "Poucos inimigos, o ritmo sobe devagar";
+            case ArenaLevel.Medium: return "O ritmo normal da Arena";
+            case ArenaLevel.Hard: return "Mais inimigos, mais fortes, mais rápido";
+            default: return "Para quem já domina a Arena";
+        }
     }
 
     // stages in rows of three, one block per dungeon
