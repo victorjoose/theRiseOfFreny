@@ -128,6 +128,8 @@ public class Player : MonoBehaviour, IDamageable {
     public bool IsAirborne => !isGrounded || isJumping;
     public bool IsDead => isDead;
     public bool IsStunned => stunned;
+    // down held on the ground: she stays put (turning is allowed), lower and shorter
+    public bool IsCrouching { get; private set; }
     public bool IsInvulnerable => Time.time < invulnerableUntil;
     public bool CanAirJump => !isGrounded && airJumpsLeft > 0;
     // the HUD's jump meter: on the ground (or just off an edge), or with the double jump still left
@@ -201,6 +203,12 @@ public class Player : MonoBehaviour, IDamageable {
         }
         rg2d = GetComponent<Rigidbody2D>();
         col2d = GetComponent<Collider2D>();
+        if (col2d is CapsuleCollider2D capsule) {
+            standSize = capsule.size;
+        } else if (col2d is BoxCollider2D box) {
+            standSize = box.size;
+        }
+        standOffset = col2d ? col2d.offset : Vector2.zero;
         _playerAnim = GetComponent<PlayerAnimation>();
         _dash = GetComponent<Dash>();
         _sprite = GetComponentInChildren<SpriteRenderer>();
@@ -284,7 +292,7 @@ public class Player : MonoBehaviour, IDamageable {
             velocity.x = Mathf.MoveTowards(velocity.x, 0f, knockbackDrag * Time.fixedDeltaTime);
         } else if (_dash == null || !_dash.IsDashing) {
             // while dashing, Dash owns the horizontal velocity
-            velocity.x = _input.Current.move * _speed * (IsRunning ? runMultiplier : 1f);
+            velocity.x = IsCrouching ? 0f : _input.Current.move * _speed * (IsRunning ? runMultiplier : 1f);
         }
 
         // fixed-height jump with a quick fall: holding the button doesn't change the height
@@ -386,18 +394,43 @@ public class Player : MonoBehaviour, IDamageable {
 
     private void Movement() {
         float move = _input.Current.move;
-        _playerAnim.Move(move != 0f);
+        SetCrouching(_input.Current.crouchHeld && isGrounded && (_dash == null || !_dash.IsDashing));
+        _playerAnim.Move(move != 0f && !IsCrouching);
         if (move == 0f) {
             return;
         }
 
         Face(move > 0f);
+        if (IsCrouching) {
+            return;
+        }
         // dust kicked up while running
         if (isGrounded && Time.time >= nextDustTime) {
             Fx.Dust(Feet, 2);
             Sfx.Play("freny_step", Feet);
             nextDustTime = Time.time + 0.15f;
         }
+    }
+
+    private const float CrouchHeight = 0.7f;  // of the standing collider, keeping its bottom
+    private Vector2 standSize, standOffset;
+
+    private void SetCrouching(bool crouching) {
+        if (crouching == IsCrouching) {
+            return;
+        }
+        IsCrouching = crouching;
+        if (standSize == Vector2.zero) {
+            return;
+        }
+        Vector2 size = crouching ? new Vector2(standSize.x, standSize.y * CrouchHeight) : standSize;
+        Vector2 offset = standOffset - new Vector2(0f, (standSize.y - size.y) * 0.5f);
+        if (col2d is CapsuleCollider2D capsule) {
+            capsule.size = size;
+        } else if (col2d is BoxCollider2D box) {
+            box.size = size;
+        }
+        col2d.offset = offset;
     }
 
     private void Face(bool right) {
@@ -490,7 +523,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
-    // the sword works mid-air too; the gun does not (see Shoot)
+    // the sword and the gun both work mid-air and crouched
     private void Attack() {
         if (!_input.Current.meleePressed || !AttackReady) {
             return;
@@ -523,12 +556,15 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     private void Shoot() {
-        if (!_input.Current.rangedPressed || !GunReady || !isGrounded) {
-            return; // no shooting in the air (it made her too strong)
+        if (!_input.Current.rangedPressed || !GunReady) {
+            return;
         }
 
         _playerAnim.Ranged();
         Vector3 muzzle = playerRevolverShootPosition ? playerRevolverShootPosition.position : transform.position;
+        if (IsCrouching) {
+            muzzle += Vector3.down * CrouchMuzzleDrop;
+        }
         Vector3 forward = FacingRight ? Vector3.right : Vector3.left;
         Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);
 
@@ -545,6 +581,8 @@ public class Player : MonoBehaviour, IDamageable {
         }
         attackReadyAt = Time.time + attackCooldown;
     }
+
+    private const float CrouchMuzzleDrop = 0.32f; // the crouched gun sits 8 art pixels lower
 
     private void FireBullet(Vector3 from, Vector3 direction) {
         GameObject bullet = Instantiate(revolverBulletPrefab, from, Quaternion.identity);

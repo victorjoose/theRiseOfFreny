@@ -27,6 +27,7 @@ public static class FrenyProgress {
     public const string LevelKeyPrefix = "freny.upgrade.";
     public const string CoinsKey = "freny.coins";
     public const string BestWaveKey = "freny.arena.bestRunSeconds";
+    public const string UnequippedKeyPrefix = "freny.unequipped.";
 
     // ---- coins (shared by arena, shop and campaign) ----
 
@@ -152,7 +153,9 @@ public static class FrenyProgress {
         if (IsBrain(upgrade)) {
             return BrainPoints >= Cost(upgrade);
         }
-        return player != null && player.coins >= Cost(upgrade);
+        // from the menu (no Player in the scene) the saved coins pay
+        int coins = player != null ? player.coins : Coins;
+        return coins >= Cost(upgrade);
     }
 
     public static bool TryBuy(FrenyUpgrade upgrade, Player player) {
@@ -162,11 +165,14 @@ public static class FrenyProgress {
 
         if (IsBrain(upgrade)) {
             PlayerPrefs.SetInt(SpentPointsKey, PlayerPrefs.GetInt(SpentPointsKey, 0) + Cost(upgrade));
-        } else {
+        } else if (player != null) {
             player.AddCoins(-Cost(upgrade));
+        } else {
+            Coins -= Cost(upgrade);
         }
 
         PlayerPrefs.SetInt(LevelKeyPrefix + upgrade, GetLevel(upgrade) + 1);
+        PlayerPrefs.DeleteKey(UnequippedKeyPrefix + upgrade);   // what you buy goes on equipped
         PlayerPrefs.Save();
         Sfx.Ui("upgrade");
         Changed?.Invoke();
@@ -192,15 +198,41 @@ public static class FrenyProgress {
         return true;
     }
 
+    // ---- equipment ----
+
+    // weapons and moves bought with coins can be left at home (the menu's Inventário)
+    public static bool IsEquipment(FrenyUpgrade upgrade) {
+        return upgrade == FrenyUpgrade.DoubleJump || upgrade == FrenyUpgrade.Shotgun ||
+               upgrade == FrenyUpgrade.GreatSword || upgrade == FrenyUpgrade.Grenade;
+    }
+
+    public static bool IsEquipped(FrenyUpgrade upgrade) {
+        return PlayerPrefs.GetInt(UnequippedKeyPrefix + upgrade, 0) == 0;
+    }
+
+    public static void SetEquipped(FrenyUpgrade upgrade, bool equipped) {
+        if (equipped) {
+            PlayerPrefs.DeleteKey(UnequippedKeyPrefix + upgrade);
+        } else {
+            PlayerPrefs.SetInt(UnequippedKeyPrefix + upgrade, 1);
+        }
+        PlayerPrefs.Save();
+        Changed?.Invoke();
+    }
+
+    private static bool Carries(FrenyUpgrade upgrade) {
+        return GetLevel(upgrade) > 0 && IsEquipped(upgrade);
+    }
+
     // ---- effects ----
 
     public static int BonusMaxHealth => GetLevel(FrenyUpgrade.MaxHealth);
     public static float SpeedMultiplier => 1f + 0.08f * GetLevel(FrenyUpgrade.MoveSpeed);
     public static float AttackCooldownMultiplier => 1f - 0.1f * GetLevel(FrenyUpgrade.AttackSpeed);
-    public static bool HasDoubleJump => GetLevel(FrenyUpgrade.DoubleJump) > 0;
-    public static bool HasShotgun => GetLevel(FrenyUpgrade.Shotgun) > 0;
-    public static bool HasGreatSword => GetLevel(FrenyUpgrade.GreatSword) > 0;
-    public static bool HasGrenade => GetLevel(FrenyUpgrade.Grenade) > 0;
+    public static bool HasDoubleJump => Carries(FrenyUpgrade.DoubleJump);
+    public static bool HasShotgun => Carries(FrenyUpgrade.Shotgun);
+    public static bool HasGreatSword => Carries(FrenyUpgrade.GreatSword);
+    public static bool HasGrenade => Carries(FrenyUpgrade.Grenade);
 
     // seconds between autopilot decisions: 0.6 s untrained, 0.1 s maxed
     public static float AutopilotReactionTime => 0.6f - 0.1f * GetLevel(FrenyUpgrade.Reaction);
@@ -216,6 +248,7 @@ public static class FrenyProgress {
         PlayerPrefs.DeleteKey(SpentPointsKey);
         foreach (FrenyUpgrade upgrade in Enum.GetValues(typeof(FrenyUpgrade))) {
             PlayerPrefs.DeleteKey(LevelKeyPrefix + upgrade);
+            PlayerPrefs.DeleteKey(UnequippedKeyPrefix + upgrade);
         }
         PlayerPrefs.Save();
         Changed?.Invoke();

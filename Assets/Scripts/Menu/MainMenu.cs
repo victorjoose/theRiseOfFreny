@@ -84,18 +84,75 @@ public class MainMenu : MonoBehaviour {
         } else {
             page.Button("Começar", () => GameMenus.StartStage(CampaignLevels.All[0].id), true, CompactRow);
         }
-        page.Button("Novo jogo", () => stack.Push(SlotsPage(true)), true, CompactRow);
-        page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)), true, CompactRow);
-        page.Button("Fases", () => stack.Push(StagesPage()), true, CompactRow);
-        page.Button("Arena", () => stack.Push(ArenaPage()), Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene), CompactRow);
+        page.Button("Jogar", () => stack.Push(PlayPage()), true, CompactRow);
         page.Button("Configurações", () => stack.Push(SettingsScreens.Settings(stack)), true, CompactRow);
         if (Online.OnlineServices.Instance != null && Online.OnlineServices.Instance.State != Online.OnlineServices.Status.Disabled) {
-            page.Button("Online e ranking", () => Online.OnlineHUD.Instance?.SetOpen(true), true, CompactRow);
+            page.Button("Online", () => Online.OnlineHUD.Instance?.SetOpen(true), true, CompactRow);
+            page.Button("Ranking", () => stack.Push(RankingPage()), true, CompactRow);
         }
         if (GameMenus.CanQuit) {
             page.Button("Sair", GameMenus.Quit, true, CompactRow);
         }
         return page;
+    }
+
+    // Jogar: everything that starts or prepares a run
+    private MenuPage PlayPage() {
+        MenuPage page = new MenuPage(stack.transform, "Jogar", 520f, new Vector2(0.5f, 0.5f));
+        page.Button("Novo jogo", () => stack.Push(SlotsPage(true)));
+        page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)));
+        page.Button("Fases", () => stack.Push(StagesPage()));
+        page.Button("Arena", () => stack.Push(ArenaPage()), Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene));
+        page.Button("Inventário", () => stack.Push(InventoryScreens.Inventory(stack)));
+        page.Button("Armeiro", () => stack.Push(InventoryScreens.Armory(stack)));
+        page.Button("Voltar", stack.Back);
+        return page;
+    }
+
+    // the arena's top 10, refreshed from the server when the page opens
+    private MenuPage RankingPage() {
+        Online.OnlineServices online = Online.OnlineServices.Instance;
+        MenuPage page = new MenuPage(stack.transform, "Ranking", 560f, new Vector2(0.5f, 0.5f), 4f);
+        Text status = page.Label("", MenuKit.SmallTextSize);
+        Text[] rows = new Text[Online.OnlineServices.LeaderboardSize];
+        for (int i = 0; i < rows.Length; i++) {
+            Image row = MenuKit.MakeRow(page.Content, "", out rows[i]);
+            row.color = new Color(1f, 1f, 1f, 0.04f);
+            MenuKit.Size(row, -1f, 30f);
+            rows[i].fontSize = MenuKit.SmallTextSize;
+            rows[i].supportRichText = true;
+        }
+        Text best = page.Label("", MenuKit.SmallTextSize);
+        page.Space(4f);
+        page.Button("Voltar", stack.Back);
+
+        Action fill = () => {
+            status.text = online.State == Online.OnlineServices.Status.Online ? "Melhores corridas da Arena"
+                : online.State == Online.OnlineServices.Status.Connecting ? "Conectando..." : "Sem conexão: mostrando o último ranking";
+            string self = online.Auth != null ? online.Auth.UserId : null;
+            for (int i = 0; i < rows.Length; i++) {
+                if (i >= online.Top.Count) {
+                    rows[i].text = i == 0 ? "Ninguém no ranking ainda" : "";
+                    continue;
+                }
+                Online.LeaderboardEntry entry = online.Top[i];
+                string line = (i + 1) + ". " + entry.name + "  " + entry.score;
+                rows[i].text = entry.userId == self ? "<color=#EE8FFC>" + line + "</color>" : line;
+            }
+            best.text = "Seu recorde: " + online.Save.bestScore + " · corridas: " + online.Save.runsPlayed;
+        };
+        fill();
+        StartCoroutine(RefreshRanking(online, page, fill));
+        return page;
+    }
+
+    private System.Collections.IEnumerator RefreshRanking(Online.OnlineServices online, MenuPage page, Action fill) {
+        if (online.State == Online.OnlineServices.Status.Online) {
+            yield return online.RefreshLeaderboard();
+        }
+        if (page.Root != null) {   // still open
+            fill();
+        }
     }
 
     // newGame: pick a slot to start over in; otherwise pick a slot to continue
