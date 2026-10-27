@@ -38,7 +38,7 @@ atribuição obrigatória), cortados, convertidos para mono 44,1 kHz e normaliza
 | `freny_step_2` | Timothy McHugh -  Barefoot on Metal / FOOTSTEP - Metal Plate Walk Barefoot Male - 2.wav (0–0.3 s) |
 | `freny_step_3` | Timothy McHugh -  Barefoot on Metal / FOOTSTEP - Metal Plate Walk Barefoot Male - 3.wav (0–0.3 s) |
 | `freny_stun` | Coll Anderson - Slapstick Comedy / EFX SD Heads Hit Together 02.wav (0–0.42 s) |
-| `potion` | Eiravaein Works - Vaeyan I / RamuneBottle,open,marble,punch,decompress,ping,glass.wav (0–0.37 s) |
+| `potion` | Eiravaein Works - Vaeyan II / Liquids,gingerbeer,pour,plop,gurgling,fizzy,effervescent,close.M.wav (0.26–1.12 s) |
 | `weapon_switch` | Eiravaein Works - Vaeyan II / Switchblades,OTF,quality,close,unsheath,mechanical,tight,spring,ringing.M.wav (0–0.4 s) |
 | `arena_wrap` | Membrans - Scanners Sound Pack 01 / Scan 10.wav (0–0.55 s) |
 | `bug_attack` | RDGSFX002 - Creatures / Hisses Dry 11.M.wav (0.17–0.9 s) |
