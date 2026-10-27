@@ -7,39 +7,33 @@ TextureImporter:
     second: Freny crouch_0
   - first:
       213: 3147290335399028457
-    second: Freny crouch slash_0
-  - first:
-      213: 4443901822933087423
-    second: Freny crouch slash_1
-  - first:
-      213: 3525080503606983398
     second: Freny crouch ranged_0
   - first:
-      213: -4564926455042256413
+      213: 4443901822933087423
     second: Freny crouch ranged_1
   - first:
-      213: -3122597141751759380
+      213: 3525080503606983398
     second: Freny crouch ranged_2
   - first:
-      213: 686960640578370293
+      213: -4564926455042256413
     second: Freny air ranged_0
   - first:
-      213: -2802952854236084819
+      213: -3122597141751759380
     second: Freny air ranged_1
   - first:
-      213: -4399754493112314798
+      213: 686960640578370293
     second: Freny air ranged_2
   - first:
-      213: 4432507918585680993
+      213: -2802952854236084819
     second: Freny air ranged_3
   - first:
-      213: 1184892067255185169
+      213: -4399754493112314798
     second: Freny air ranged_4
   - first:
-      213: 2715681764597123200
+      213: 4432507918585680993
     second: Freny climb_0
   - first:
-      213: 1801469302619187644
+      213: 1184892067255185169
     second: Freny climb_1
   externalObjects: {}
   serializedVersion: 12
@@ -189,14 +183,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a7810c06c64c494885e12e16c67bbf18
+      spriteID: 103343aa15b44dcc9d80c2b936549c4a
       internalID: 1281762758697591833
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny crouch slash_0
+      name: Freny crouch ranged_0
       rect:
         serializedVersion: 2
         x: 280
@@ -210,14 +204,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 024dab3d219f4ff2ba0ed21b918c1b44
+      spriteID: e8d49c037a0e4a2ba65f6960d68ed14c
       internalID: 3147290335399028457
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny crouch slash_1
+      name: Freny crouch ranged_1
       rect:
         serializedVersion: 2
         x: 560
@@ -231,14 +225,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: d102ed8b1c814472a7f5df777b36c011
+      spriteID: 9d48c3d8f75745cf9fdbdd5d567be061
       internalID: 4443901822933087423
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny crouch ranged_0
+      name: Freny crouch ranged_2
       rect:
         serializedVersion: 2
         x: 840
@@ -252,14 +246,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ac6cdaf6743a48b69e8a1a94ead53720
+      spriteID: 58617b595b964a498c9af52d23b68408
       internalID: 3525080503606983398
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny crouch ranged_1
+      name: Freny air ranged_0
       rect:
         serializedVersion: 2
         x: 1120
@@ -273,14 +267,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 720fca9ae96f4d86956efd9dbf4d4df9
+      spriteID: e2ff69f891e74b418342105923171e00
       internalID: -4564926455042256413
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny crouch ranged_2
+      name: Freny air ranged_1
       rect:
         serializedVersion: 2
         x: 1400
@@ -294,14 +288,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 70945b4c6ad94ccf9963820e1e2f8043
+      spriteID: 0bfd92886acc462bb3b791f1d8b159ac
       internalID: -3122597141751759380
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny air ranged_0
+      name: Freny air ranged_2
       rect:
         serializedVersion: 2
         x: 1680
@@ -315,14 +309,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: da92b827e421476dad9e27c89c3880cc
+      spriteID: 90716bab050b4ead8b3ecbf02c75e291
       internalID: 686960640578370293
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny air ranged_1
+      name: Freny air ranged_3
       rect:
         serializedVersion: 2
         x: 1960
@@ -336,14 +330,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9ae275e0692d4661b34e11dfe6cb7ad3
+      spriteID: 1702069a0f734c759661a324159b2ef4
       internalID: -2802952854236084819
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny air ranged_2
+      name: Freny air ranged_4
       rect:
         serializedVersion: 2
         x: 2240
@@ -357,14 +351,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3bedcbb724a0464baff5a9f919be4cb8
+      spriteID: 2d233a1a464e4bf19ad9a9d2f67f5926
       internalID: -4399754493112314798
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny air ranged_3
+      name: Freny climb_0
       rect:
         serializedVersion: 2
         x: 2520
@@ -378,14 +372,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 64fc53c387bd4d8f94eb832486cb7744
+      spriteID: e35b1c4733254acfae902e1802754db4
       internalID: 4432507918585680993
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Freny air ranged_4
+      name: Freny climb_1
       rect:
         serializedVersion: 2
         x: 2800
@@ -399,50 +393,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 8bc1d81b4a85405f99d5ff7abfad5a5e
+      spriteID: e397c7531821495885b3c20626ffa5f3
       internalID: 1184892067255185169
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Freny climb_0
-      rect:
-        serializedVersion: 2
-        x: 3080
-        y: 0
-        width: 280
-        height: 200
-      alignment: 9
-      pivot: {x: 0.357143, y: 0.500000}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: fb5823e39cd54e2297b51fecba0c2051
-      internalID: 2715681764597123200
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Freny climb_1
-      rect:
-        serializedVersion: 2
-        x: 3360
-        y: 0
-        width: 280
-        height: 200
-      alignment: 9
-      pivot: {x: 0.357143, y: 0.500000}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 41b912667ccb4b9e9a7db7fabdf32b8d
-      internalID: 1801469302619187644
       vertices: []
       indices: 
       edges: []
@@ -459,18 +411,16 @@ TextureImporter:
     secondaryTextures: []
     nameFileIdTable:
       Freny crouch_0: 1281762758697591833
-      Freny crouch slash_0: 3147290335399028457
-      Freny crouch slash_1: 4443901822933087423
-      Freny crouch ranged_0: 3525080503606983398
-      Freny crouch ranged_1: -4564926455042256413
-      Freny crouch ranged_2: -3122597141751759380
-      Freny air ranged_0: 686960640578370293
-      Freny air ranged_1: -2802952854236084819
-      Freny air ranged_2: -4399754493112314798
-      Freny air ranged_3: 4432507918585680993
-      Freny air ranged_4: 1184892067255185169
-      Freny climb_0: 2715681764597123200
-      Freny climb_1: 1801469302619187644
+      Freny crouch ranged_0: 3147290335399028457
+      Freny crouch ranged_1: 4443901822933087423
+      Freny crouch ranged_2: 3525080503606983398
+      Freny air ranged_0: -4564926455042256413
+      Freny air ranged_1: -3122597141751759380
+      Freny air ranged_2: 686960640578370293
+      Freny air ranged_3: -2802952854236084819
+      Freny air ranged_4: -4399754493112314798
+      Freny climb_0: 4432507918585680993
+      Freny climb_1: 1184892067255185169
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
