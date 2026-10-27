@@ -76,6 +76,14 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private float patrolPauseUntil;
     [SerializeField]
     protected float provokedRadius = 10f; // how far a hit enemy keeps chasing
+    [SerializeField]
+    protected float keepChasingFactor = 1.75f; // once chasing, it only gives up when Freny is this many times its sight away
+    // ---- enemies hit each other: a swing at Freny also catches whoever stands in front of it, and a
+    // hexball hits whatever it crosses. The one hit turns on whoever hit it and they fight
+    private Enemy rival;
+    private float rivalUntil;
+    private const float RivalMemory = 6f;    // a fight with another enemy lasts this long after its last hit
+    private static readonly List<Enemy> bystanders = new List<Enemy>();
     private float nextDustTime;
     private float fallVelocity;      // walkers fall through StickToGround (there is no physics gravity on them)
     private static int groundMask = -1;
@@ -191,7 +199,15 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return;
         }
 
-        if (player_t && player != null) {
+        UpdateRival();
+        if (rival != null) {
+            // fighting another enemy: it goes after that one, wherever Freny is
+            distance = Vector2.Distance(Center, rival.Center);
+            if (!isPlayerInRange) {
+                isPlayerInRange = true;
+                SetInCombat(true);
+            }
+        } else if (player_t && player != null) {
             distance = Vector2.Distance(transform.position, player_t.position);
             float dx = Mathf.Abs(player_t.position.x - transform.position.x);
             float dy = Mathf.Abs(player_t.position.y - transform.position.y);
@@ -208,6 +224,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             // sight is shorter behind the back, but not zero: Freny sneaking up still gets noticed
             bool playerBehind = (player_t.position.x > transform.position.x) != FacingRight;
             float sight = radius * Tuning.EnemyAggro.Value * (playerBehind ? rearSightFactor : 1f);
+            if (isPlayerInRange) {
+                sight *= keepChasingFactor; // already after her: it doesn't let go the moment she steps out of sight
+            }
             bool provoked = isHit && distance <= provokedRadius;
             // walkers also go after her on a platform above or below (they jump and drop, see AttackMode)
             bool reachable = sameLevel || (Climbs && dy <= ClimbSight);
@@ -471,7 +490,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return;
         }
         if (Time.time < restUntil) {
-            FacePlayer(); // catching its breath after a swing or a landing
+            FaceTarget(); // catching its breath after a swing or a landing
             return;
         }
         if (Time.time < backOffUntil) {
@@ -479,7 +498,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return;
         }
 
-        FacePlayer();
+        FaceTarget();
 
         if (InAttackReach()) {
             // close enough: wind up, then hit; the cooldown starts after the hit, so the rhythm is steady
@@ -489,16 +508,16 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return;
         }
 
-        // inside the radius but too far to attack: walk towards the player. Walkers follow her to
+        // inside the radius but too far to attack: walk towards the target. Walkers follow it to
         // other platforms; the others never leave their patrol area
-        float targetX = ArenaBounds.ClampX(player_t.position.x, 0.5f);
+        float targetX = ArenaBounds.ClampX(Target.position.x, 0.5f);
         if (pointA && pointB && !Climbs) {
             PatrolRange(out float min, out float max);
             targetX = Mathf.Clamp(targetX, min, max);
         }
         float step = targetX - transform.position.x;
         float dir = step >= 0f ? 1f : -1f;
-        float herFeet = playerCol ? playerCol.bounds.min.y : player_t.position.y - 1f;
+        float herFeet = rival != null ? rival.Feet.y : playerCol ? playerCol.bounds.min.y : player_t.position.y - 1f;
         float myFeet = Feet.y;
         bool canJump = Climbs && Time.time >= nextJumpTime;
         if (canJump && herFeet > myFeet + 0.6f && TryJumpUp(dir)) {
@@ -522,12 +541,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // true when the colliders are within attackDistance of touching and roughly at the same height.
     // Falls back to centre distance when a collider is missing (e.g. the player died and lost its collider).
     protected bool InAttackReach() {
-        if (col == null || playerCol == null) {
+        if (col == null || (rival == null && playerCol == null)) {
             return distance <= attackDistance + 1f;
         }
 
         Bounds mine = col.bounds;
-        Bounds theirs = playerCol.bounds;
+        Bounds theirs = rival != null ? rival.BodyBounds : playerCol.bounds;
         float gapX = Mathf.Max(0f, Mathf.Max(theirs.min.x - mine.max.x, mine.min.x - theirs.max.x));
         bool sameHeight = theirs.max.y > mine.min.y && theirs.min.y < mine.max.y;
         return sameHeight && gapX <= attackDistance;
@@ -543,9 +562,17 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             PlaySound("attack");
         }
 
-        // the player can still step or dash out of the swing
-        if (!isDead && player != null && player.Health > 0 && InAttackReach()) {
-            HitPlayer();
+        // the target can still step or dash out of the swing
+        if (!isDead) {
+            Enemy foe = rival;
+            if (foe != null) {
+                if (!foe.isDead && InAttackReach()) {
+                    foe.HitBy(this, HitDamage);
+                }
+            } else if (player != null && player.Health > 0 && InAttackReach()) {
+                HitPlayer();
+            }
+            HitBystanders(foe);
         }
         nextAttackTime = Time.time + attackCooldown * Tuning.EnemyCooldown.Value * DifficultyCooldown;
         // not frantic: rest a moment, then step back before closing in again
@@ -556,7 +583,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // walks away from Freny for a moment (stops at the platform's edge)
     private void BackOff() {
-        float dir = player_t.position.x > transform.position.x ? -1f : 1f;
+        float dir = Target.position.x > transform.position.x ? -1f : 1f;
         transform.localScale = new Vector3(-dir, 1, 1);
         if (!GroundAhead(dir)) {
             return;
@@ -700,8 +727,74 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
     }
 
-    private void FacePlayer() {
-        transform.localScale = new Vector3(player_t.position.x > transform.position.x ? -1 : 1, 1, 1);
+    private void FaceTarget() {
+        transform.localScale = new Vector3(Target.position.x > transform.position.x ? -1 : 1, 1, 1);
+    }
+
+    // ==== fighting other enemies ===============================================================
+
+    // whom it goes after: the enemy it is fighting, otherwise Freny
+    protected Transform Target => rival != null ? rival.transform : player_t;
+    // the enemy it is fighting right now (null: none, it is after Freny)
+    protected Enemy Rival => rival;
+    // the collider's box in world space, from the transform (see Feet)
+    public Bounds BodyBounds => new Bounds(Center, new Vector3(HalfWidth * 2f, HalfHeight * 2f, 1f));
+
+    // the fight ends when the rival dies, gets too far or nobody has hit anybody for a while
+    protected void UpdateRival() {
+        if (rival == null) {
+            return;
+        }
+        if (rival.isDead || Time.time >= rivalUntil || Vector2.Distance(Center, rival.Center) > provokedRadius) {
+            rival = null;
+            isPlayerInRange = false;
+            ResetAttackMode();
+        }
+    }
+
+    // hit by another enemy, by accident or in a fight: it loses the hearts and turns on whoever hit it
+    public void HitBy(Enemy attacker, int amount) {
+        if (isDead || attacker == this) {
+            return;
+        }
+        if (attacker != null && !attacker.isDead) {
+            if (rival != attacker) {
+                restUntil = backOffUntil = 0f; // no breather: it goes straight for the one that hit it
+            }
+            rival = attacker;
+            rivalUntil = Time.time + RivalMemory;
+            isPlayerInRange = true;
+            SetInCombat(true);
+        }
+        Health -= Mathf.Max(1, amount);
+        TakeHit(false);
+        if (Health < 1) {
+            Die(false);
+        }
+    }
+
+    // a swing hits every other enemy standing in front of it, not only the one it aimed at
+    private void HitBystanders(Enemy aimedAt) {
+        if (col == null) {
+            return;
+        }
+        float dir = FacingRight ? 1f : -1f;
+        Vector2 center = Center;
+        float reachX = center.x + dir * (HalfWidth + attackDistance + 0.2f);
+        Bounds swing = new Bounds();
+        swing.SetMinMax(new Vector3(Mathf.Min(center.x, reachX), center.y - HalfHeight, -1f),
+            new Vector3(Mathf.Max(center.x, reachX), center.y + HalfHeight, 1f));
+        bystanders.Clear();
+        bystanders.AddRange(Active);
+        foreach (Enemy other in bystanders) {
+            if (other == null || other == this || other == aimedAt || other.isDead) {
+                continue;
+            }
+            if (swing.Intersects(other.BodyBounds)) {
+                other.HitBy(this, HitDamage);
+            }
+        }
+        bystanders.Clear();
     }
 
     private void ResetAttackMode() {
@@ -719,7 +812,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // any enemy killed (Freny's Rage meter counts them)
     public static event System.Action<Enemy> Killed;
 
-    // a harder hit (the sword during Rage): the extra points first, then the usual hit
+    // a harder hit from Freny (the sword during Rage): the extra points first, then the usual hit
     public void Damage(int amount) {
         if (isDead) {
             return;
@@ -728,21 +821,24 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Damage();
     }
 
-    // one point of damage from the sword, a bullet or a grenade
+    // one point of damage from Freny's sword, a bullet or a grenade
     public virtual void Damage() {
         if (isDead) {
             return;
         }
+        rival = null; // Freny hit it: she is the one it goes after now
         Health--;
-        TakeHit();
+        TakeHit(true);
         if (Health < 1) {
-            Die();
+            Die(true);
         }
     }
 
     // flinch, fight back, and bleed a few particles
-    protected void TakeHit() {
-        isHit = true;
+    protected void TakeHit(bool byPlayer) {
+        if (byPlayer) {
+            isHit = true;
+        }
         if (hasHitTrigger) {
             anim.SetTrigger("Hit");
         }
@@ -754,8 +850,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     }
 
     // the sprite disappears in a burst of particles instead of playing the "pieces" animation,
-    // and the body stops colliding and moving at once (the pieces used to keep walking)
-    protected void Die() {
+    // and the body stops colliding and moving at once (the pieces used to keep walking).
+    // Killed by another enemy, it still drops its coins but gives Freny no XP, score or Rage
+    protected void Die(bool byPlayer) {
         isDead = true;
         if (attackRoutine != null) {
             StopCoroutine(attackRoutine);
@@ -775,14 +872,18 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             rb.simulated = false;
         }
 
-        Killed?.Invoke(this);
-        FrenyProgress.AddXp(Mathf.Max(scoreToAdd, 10));
-        if (UIManager.Instance) {
-            UIManager.Instance.HandleComboManager(this);
+        if (byPlayer) {
+            Killed?.Invoke(this);
+            FrenyProgress.AddXp(Mathf.Max(scoreToAdd, 10));
+            if (UIManager.Instance) {
+                UIManager.Instance.HandleComboManager(this);
+            }
         }
         ReleaseSpawnerSlot();
         DropCoin();
-        ItemPickup.RollEnemyDrop(Center); // now and then a potion or ammo too
+        if (ArenaBounds.Active) {
+            ItemPickup.RollEnemyDrop(Center); // now and then a potion or ammo too; in the stages only coins
+        }
         Destroy(gameObject, 1f);
     }
 

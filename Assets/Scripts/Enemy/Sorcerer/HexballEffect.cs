@@ -11,6 +11,14 @@ public class HexballEffect : MonoBehaviour
     [NonSerialized] public int damage = 2;
     [NonSerialized] public float knockback = 5f;
     [NonSerialized] public float speedMultiplier = 1f;
+    // who cast it: it flies through its caster and hurts any other enemy it crosses
+    [NonSerialized] public Enemy caster;
+
+    // it flies until it hits something; once it is far from Freny and still moving away it is gone
+    private const float LoseDistance = 25f;
+    private const float MaxLifetime = 30f;
+    private const float EnemyHitRadius = 0.15f;
+    private static Transform playerT;
 
     public Vector3 Direction => direction;
     public float Speed => speed * speedMultiplier;
@@ -38,12 +46,48 @@ public class HexballEffect : MonoBehaviour
 
     private void Start()
     {
-        Destroy(gameObject, 3.0f);
+        Destroy(gameObject, MaxLifetime);
     }
 
     private void Update()
     {
         transform.Translate(direction * (Speed * Time.deltaTime), Space.World);
+        if (HitEnemy()) {
+            return;
+        }
+
+        if (playerT == null) {
+            GameObject obj = GameObject.FindGameObjectWithTag("Player");
+            playerT = obj ? obj.transform : null;
+        }
+        if (playerT != null) {
+            Vector2 away = transform.position - playerT.position;
+            if (away.sqrMagnitude > LoseDistance * LoseDistance && Vector2.Dot(away, direction) > 0f) {
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    // any enemy but its caster that it crosses takes the hit (box test from the transform, so it
+    // doesn't depend on which bodies get trigger messages from each other)
+    private bool HitEnemy()
+    {
+        Vector2 p = transform.position;
+        for (int i = Enemy.Active.Count - 1; i >= 0; i--) {
+            Enemy enemy = Enemy.Active[i];
+            if (enemy == null || enemy == caster || enemy.IsDead) {
+                continue;
+            }
+            Vector2 c = enemy.Center;
+            if (Mathf.Abs(p.x - c.x) <= enemy.HalfWidth + EnemyHitRadius && Mathf.Abs(p.y - c.y) <= enemy.HalfHeight + EnemyHitRadius) {
+                enemy.HitBy(caster, damage);
+                Fx.Burst(transform.position, new Color(0.7f, 0.4f, 1f), 12, 2.5f, 0.1f, 0.4f);
+                Sfx.Play("hexball_impact", transform.position);
+                Destroy(gameObject);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
