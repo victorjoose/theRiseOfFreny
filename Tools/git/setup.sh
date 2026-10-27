@@ -20,7 +20,7 @@ if [ -z "$merge" ]; then
   echo "Aviso: UnityYAMLMerge da Unity $version nao encontrado; Smart Merge nao configurado." >&2
 else
   git config merge.unityyamlmerge.name 'Unity SmartMerge (UnityYAMLMerge)'
-  git config merge.unityyamlmerge.driver "'$merge' merge -p %O %B %A %A"
+  git config merge.unityyamlmerge.driver "'$merge' merge -h -p --force --fallback none %O %B %A %A"
   git config merge.unityyamlmerge.recursive binary
   echo "Smart Merge: $merge"
 fi

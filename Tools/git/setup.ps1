@@ -4,8 +4,12 @@
 # - liga o Smart Merge da Unity (UnityYAMLMerge) para cenas, prefabs e assets
 # Detalhes em CONTRIBUTING.md.
 $ErrorActionPreference = 'Stop'
-$root = (git rev-parse --show-toplevel).Trim()
+# A raiz vem do caminho do script: a saida do git embaralha caminhos com acento.
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location $root
+if ($root -match '[^\x00-\x7F]') {
+    Write-Warning "O caminho do clone tem acento ou caractere especial ($root). O UnityYAMLMerge nao funciona nesse caso; clone numa pasta so com letras sem acento (ex.: C:\dev\theRiseOfFreny)."
+}
 
 git lfs version | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Git LFS nao encontrado. Instale o Git for Windows (ja vem com LFS) ou https://git-lfs.com' }
@@ -30,7 +34,7 @@ if (-not $merge) {
 } else {
     $m = $merge -replace '\\', '/'
     git config merge.unityyamlmerge.name 'Unity SmartMerge (UnityYAMLMerge)'
-    git config merge.unityyamlmerge.driver "'$m' merge -p %O %B %A %A"
+    git config merge.unityyamlmerge.driver "'$m' merge -h -p --force --fallback none %O %B %A %A"
     git config merge.unityyamlmerge.recursive binary
     Write-Host "Smart Merge: $merge"
 }

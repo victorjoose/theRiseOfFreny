@@ -8,7 +8,9 @@ Guia curto para quem vai mexer no projeto junto. Se algo aqui não fizer sentido
    reescreve dezenas de arquivos (`ProjectSettings`, `.meta`, cenas) e gera conflito para todo mundo. O CI recusa
    PR com outra versão em `ProjectSettings/ProjectVersion.txt`.
 2. Instale o **Git for Windows** (já vem com Git LFS). No macOS/Linux, instale o `git-lfs` separado.
-3. Clone e rode o script de configuração dentro do clone:
+3. Clone numa pasta **sem acento nem caractere especial no caminho** (ex.: `C:\dev\theRiseOfFreny`; evite
+   `C:\Users\José\...`, porque o Smart Merge da Unity não abre arquivos nesses caminhos) e rode o script de
+   configuração dentro do clone:
 
    ```powershell
    git clone https://github.com/victorjoose/theRiseOfFreny.git
@@ -62,8 +64,10 @@ faz milagre:
   Avise no grupo antes de abrir uma cena grande (`ZE Arena`, fases da campanha).
 - Prefira **prefabs**: mudar um inimigo no prefab não toca na cena.
 - Salve a cena só quando quiser mesmo mudá-la. Abrir e dar Ctrl+S "por garantia" gera diff à toa.
-- Se o merge de uma cena der errado, não tente consertar o YAML na mão: escolha uma versão
-  (`git checkout --ours` ou `--theirs` no arquivo) e refaça a sua mudança na Unity.
+- Quando duas pessoas mudam **o mesmo campo** para valores diferentes, o Git avisa `CONFLICT`, mas o arquivo
+  **não ganha os marcadores `<<<<<<<`**: o Smart Merge já deixa um dos valores lá. Não confie nele. Escolha uma
+  versão (`git checkout --ours <arquivo>` ou `--theirs`), confira na Unity, refaça a outra mudança se precisar
+  e dê `git add <arquivo>`. Não tente consertar o YAML na mão.
 
 ## 5. Arte, áudio e Git LFS
 
