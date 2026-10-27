@@ -41,7 +41,9 @@ public static class StageTerrain {
             if (map.gameObject.scene != scene) {
                 continue;
             }
-            bool solid = map.GetComponent<TilemapCollider2D>() is TilemapCollider2D collider && collider.enabled;
+            // != null, not `is`: in the Editor a missing component is a fake object that passes `is`
+            TilemapCollider2D collider = map.GetComponent<TilemapCollider2D>();
+            bool solid = collider != null && collider.enabled;
             BoundsInt bounds = map.cellBounds;
             foreach (Vector3Int cell in bounds.allPositionsWithin) {
                 Kind kind = KindOf(map.GetSprite(cell));
@@ -115,7 +117,8 @@ public static class StageTerrain {
     public static void SettleEnemies(Scene scene) {
         var solidMaps = new List<Tilemap>();
         foreach (TilemapCollider2D collider in FindCompat.All<TilemapCollider2D>()) {
-            if (collider.enabled && collider.gameObject.scene == scene && collider.GetComponent<Tilemap>() is Tilemap map) {
+            Tilemap map = collider.GetComponent<Tilemap>();
+            if (collider.enabled && collider.gameObject.scene == scene && map != null) {
                 solidMaps.Add(map);
             }
         }
