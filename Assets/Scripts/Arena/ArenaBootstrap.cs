@@ -50,6 +50,8 @@ public static class ArenaBootstrap {
         GetOrAdd<ArenaHud>(playerObj);
         GetOrAdd<CombatHud>(playerObj); // weapons and cooldowns, same as in the campaign
         input.FindAutopilot();
+        // before the first Update, so a manual run never has the autopilot drive a single frame
+        input.SetAutoEnabled(!ArenaDifficulty.Manual);
     }
 
     private static T GetOrAdd<T>(GameObject obj) where T : Component {

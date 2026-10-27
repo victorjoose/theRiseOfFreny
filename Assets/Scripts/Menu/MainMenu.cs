@@ -198,9 +198,13 @@ public class MainMenu : MonoBehaviour {
         return page;
     }
 
-    // Easy / Medium / Hard / Freny (ArenaDifficulty, the arena reads it), then the run starts
+    // Automático or Manual, then Easy / Medium / Hard / Freny (ArenaDifficulty, the arena reads
+    // both), then the run starts
     private MenuPage ArenaPage() {
         MenuPage page = new MenuPage(stack.transform, "Arena", 560f, new Vector2(0.5f, 0.5f));
+        page.Choice("Controle", new[] { "Automático", "Manual" }, ArenaDifficulty.Manual ? 1 : 0,
+            i => ArenaDifficulty.Manual = i == 1);
+        page.Label("Só corridas manuais do começo ao fim valem para o ranking.");
         Button current = null;
         foreach (ArenaLevel level in System.Enum.GetValues(typeof(ArenaLevel))) {
             ArenaLevel chosen = level;
