@@ -41,6 +41,12 @@ public static class ArenaBootstrap {
         // the vases, crates and barrels painted on the foreground tilemaps break like the campaign's
         Breakable.FromTilemaps(PropRegrowSeconds);
 
+        if (!System.Array.Exists(FindCompat.All<ArenaDayNight>(), d => d.gameObject.scene == scene)) {
+            GameObject dayNight = new GameObject("Day Night");
+            SceneManager.MoveGameObjectToScene(dayNight, scene);
+            dayNight.AddComponent<ArenaDayNight>();
+        }
+
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {
             return;
