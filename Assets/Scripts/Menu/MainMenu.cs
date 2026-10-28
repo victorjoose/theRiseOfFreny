@@ -109,10 +109,18 @@ public class MainMenu : MonoBehaviour {
         return page;
     }
 
-    // the arena's top 10, refreshed from the server when the page opens
+    // the arena's top 10 on each ranked difficulty (Hard, the main one, first), refreshed from
+    // the server when the page opens
     private MenuPage RankingPage() {
         Online.OnlineServices online = Online.OnlineServices.Instance;
         MenuPage page = new MenuPage(stack.transform, "Ranking", 560f, new Vector2(0.5f, 0.5f), 4f);
+        ArenaLevel board = ArenaDifficulty.Ranked[0];
+        Action fill = null;
+        string[] boardNames = System.Array.ConvertAll(ArenaDifficulty.Ranked, ArenaDifficulty.Label);
+        page.Choice("Dificuldade", boardNames, 0, i => {
+            board = ArenaDifficulty.Ranked[i];
+            fill();
+        });
         Text status = page.Label("", MenuKit.SmallTextSize);
         Text[] rows = new Text[Online.OnlineServices.LeaderboardSize];
         for (int i = 0; i < rows.Length; i++) {
@@ -126,20 +134,21 @@ public class MainMenu : MonoBehaviour {
         page.Space(4f);
         page.Button("Voltar", stack.Back);
 
-        Action fill = () => {
-            status.text = online.State == Online.OnlineServices.Status.Online ? "Melhores corridas da Arena"
+        fill = () => {
+            status.text = online.State == Online.OnlineServices.Status.Online ? "Só valem corridas manuais no Difícil ou no Freny"
                 : online.State == Online.OnlineServices.Status.Connecting ? "Conectando..." : "Sem conexão: mostrando o último ranking";
             string self = online.Auth != null ? online.Auth.UserId : null;
+            var top = online.TopFor(board);
             for (int i = 0; i < rows.Length; i++) {
-                if (i >= online.Top.Count) {
+                if (i >= top.Count) {
                     rows[i].text = i == 0 ? "Ninguém no ranking ainda" : "";
                     continue;
                 }
-                Online.LeaderboardEntry entry = online.Top[i];
+                Online.LeaderboardEntry entry = top[i];
                 string line = (i + 1) + ". " + entry.name + "  " + entry.score;
                 rows[i].text = entry.userId == self ? "<color=#EE8FFC>" + line + "</color>" : line;
             }
-            best.text = "Seu recorde: " + online.Save.bestScore + " · corridas: " + online.Save.runsPlayed;
+            best.text = "Seu recorde no " + ArenaDifficulty.Label(board) + ": " + online.BestFor(board) + " · corridas: " + online.Save.runsPlayed;
         };
         fill();
         StartCoroutine(RefreshRanking(online, page, fill));
@@ -204,7 +213,7 @@ public class MainMenu : MonoBehaviour {
         MenuPage page = new MenuPage(stack.transform, "Arena", 560f, new Vector2(0.5f, 0.5f));
         page.Choice("Controle", new[] { "Automático", "Manual" }, ArenaDifficulty.Manual ? 1 : 0,
             i => ArenaDifficulty.Manual = i == 1);
-        page.Label("Só corridas manuais do começo ao fim valem para o ranking.");
+        page.Label("Ranking: só corridas manuais do começo ao fim, no Difícil ou no Freny.");
         Button current = null;
         foreach (ArenaLevel level in System.Enum.GetValues(typeof(ArenaLevel))) {
             ArenaLevel chosen = level;
