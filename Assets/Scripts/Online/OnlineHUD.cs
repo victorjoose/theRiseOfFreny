@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -23,6 +24,7 @@ namespace Online {
         private string _toast;
         private float _toastUntil;
         private float _openAt = -1f;
+        private ArenaLevel _board = ArenaDifficulty.Ranked[0];
 
         private GUIStyle _title;
         private GUIStyle _row;
@@ -70,14 +72,17 @@ namespace Online {
             }
         }
 
-        private void OnRunReported(long score, bool newBest, bool assisted) {
-            if (assisted) {
-                // Idle arena runs restart on their own; don't pop the board over them.
-                _toast = "Score: " + score + "  (autopilot runs don't go to the leaderboard)";
+        private void OnRunReported(long score, bool newBest, string unranked) {
+            if (unranked != null) {
+                // Idle arena runs restart on their own; don't pop the board over unranked runs.
+                _toast = "Score: " + score + "  (" + unranked + ")";
                 _toastUntil = Time.unscaledTime + 3f;
                 return;
             }
-            _toast = newBest ? "New best: " + score + "!" : "Score: " + score + "  (best " + _online.Save.bestScore + ")";
+            ArenaLevel level = ArenaDifficulty.Current;
+            _board = level;
+            _toast = newBest ? "Novo recorde no " + ArenaDifficulty.Label(level) + ": " + score + "!"
+                : "Score: " + score + "  (recorde no " + ArenaDifficulty.Label(level) + ": " + _online.BestFor(level) + ")";
             if (newBest) Sfx.Play("new_record");
             _toastUntil = Time.unscaledTime + 4f;
             _openAt = Time.unscaledTime + AutoOpenDelay;
@@ -117,14 +122,23 @@ namespace Online {
             GUILayout.EndArea();
         }
 
+        // one tab per ranked difficulty, the main one (Hard) first
         private void DrawLeaderboard() {
-            if (_online.Top.Count == 0) {
+            GUILayout.BeginHorizontal();
+            foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
+                if (GUILayout.Toggle(_board == level, ArenaDifficulty.Label(level), GUI.skin.button)) _board = level;
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.Label("Só corridas manuais no Difícil ou no Freny valem.");
+
+            List<LeaderboardEntry> top = _online.TopFor(_board);
+            if (top.Count == 0) {
                 GUILayout.Label(_online.State == OnlineServices.Status.Online ? "No scores yet. Be the first!" : "-");
                 return;
             }
             string self = _online.Auth != null ? _online.Auth.UserId : null;
-            for (int i = 0; i < _online.Top.Count; i++) {
-                LeaderboardEntry entry = _online.Top[i];
+            for (int i = 0; i < top.Count; i++) {
+                LeaderboardEntry entry = top[i];
                 GUIStyle style = entry.userId == self ? _rowSelf : _row;
                 GUILayout.BeginHorizontal();
                 GUILayout.Label((i + 1) + ".", style, GUILayout.Width(30));
@@ -137,7 +151,7 @@ namespace Online {
 
         private void DrawProfile() {
             PlayerSave save = _online.Save;
-            GUILayout.Label("Your best: " + save.bestScore + "    Runs: " + save.runsPlayed + "    Coins: " + save.totalCoins);
+            GUILayout.Label("Your best (" + ArenaDifficulty.Label(_board) + "): " + _online.BestFor(_board) + "    Runs: " + save.runsPlayed + "    Coins: " + save.totalCoins);
             GUILayout.BeginHorizontal();
             GUILayout.Label("Name", GUILayout.Width(50));
             _nameField = GUILayout.TextField(_nameField ?? "", OnlineServices.MaxNameLength);

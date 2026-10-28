@@ -14,6 +14,7 @@ namespace Online {
         public const int LeaderboardSize = 10;
         public const int MaxNameLength = 16;
         private const string LocalSavePref = "online.save";
+        private const string LocalBestPref = "online.best.";   // + level, this account's best on each ranked board
 
         public static OnlineServices Instance { get; private set; }
 
@@ -22,15 +23,15 @@ namespace Online {
         public FirebaseAuthService Auth { get; private set; }
         public FirestoreClient Db => _db;   // for CloudProgressSync (save slots)
         public PlayerSave Save { get; private set; }
-        public List<LeaderboardEntry> Top { get; private set; } = new List<LeaderboardEntry>();
         // the autopilot drove at some point of this run: it won't count for the leaderboard
         public bool RunAssisted => _assisted;
 
-        // score, isNewBest, assisted (the arena autopilot played part of the run)
-        public event Action<long, bool, bool> RunReported;
+        // score, isNewBest on its board, and why the run is off the ranking (null when it counts)
+        public event Action<long, bool, string> RunReported;
 
         private FirestoreClient _db;
         private LeaderboardService _leaderboard;
+        private readonly Dictionary<ArenaLevel, List<LeaderboardEntry>> _boards = new Dictionary<ArenaLevel, List<LeaderboardEntry>>();
         private CloudSaveService _saves;
 
         // Run tracking for the current scene.
@@ -42,6 +43,8 @@ namespace Online {
         private bool _sawAlive;
         private bool _reported;
         private bool _assisted;
+        private bool _arenaRun;
+        private ArenaLevel _runLevel;
         private int _coinsAtStart;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -92,11 +95,31 @@ namespace Online {
             yield return RefreshLeaderboard();
         }
 
+        // The top of one ranked board (ArenaDifficulty.Ranked), as last fetched.
+        public List<LeaderboardEntry> TopFor(ArenaLevel level) {
+            return _boards.TryGetValue(level, out List<LeaderboardEntry> top) ? top : new List<LeaderboardEntry>();
+        }
+
+        public long BestFor(ArenaLevel level) {
+            return long.TryParse(PlayerPrefs.GetString(LocalBestPref + level, "0"), out long best) ? best : 0;
+        }
+
+        private static void SetBest(ArenaLevel level, long best) {
+            PlayerPrefs.SetString(LocalBestPref + level, best.ToString());
+            PlayerPrefs.Save();
+        }
+
+        private static void ClearBests() {
+            foreach (ArenaLevel level in ArenaDifficulty.Ranked) SetBest(level, 0);
+        }
+
         public IEnumerator RefreshLeaderboard() {
             if (_leaderboard == null || !Auth.IsSignedIn) yield break;
-            yield return _leaderboard.GetTop(LeaderboardSize, entries => {
-                if (entries != null) Top = entries;
-            });
+            foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
+                yield return _leaderboard.GetTop(level, LeaderboardSize, entries => {
+                    if (entries != null) _boards[level] = entries;
+                });
+            }
         }
 
         public void SetPlayerName(string newName) {
@@ -119,6 +142,7 @@ namespace Online {
         public void SignOut() {
             Auth.SignOut();
             Save = NewSave();
+            ClearBests();
             SaveLocal();
             StartCoroutine(Connect());
         }
@@ -129,6 +153,7 @@ namespace Online {
             if (error == null) {
                 // This device's local progress belonged to another account; take the cloud one.
                 Save = NewSave();
+                ClearBests();
                 yield return SyncSave();
                 yield return RefreshLeaderboard();
             }
@@ -144,7 +169,6 @@ namespace Online {
 
             bool localAhead = Save.bestScore > cloud.bestScore || Save.runsPlayed > cloud.runsPlayed ||
                               Save.totalCoins > cloud.totalCoins || string.IsNullOrEmpty(cloud.playerName);
-            bool bestAhead = Save.bestScore > cloud.bestScore;
 
             Save = new PlayerSave {
                 playerName = string.IsNullOrEmpty(cloud.playerName) ? Save.playerName : cloud.playerName,
@@ -155,18 +179,32 @@ namespace Online {
             SaveLocal();
 
             if (localAhead) yield return _saves.Save(Save, null);
-            if (bestAhead) yield return _leaderboard.SubmitBest(Save.playerName, Save.bestScore, null);
+
+            // each ranked board: keep the higher of this device's best and the server's
+            foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
+                long? server = null;
+                yield return _leaderboard.GetOwn(level, s => server = s);
+                if (server == null) continue;
+                long local = BestFor(level);
+                if (local > server.Value) {
+                    yield return _leaderboard.SubmitBest(level, Save.playerName, local, null);
+                } else {
+                    SetBest(level, server.Value);
+                }
+            }
         }
 
-        private IEnumerator PushRun(bool newBest) {
+        private IEnumerator PushRun(ArenaLevel level, bool newBest) {
             yield return _saves.Save(Save, null);
-            if (newBest) yield return _leaderboard.SubmitBest(Save.playerName, Save.bestScore, null);
+            if (newBest) yield return _leaderboard.SubmitBest(level, Save.playerName, BestFor(level), null);
             yield return RefreshLeaderboard();
         }
 
         private IEnumerator PushName() {
             yield return _saves.Save(Save, null);
-            if (Save.bestScore > 0) yield return _leaderboard.Rename(Save.playerName, null);
+            foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
+                if (BestFor(level) > 0) yield return _leaderboard.Rename(level, Save.playerName, null);
+            }
             yield return RefreshLeaderboard();
         }
 
@@ -180,6 +218,9 @@ namespace Online {
             // Campaign stages are not runs: a death there just respawns at the checkpoint.
             _reported = CampaignLevels.IsStage(scene.name);
             _assisted = false;
+            // only arena runs are ranked, on the board of the difficulty picked in the menu
+            _arenaRun = scene.name == GameMenus.ArenaScene;
+            _runLevel = ArenaDifficulty.Current;
         }
 
         private void Update() {
@@ -217,17 +258,23 @@ namespace Online {
             return 0;
         }
 
-        // Runs the autopilot helped with still count for stats, but not for the leaderboard
-        // (the GDD keeps idle play out of the manual "Freny Arena Online" ranking).
+        // Every run counts for the stats, but only an arena run played by hand from start to end
+        // on a ranked difficulty (Hard or Freny) goes to that difficulty's board. The GDD keeps
+        // idle play out of the manual "Freny Arena Online" ranking.
         private void ReportRun(long score, long coins, bool assisted) {
-            bool newBest = !assisted && score > Save.bestScore;
+            string unranked = !_arenaRun ? "só a Arena tem ranking"
+                : assisted ? "corridas com o piloto automático não valem para o ranking"
+                : !ArenaDifficulty.IsRanked(_runLevel) ? "o ranking vale a partir do Difícil"
+                : null;
+            bool newBest = unranked == null && score > BestFor(_runLevel);
             Save.runsPlayed++;
             Save.totalCoins += coins;
-            if (newBest) Save.bestScore = score;
+            if (!assisted && score > Save.bestScore) Save.bestScore = score;
+            if (newBest) SetBest(_runLevel, score);
             SaveLocal();
 
-            RunReported?.Invoke(score, newBest, assisted);
-            if (State == Status.Online) StartCoroutine(PushRun(newBest));
+            RunReported?.Invoke(score, newBest, unranked);
+            if (State == Status.Online) StartCoroutine(PushRun(_runLevel, newBest));
         }
 
         private void SaveLocal() {

@@ -28,6 +28,11 @@ public static class ArenaDifficulty {
         }
     }
 
+    // the levels with an online ranking, main one first. Easier runs don't count.
+    public static readonly ArenaLevel[] Ranked = { ArenaLevel.Hard, ArenaLevel.Freny };
+
+    public static bool IsRanked(ArenaLevel level) => System.Array.IndexOf(Ranked, level) >= 0;
+
     public static string Label(ArenaLevel level) {
         switch (level) {
             case ArenaLevel.Easy: return "Fácil";

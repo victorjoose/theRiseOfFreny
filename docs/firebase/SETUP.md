@@ -63,8 +63,8 @@ Sem esse arquivo o jogo funciona normal, só que offline, e o painel do Tab avis
 1. Dê Play na `JoviScene` ou na `MaxScene`.
 2. No Console deve aparecer qualquer aviso com `[Online]` se algo der errado. Se não aparecer nada, o login funcionou.
 3. Aperte **Tab**: o status deve mostrar **Online**.
-4. Morra. A pontuação aparece no topo da tela e o leaderboard abre.
-5. No console do Firebase, em **Firestore Database > Dados**, devem aparecer as coleções `leaderboard` e `saves`.
+4. Jogue a Arena no modo Manual, no Difícil ou no Freny, e morra. A pontuação aparece no topo da tela e o leaderboard abre.
+5. No console do Firebase, em **Firestore Database > Dados**, devem aparecer as coleções `leaderboard_hard` (ou `leaderboard_freny`) e `saves`.
 
 ## Como funciona
 
@@ -73,7 +73,7 @@ Sem esse arquivo o jogo funciona normal, só que offline, e o painel do Tab avis
 | `OnlineServices.cs` | Se cria sozinho quando o jogo inicia (`RuntimeInitializeOnLoadMethod`), então não precisa mexer em nenhuma cena. Faz o login, sincroniza o save e detecta a morte do jogador. |
 | `FirebaseAuthService.cs` | Login anônimo, email/senha e renovação do token (o token dura 1 hora). O refresh token fica no PlayerPrefs. |
 | `FirestoreClient.cs` | Cliente mínimo do Firestore via REST: ler, gravar campos e fazer query. |
-| `LeaderboardService.cs` | Grava o melhor score em `leaderboard/{uid}` e busca o top 10. |
+| `LeaderboardService.cs` | Um ranking por dificuldade: grava o melhor score em `leaderboard_hard/{uid}` ou `leaderboard_freny/{uid}` e busca o top 10 de cada um. Só entram corridas da Arena jogadas no Manual do começo ao fim, no Difícil ou no Freny (`ArenaDifficulty.Ranked`). A coleção antiga `leaderboard` misturava todas as dificuldades e o jogo não grava mais nela. |
 | `CloudSaveService.cs` | Lê e grava `saves/{uid}`. |
 | `OnlineHUD.cs` | Painel provisório em IMGUI (Tab). A ideia é trocar por uma tela de verdade quando os menus forem refeitos. |
 
