@@ -282,13 +282,15 @@ public class GameMenus : MonoBehaviour {
     }
 
     private MenuPage PausePage() {
-        MenuPage page = new MenuPage(pauseStack.transform, "Pausado", 600f, new Vector2(0.5f, 0.5f));
         string scene = SceneManager.GetActiveScene().name;
+        bool arena = scene == ArenaScene;
+        // the arena's extra rows (mode, note, ranking) need a tighter column to fit a 720p screen
+        MenuPage page = new MenuPage(pauseStack.transform, "Pausado", 600f, new Vector2(0.5f, 0.5f), arena ? 5f : 10f);
 
         page.Button("Continuar", Resume);
         if (CampaignLevels.IsStage(scene)) {
             page.Button("Recomeçar fase", () => StartStage(scene));
-        } else if (scene == ArenaScene) {
+        } else if (arena) {
             ArenaControls(page);
         } else {
             page.Button(scene == ArenaScene ? "Nova corrida" : "Recomeçar", () => {
@@ -300,17 +302,22 @@ public class GameMenus : MonoBehaviour {
         page.Button("Guia", () => pauseStack.Push(GuideScreen.Guide(pauseStack)));
         page.Button("Configurações", () => pauseStack.Push(SettingsScreens.Settings(pauseStack)));
 
-        Button save = null;
-        save = page.Button("Salvar jogo", () => {
-            SaveSystem.SaveNow();
-            save.GetComponentInChildren<Text>().text = "Salvo no espaço " + (SaveSystem.ActiveSlot + 1);
-        });
+        // the arena keeps its progress (coins, XP, upgrades) as it goes: nothing to save by hand
+        if (!arena) {
+            Button save = null;
+            save = page.Button("Salvar jogo", () => {
+                SaveSystem.SaveNow();
+                save.GetComponentInChildren<Text>().text = "Salvo no espaço " + (SaveSystem.ActiveSlot + 1);
+            });
+        }
 
         page.Button("Menu principal", LoadMainMenu, HasMainMenu);
         if (CanQuit) {
             page.Button("Sair do jogo", Quit);
         }
-        page.Label("O jogo também salva sozinho a cada minuto e ao trocar de fase.");
+        if (!arena) {
+            page.Label("O jogo também salva sozinho a cada minuto e ao trocar de fase.");
+        }
         return page;
     }
 
