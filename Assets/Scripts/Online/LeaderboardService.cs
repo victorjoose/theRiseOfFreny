@@ -13,7 +13,8 @@ namespace Online {
 
     // One board per arena difficulty ("leaderboard_hard", "leaderboard_freny", "_medium", "_easy"), with
     // one document per player keyed by user id holding that player's best score there.
-    // firestore.rules only lets a score go up. The old mixed "leaderboard" is no longer used.
+    // firestore.rules only lets a score go up, and only as far as the run ticket (StartRun)
+    // allows for the time the run has lasted. The old mixed "leaderboard" is no longer used.
     public class LeaderboardService {
         public static string Collection(ArenaLevel level) => "leaderboard_" + level.ToString().ToLowerInvariant();
 
@@ -29,8 +30,16 @@ namespace Online {
             FirestoreFields fields = new FirestoreFields()
                 .Set("name", playerName)
                 .Set("score", score)
-                .SetTimestamp("updatedAt", DateTime.UtcNow);
+                .SetServerTime("updatedAt");
             yield return _db.Patch(Collection(level) + "/" + _auth.UserId, fields, done);
+        }
+
+        // The run ticket: marks, with the server's clock, that a run on this board starts now.
+        public IEnumerator StartRun(ArenaLevel level, Action<bool> done) {
+            FirestoreFields fields = new FirestoreFields()
+                .Set("board", Collection(level))
+                .SetServerTime("startedAt");
+            yield return _db.Patch("runs/" + _auth.UserId, fields, done);
         }
 
         // The player's own score on a board, 0 when they have none. done(null) on a network error.
@@ -47,7 +56,7 @@ namespace Online {
 
         // Renames the player's entry without touching the score.
         public IEnumerator Rename(ArenaLevel level, string playerName, Action<bool> done) {
-            FirestoreFields fields = new FirestoreFields().Set("name", playerName);
+            FirestoreFields fields = new FirestoreFields().Set("name", playerName).SetServerTime("updatedAt");
             yield return _db.Patch(Collection(level) + "/" + _auth.UserId, fields, done);
         }
 
