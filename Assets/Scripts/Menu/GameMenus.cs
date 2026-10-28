@@ -297,6 +297,7 @@ public class GameMenus : MonoBehaviour {
             });
         }
         page.Button("Ajuda", () => pauseStack.Push(HelpScreen.Help(pauseStack)));
+        page.Button("Guia", () => pauseStack.Push(GuideScreen.Guide(pauseStack)));
         page.Button("Configurações", () => pauseStack.Push(SettingsScreens.Settings(pauseStack)));
 
         Button save = null;
