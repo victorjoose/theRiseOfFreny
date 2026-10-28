@@ -259,12 +259,11 @@ namespace Online {
         }
 
         // Every run counts for the stats, but only an arena run played by hand from start to end
-        // on a ranked difficulty (Hard or Freny) goes to that difficulty's board. The GDD keeps
+        // goes to the board of its difficulty. The GDD keeps
         // idle play out of the manual "Freny Arena Online" ranking.
         private void ReportRun(long score, long coins, bool assisted) {
             string unranked = !_arenaRun ? "só a Arena tem ranking"
                 : assisted ? "corridas com o piloto automático não valem para o ranking"
-                : !ArenaDifficulty.IsRanked(_runLevel) ? "o ranking vale a partir do Difícil"
                 : null;
             bool newBest = unranked == null && score > BestFor(_runLevel);
             Save.runsPlayed++;

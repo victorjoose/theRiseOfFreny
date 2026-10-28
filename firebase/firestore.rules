@@ -6,7 +6,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // One board per ranked arena difficulty (leaderboard_hard, leaderboard_freny), with one
+    // One board per arena difficulty (leaderboard_hard, _freny, _medium, _easy), with one
     // entry per player holding their best score there. Anyone can read a board; a player can
     // only write their own entry, and the score can only go up.
     // "leaderboard" is the old board that mixed every difficulty; the game no longer writes it,
@@ -38,7 +38,7 @@ service cloud.firestore {
     }
 
     function isBoard(board) {
-      return board in ['leaderboard', 'leaderboard_hard', 'leaderboard_freny'];
+      return board in ['leaderboard', 'leaderboard_hard', 'leaderboard_freny', 'leaderboard_medium', 'leaderboard_easy'];
     }
 
     function isOwner(userId) {
