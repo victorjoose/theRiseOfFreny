@@ -8,7 +8,7 @@ O jogo tem três recursos online, todos em `Assets/Scripts/Online/`:
 
 ## Por que REST e não o Firebase Unity SDK
 
-O Firebase Unity SDK só tem suporte oficial para Android e iOS. No Windows/Mac/Linux ele roda apenas como "beta para desenvolvimento" e não funciona em WebGL. Como o Ryse of Freny é um jogo de PC, a integração usa as APIs REST do Firebase com `UnityWebRequest`. Assim não tem pacote nativo para importar, nada muda no `Packages/manifest.json`, e o mesmo código funciona em PC, WebGL e mobile.
+O Firebase Unity SDK só tem suporte oficial para Android e iOS. No Windows/Mac/Linux ele roda apenas como "beta para desenvolvimento" e não funciona em WebGL. Como o The Rise of Freny é um jogo de PC, a integração usa as APIs REST do Firebase com `UnityWebRequest`. Assim não tem pacote nativo para importar, nada muda no `Packages/manifest.json`, e o mesmo código funciona em PC, WebGL e mobile.
 
 Se um dia o jogo for para celular e precisar de Crashlytics ou push, dá para adicionar o SDK nessa hora.
 
