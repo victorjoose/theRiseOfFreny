@@ -72,8 +72,8 @@ service cloud.firestore {
     }
 
     // sig = sha256("<key>|<uid>|<board>|<score>") in hex, made by ScoreSignature.cs.
-    // __SCORE_KEY__ is replaced by the secret when the rules are published; the secret is not
-    // in this repository (see docs/firebase/SETUP.md).
+    // The key below is a placeholder that Tools/ScoreKey/make_score_key.py swaps for the secret;
+    // the secret is not in this repository (see docs/firebase/SETUP.md).
     function validSig(board, userId) {
       let d = request.resource.data;
       return d.sig == hashing.sha256('__SCORE_KEY__|' + userId + '|' + board + '|' + string(d.score)).toHexString().lower();
