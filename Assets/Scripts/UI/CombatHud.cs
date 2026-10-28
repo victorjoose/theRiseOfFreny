@@ -44,8 +44,8 @@ public class CombatHud : MonoBehaviour {
             }
         }
 
-        // the game is over or a menu is up: only the hearts row stays (uGUI, hidden by the menus)
-        if (player.IsDead || GameMenus.Paused) {
+        // a menu is up: nothing (the menus hide the uGUI HUD too)
+        if (GameMenus.Paused) {
             return;
         }
 
@@ -55,14 +55,19 @@ public class CombatHud : MonoBehaviour {
         }
         labelStyle.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * scale));
 
-        Rect head;
-        float heartsRight, rowRight, rowMiddle;
-        FindHeartsRow(scale, out head, out heartsRight, out rowRight, out rowMiddle);
-        // the energy (Corrida) and Rage bars right under the portrait and the hearts
-        DrawBars(head.xMin, head.yMax + 6f * scale, heartsRight - head.xMin, scale);
-        // the weapons loose on the right of the hearts (and of the armor hearts' places)
-        float size = 84f * scale;   // the sword and gun sprites are small inside their frames
-        weaponsRight = DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
+        // the game is over: only the hearts row and the score stay
+        if (!player.IsDead) {
+            Rect head;
+            float heartsRight, rowRight, rowMiddle;
+            FindHeartsRow(scale, out head, out heartsRight, out rowRight, out rowMiddle);
+            heartsMiddle = rowMiddle;
+            // the energy (Corrida) and Rage bars right under the portrait and the hearts
+            DrawBars(head.xMin, head.yMax + 6f * scale, heartsRight - head.xMin, scale);
+            // the weapons loose on the right of the hearts (and of the armor hearts' places)
+            float size = 84f * scale;   // the sword and gun sprites are small inside their frames
+            weaponsRight = DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
+        }
+        DrawScore(scale);
     }
 
     // the portrait and hearts of the uGUI HUD, on screen in GUI coordinates (y down); a fixed
@@ -178,64 +183,71 @@ public class CombatHud : MonoBehaviour {
         }
         UpdatePortrait();
         UpdateArmorHearts();
-        MoveScore();
+        HideScoreTexts();
     }
 
-    // ---- the scene's Score and Combo texts: right of centre, and always clear of the weapons ----
+    // ---- Score and Combo: right of centre, and always clear of the weapons ----
+    // The scene's own texts sit on nested canvases with a zero z scale and can't be moved (moving
+    // them changes nothing on screen), so they are hidden and their text is drawn here instead.
 
-    private static readonly string[] ScoreParts = { "ScoreTitleText", "ScoreText", "ComboTitleText", "ComboText" };
-    private readonly List<RectTransform> scoreParts = new List<RectTransform>();
-    private readonly List<Vector3> scoreHome = new List<Vector3>();
-    private float weaponsRight = -1f;   // screen x where the weapon icons end (OnGUI)
+    private Text scoreTitle, scoreValue, comboTitle, comboValue;
     private bool scoreSearched;
+    private float weaponsRight = -1f;   // screen x where the weapon icons end
+    private float heartsMiddle = -1f;   // screen y of the hearts row, to keep the score on that line
+    private GUIStyle scoreStyle;
 
-    private void MoveScore() {
-        if (!scoreSearched) {
-            scoreSearched = true;
-            foreach (Text text in FindCompat.All<Text>()) {
-                if (System.Array.IndexOf(ScoreParts, text.name) >= 0) {
-                    scoreParts.Add(text.rectTransform);
-                }
-            }
-            // a part inside another part moves with it
-            scoreParts.RemoveAll(part => scoreParts.Exists(other => other != part && part.IsChildOf(other)));
-            foreach (RectTransform part in scoreParts) {
-                scoreHome.Add(part.position);
+    private void FindScoreTexts() {
+        scoreSearched = true;
+        foreach (Text text in FindCompat.All<Text>(true)) {
+            switch (text.name) {
+                case "ScoreTitleText": scoreTitle = text; break;
+                case "ScoreText": scoreValue = text; break;
+                case "ComboTitleText": comboTitle = text; break;
+                case "ComboText": comboValue = text; break;
+                default: continue;
             }
         }
-        if (scoreParts.Count == 0 || weaponsRight < 0f) {
+    }
+
+    // invisible but still enabled: ComboManager blinks the combo by switching enabled on and
+    // off, and that blink is copied below
+    private void HideScoreTexts() {
+        foreach (Text text in new[] { scoreTitle, scoreValue, comboTitle, comboValue }) {
+            if (text != null) {
+                text.canvasRenderer.SetAlpha(0f);
+            }
+        }
+    }
+
+    private void DrawScore(float scale) {
+        if (!scoreSearched) {
+            FindScoreTexts();
+        }
+        if (scoreValue == null) {
             return;
         }
-        float left = float.MaxValue, right = float.MinValue;
-        for (int i = 0; i < scoreParts.Count; i++) {
-            if (scoreParts[i] == null) {
-                return;
-            }
-            scoreParts[i].position = scoreHome[i];
-            Rect r = ScreenRect(scoreParts[i]);
-            left = Mathf.Min(left, r.xMin);
-            right = Mathf.Max(right, r.xMax);
+        if (scoreStyle == null) {
+            scoreStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.UpperLeft };
         }
-        // a bit right of the centre (José), and never over the last weapon icon
-        float scale = Screen.width / 1920f;
-        float wantLeft = Screen.width * 0.58f - (right - left) / 2f;
-        wantLeft = Mathf.Max(wantLeft, weaponsRight + 40f * scale);
-        float dx = wantLeft - left;
-        for (int i = 0; i < scoreParts.Count; i++) {
-            scoreParts[i].position = ScreenShift(scoreParts[i], scoreHome[i], dx);
-        }
-    }
+        string score = (scoreTitle != null ? scoreTitle.text : "Score: ") + scoreValue.text;
+        HideScoreTexts();
+        bool combo = comboValue != null && comboValue.gameObject.activeInHierarchy;
+        // the value blinks while the combo runs out, like the old text
+        string comboLine = combo ? (comboTitle != null ? comboTitle.text + " " : "Combo: ") + (comboValue.enabled ? comboValue.text : "") : null;
 
-    // the world position dx screen pixels to the right of home, on this rect's canvas
-    private static Vector3 ScreenShift(RectTransform rect, Vector3 home, float dx) {
-        Canvas canvas = rect.GetComponentInParent<Canvas>();
-        Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-        Vector2 screen = RectTransformUtility.WorldToScreenPoint(camera, home) + new Vector2(dx, 0f);
-        RectTransform parent = rect.parent as RectTransform;
-        if (parent != null && RectTransformUtility.ScreenPointToWorldPointInRectangle(parent, screen, camera, out Vector3 world)) {
-            return new Vector3(world.x, world.y, home.z);
+        int scoreSize = Mathf.Max(10, Mathf.RoundToInt(40f * scale));
+        int comboSize = Mathf.Max(8, Mathf.RoundToInt(26f * scale));
+        scoreStyle.fontSize = scoreSize;
+        float width = scoreStyle.CalcSize(new GUIContent(score)).x;
+        // a bit right of the centre (José), and never over the last weapon icon
+        float x = Mathf.Max(Screen.width * 0.58f - width / 2f, weaponsRight + 40f * scale);
+        // on the line of the hearts and coins (the uGUI row moves with the screen's shape)
+        float y = heartsMiddle > 0f ? heartsMiddle - scoreSize * 0.8f : 34f * scale;
+        ShadowLabel(new Rect(x, y, width + 20f, scoreSize * 1.4f), score, scoreStyle);
+        if (comboLine != null) {
+            scoreStyle.fontSize = comboSize;
+            ShadowLabel(new Rect(x, y + scoreSize * 1.5f, 600f * scale, comboSize * 1.4f), comboLine, scoreStyle);
         }
-        return home;
     }
 
     private void UpdatePortrait() {
@@ -300,6 +312,10 @@ public class CombatHud : MonoBehaviour {
 
     // white text with a dark outline, readable over the cave background
     private void ShadowLabel(Rect rect, string text) {
+        ShadowLabel(rect, text, labelStyle);
+    }
+
+    private static void ShadowLabel(Rect rect, string text, GUIStyle labelStyle) {
         Color old = GUI.color;
         Color oldText = labelStyle.normal.textColor;
         labelStyle.normal.textColor = Color.black;
