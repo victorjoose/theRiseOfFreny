@@ -70,7 +70,7 @@ public static class GuideScreen {
     private static void Defense(Transform parent, MenuArt art) {
         Entry(parent, art ? art.heart : null, "Vida",
             "4 corações. Golpe comum tira 1; Golem e a bola do Feiticeiro tiram 2. Depois de " +
-            "apanhar ele pisca 0,8 s sem levar dano. Queda alta também tira vida.");
+            "apanhar ele pisca 1,2 s sem levar dano. Queda alta também tira vida.");
         Entry(parent, art ? art.rageHelmet : null, "Fúria",
             "A barra Fúria enche lutando: matar, acertar a espada e apanhar. Parada 2 s, ela " +
             "esvazia. Cheia, dá 20 s de FÚRIA: a espada tira 2 de dano.");
