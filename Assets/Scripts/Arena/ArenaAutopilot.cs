@@ -597,6 +597,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         foreach (ArenaVase vase in ArenaVase.Active) {
             Consider(vase ? vase.transform : null, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, "o vaso");
         }
+        foreach (Breakable prop in Breakable.Active) {
+            if (prop && !prop.Broken) {
+                Consider(prop.transform, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, prop.Describe());
+            }
+        }
         foreach (ItemPickup item in ItemPickup.Active) {
             if (item && item.Landed && item.UsefulTo(player)) {
                 // items count as closer than coins: a potion or ammo matters more than a coin
@@ -606,7 +611,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (bestDist == float.MaxValue) {
             return false;
         }
-        bool isChest = what == "o baú" || what == "o vaso";   // both open only when hit
+        bool isChest = what == "o baú" || what == "o vaso" || what == "a caixa" || what == "o barril";   // they open only when hit
         float dx = best.x - me.x;
 
         if (bestPlatform != myPlatform) {
@@ -624,7 +629,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             } else if (player.AttackReady) {
                 frame.meleePressed = true;
             }
-            action = what == "o vaso" ? "Quebrando o vaso" : "Quebrando o baú";
+            action = "Quebrando " + what;
             return true;
         }
         if (Mathf.Abs(dx) < 0.15f) {

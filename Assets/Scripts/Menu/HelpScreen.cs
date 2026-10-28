@@ -77,7 +77,6 @@ public static class HelpScreen {
         if (device == Device.Keyboard) {
             Line(lines, "Piloto (Arena)", "Liga e desliga o automático", "T");
             Line(lines, "Minimapa", "Mostra ou esconde o mapa", "M");
-            Line(lines, "Mercador", "Abre a loja, de perto", "E");
         }
     }
 
@@ -92,7 +91,7 @@ public static class HelpScreen {
             case GameAction.Potion: return "Bebe uma poção e cura";
             case GameAction.Pistol: return "Troca para a pistola";
             case GameAction.Shotgun: return "Troca para a escopeta";
-            case GameAction.Interact: return "Entra em portas";
+            case GameAction.Interact: return "Entra em portas e abre a loja";
             case GameAction.Pause: return "Pausa, ajuda e configurações";
             default: return "";
         }

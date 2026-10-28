@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -6,6 +7,8 @@ using UnityEngine.Tilemaps;
 // objects that any hit breaks (sword, bullet, grenade), like the arena's ArenaVase: CampaignBootstrap
 // calls FromTilemaps, which takes each of those tiles off its tilemap and puts this in its place.
 // A broken one bursts into shards and rolls the same drop as an arena vase (ItemPickup.RollVaseDrop).
+// ArenaBootstrap does the same for ZE Arena's props, which grow back a while after breaking, since
+// an arena run never leaves the screen.
 public class Breakable : MonoBehaviour, IDamageable {
 
     public enum Kind { Vase, Barrel, Crate }
@@ -13,10 +16,16 @@ public class Breakable : MonoBehaviour, IDamageable {
     private const float FrameTime = 0.07f;
     private const float VaseFrameScale = 0.7f;   // the arena's breaking vase is drawn bigger than the tileset's
 
+    public static readonly List<Breakable> Active = new List<Breakable>();
+
     public int Health { get; set; } = 1;
     private Kind kind;
     private bool broken;
     private SpriteRenderer sprite;
+    private Sprite tileSprite;
+    private Color tileColor;
+    private Vector3 tilePosition;
+    private float regrowAfter;   // 0: gone for good once broken (the campaign)
 
     private static Kind? KindOf(Sprite sprite) {
         if (sprite == null) {
@@ -32,8 +41,8 @@ public class Breakable : MonoBehaviour, IDamageable {
         }
     }
 
-    // returns how many it made
-    public static int FromTilemaps() {
+    // returns how many it made; regrowAfter > 0 brings each broken one back after that many seconds
+    public static int FromTilemaps(float regrowAfter = 0f) {
         int made = 0;
         foreach (Tilemap tilemap in FindCompat.All<Tilemap>()) {
             // solid tilemaps (the ground) never hold props
@@ -53,14 +62,14 @@ public class Breakable : MonoBehaviour, IDamageable {
                 Vector3 cellSize = tilemap.layoutGrid != null ? tilemap.layoutGrid.cellSize : Vector3.one;
                 Vector3 position = tilemap.CellToWorld(cell) + Vector3.Scale(tilemap.tileAnchor, cellSize);
                 tilemap.SetTile(cell, null);
-                Create(kind.Value, tileSprite, position, color, matrix.lossyScale.x < 0f, layer);
+                Create(kind.Value, tileSprite, position, color, matrix.lossyScale.x < 0f, layer, regrowAfter);
                 made++;
             }
         }
         return made;
     }
 
-    private static void Create(Kind kind, Sprite tileSprite, Vector3 position, Color color, bool flip, TilemapRenderer layer) {
+    private static void Create(Kind kind, Sprite tileSprite, Vector3 position, Color color, bool flip, TilemapRenderer layer, float regrowAfter) {
         GameObject obj = new GameObject(kind.ToString());
         obj.transform.position = position;
         SpriteRenderer renderer = obj.AddComponent<SpriteRenderer>();
@@ -84,6 +93,29 @@ public class Breakable : MonoBehaviour, IDamageable {
         Breakable breakable = obj.AddComponent<Breakable>();
         breakable.kind = kind;
         breakable.sprite = renderer;
+        breakable.tileSprite = tileSprite;
+        breakable.tileColor = color;
+        breakable.tilePosition = position;
+        breakable.regrowAfter = regrowAfter;
+    }
+
+    private void OnEnable() {
+        Active.Add(this);
+    }
+
+    private void OnDisable() {
+        Active.Remove(this);
+    }
+
+    public bool Broken => broken;
+
+    // what the autopilot calls it ("Quebrando o barril")
+    public string Describe() {
+        switch (kind) {
+            case Kind.Barrel: return "o barril";
+            case Kind.Crate: return "a caixa";
+            default: return "o vaso";
+        }
     }
 
     // the opaque part of a 100 px tile (the props stand at its bottom), in the sprite's local units
@@ -94,7 +126,7 @@ public class Breakable : MonoBehaviour, IDamageable {
         return new Bounds(center, size);
     }
 
-    private Vector3 Center => transform.position + (Vector3)GetComponent<BoxCollider2D>().offset;
+    public Vector3 Center => transform.position + (Vector3)GetComponent<BoxCollider2D>().offset;
 
     public void Damage() {
         if (broken) {
@@ -102,6 +134,7 @@ public class Breakable : MonoBehaviour, IDamageable {
         }
         broken = true;
         Health = 0;
+        Active.Remove(this);
         Vector3 center = Center;
         foreach (Collider2D c in GetComponents<Collider2D>()) {
             c.enabled = false;
@@ -140,6 +173,28 @@ public class Breakable : MonoBehaviour, IDamageable {
             sprite.color = new Color(color.r, color.g, color.b, color.a * (1f - t / 0.4f));
             yield return null;
         }
-        Destroy(gameObject);
+        if (regrowAfter <= 0f) {
+            Destroy(gameObject);
+            yield break;
+        }
+        sprite.enabled = false;
+        yield return new WaitForSeconds(regrowAfter * Random.Range(0.8f, 1.2f));
+        Regrow();
+    }
+
+    // back as it was painted, with a puff of dust
+    private void Regrow() {
+        transform.localScale = Vector3.one;
+        transform.position = tilePosition;
+        sprite.sprite = tileSprite;
+        sprite.color = tileColor;
+        sprite.enabled = true;
+        foreach (Collider2D c in GetComponents<Collider2D>()) {
+            c.enabled = true;
+        }
+        broken = false;
+        Health = 1;
+        Active.Add(this);
+        Fx.Dust(Center + Vector3.down * 0.25f, 3);
     }
 }

@@ -133,7 +133,7 @@ public static class FrenyProgress {
             case FrenyUpgrade.DoubleJump: return "Pulo duplo (pule de novo no ar)";
             case FrenyUpgrade.Shotgun: return "Escopeta (3 tiros)";
             case FrenyUpgrade.GreatSword: return "Espadão (golpe mais largo)";
-            case FrenyUpgrade.Grenade: return "Granada (G)";
+            case FrenyUpgrade.Grenade: return "Granada (" + InputBindings.KeyName(InputBindings.Keyboard(GameAction.Grenade)) + ")";
             case FrenyUpgrade.Reaction: return "Reação mais rápida";
             case FrenyUpgrade.DashDodge: return "Esquiva com dash";
             case FrenyUpgrade.AutoPotion: return "Usar poção sozinho";
