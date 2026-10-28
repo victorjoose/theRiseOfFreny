@@ -40,7 +40,7 @@ public class ArenaDayNight : MonoBehaviour {
     private static readonly Color DuskBottom = new Color32(244, 148, 96, 255);
 
     // global light: the scene's own colour at night, warm white by day, orange at dawn and dusk
-    private const float DayLightBoost = 1.35f;
+    private const float DayLightBoost = 1.8f;
     private static readonly Color DayLight = new Color(1f, 0.97f, 0.9f);
     private static readonly Color DuskLight = new Color(1f, 0.68f, 0.55f);
     private static readonly Color BlueTorchLight = new Color(0.3f, 0.6f, 1f);
