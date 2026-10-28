@@ -72,7 +72,7 @@ public class FrenyMotion : MonoBehaviour {
     // the helmet is its own layer over the body frames: Rage and Berserker (armor) repaint it.
     // Tools/ArtGen/freny_heads.py cuts one head per body frame, named after that frame.
     private SpriteRenderer head;
-    private Dictionary<string, Sprite> rageHeads, berserkerHeads;
+    private Dictionary<string, Sprite> rageHeads, berserkerHeads, rageBerserkerHeads;
     public SpriteRenderer HeadRenderer => head;
 
     // poses the Animator has no state for, drawn over its frame: crouching (and slashing or
@@ -113,6 +113,7 @@ public class FrenyMotion : MonoBehaviour {
     private void BuildHead() {
         rageHeads = LoadHeads("FrenyHeads/rage");
         berserkerHeads = LoadHeads("FrenyHeads/berserker");
+        rageBerserkerHeads = LoadHeads("FrenyHeads/rage_berserker");
         poses = LoadHeads("FrenyPoses/poses");
         head = new GameObject("Head").AddComponent<SpriteRenderer>();
         head.transform.SetParent(body.transform, false);
@@ -140,9 +141,11 @@ public class FrenyMotion : MonoBehaviour {
         return heads;
     }
 
-    // Rage wins over the Berserker armor; the grey helmet is the body frame itself
+    // Rage turns the Berserker helmet red, so Rage with armor looks unlike either alone; the grey
+    // helmet is the body frame itself
     private void UpdateHead() {
         Dictionary<string, Sprite> set = player == null ? null
+            : player.Raging && player.Armor > 0 ? rageBerserkerHeads
             : player.Raging ? rageHeads
             : player.Armor > 0 ? berserkerHeads
             : null;

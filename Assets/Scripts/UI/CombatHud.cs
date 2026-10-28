@@ -250,6 +250,18 @@ public class CombatHud : MonoBehaviour {
         }
     }
 
+    // Rage with the Berserker armor: the Berserker helmet in red, made by Tools/ArtGen/freny_heads.py
+    private static Sprite rageBerserkerIcon;
+    private static Sprite RageBerserkerIcon {
+        get {
+            if (rageBerserkerIcon == null) {
+                Sprite[] sprites = Resources.LoadAll<Sprite>("FrenyHeads/rage_berserker_icon");
+                rageBerserkerIcon = sprites.Length > 0 ? sprites[0] : null;
+            }
+            return rageBerserkerIcon;
+        }
+    }
+
     private void UpdatePortrait() {
         if (portrait == null) {
             foreach (Image image in UIManager.Instance.GetComponentsInChildren<Image>(true)) {
@@ -263,7 +275,8 @@ public class CombatHud : MonoBehaviour {
                 return;
             }
         }
-        Sprite want = player.Raging ? Icon(rageHelmetIcon, a => a.rageHelmetIcon)
+        Sprite want = player.Raging && player.Armor > 0 && RageBerserkerIcon != null ? RageBerserkerIcon
+            : player.Raging ? Icon(rageHelmetIcon, a => a.rageHelmetIcon)
             : player.Armor > 0 ? Icon(armorHelmetIcon, a => a.armorHelmetIcon)
             : null;
         if (want == null) {
