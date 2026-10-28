@@ -30,6 +30,7 @@ public class GameMenus : MonoBehaviour {
     private int lastScreenWidth;
     private int lastScreenHeight;
     private readonly List<Canvas> hiddenHuds = new List<Canvas>();
+    private MenuPage deathRanking;   // the ranking opened after a manual run: Space starts the next one
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap() {
@@ -72,6 +73,11 @@ public class GameMenus : MonoBehaviour {
             Instance.Resume();
         }
         SceneManager.LoadScene(ArenaScene);
+    }
+
+    public static void StartArena(bool manual) {
+        ArenaDifficulty.Manual = manual;
+        StartArena();
     }
 
     // the last stage (or the arena) of the active save, else the furthest open stage
@@ -160,6 +166,8 @@ public class GameMenus : MonoBehaviour {
             if (InputBindings.GetDown(GameAction.Pause)) {
                 Pause();
             }
+        } else if (deathRanking != null && pauseStack.Top == deathRanking && InputBindings.GetDown(GameAction.Jump)) {
+            StartArena(ArenaDifficulty.Manual);
         }
         if (Time.unscaledTime >= nextAutosave) {
             nextAutosave = Time.unscaledTime + AutosaveSeconds;
@@ -201,11 +209,25 @@ public class GameMenus : MonoBehaviour {
             MenuKit.Stretch(shade.rectTransform);
             pauseStack = pauseCanvas.gameObject.AddComponent<MenuStack>();
             pauseStack.OnRootCancel = Resume;
-            pauseStack.ExtraCancel = () => InputBindings.GetDown(GameAction.Pause);
+            pauseStack.ExtraCancel = () => InputBindings.GetDown(GameAction.Pause) || (RankingOpen && Input.GetKeyDown(KeyCode.Tab));
         }
         pauseCanvas.gameObject.SetActive(true);
         pauseStack.ResetTo(PausePage());
     }
+
+    // the arena ranking over the paused game (Tab, or on its own after a manual run ends);
+    // afterRun adds "Nova corrida", also on Space
+    public void ShowRanking(bool afterRun) {
+        Pause();
+        deathRanking = OnlineScreens.Ranking(pauseStack, this, ArenaDifficulty.Current,
+            afterRun ? (System.Action)(() => StartArena(ArenaDifficulty.Manual)) : null, afterRun ? "Ver a arena" : "Voltar ao jogo");
+        pauseStack.ResetTo(deathRanking);
+        if (!afterRun) {
+            deathRanking = null;
+        }
+    }
+
+    public bool RankingOpen => paused && pauseStack != null && pauseStack.Top != null && pauseStack.Top.Root.name == "Page Ranking";
 
     // testers did not know the buttons: the first run opens the pause menu on the Help page
     private System.Collections.IEnumerator ShowHelpFirstTime() {
@@ -220,6 +242,7 @@ public class GameMenus : MonoBehaviour {
             return;
         }
         paused = false;
+        deathRanking = null;
         if (pauseStack != null) {
             pauseStack.Clear();
             pauseStack.Busy = false;
@@ -257,6 +280,8 @@ public class GameMenus : MonoBehaviour {
         page.Button("Continuar", Resume);
         if (CampaignLevels.IsStage(scene)) {
             page.Button("Recomeçar fase", () => StartStage(scene));
+        } else if (scene == ArenaScene) {
+            ArenaControls(page);
         } else {
             page.Button(scene == ArenaScene ? "Nova corrida" : "Recomeçar", () => {
                 Resume();
@@ -277,6 +302,50 @@ public class GameMenus : MonoBehaviour {
             page.Button("Sair do jogo", Quit);
         }
         page.Label("O jogo também salva sozinho a cada minuto e ao trocar de fase.");
+        return page;
+    }
+
+    // the arena: Auto on or off right here, and "Nova corrida" asks automatic or manual, so the
+    // mode changes without going back to the main menu. Only a run played by hand from start to
+    // end counts for the ranking (OnlineServices), so switching mid-run says what that means.
+    private void ArenaControls(MenuPage page) {
+        FrenyInput input = FindAnyObjectByType<FrenyInput>();
+        Online.OnlineServices online = Online.OnlineServices.Instance;
+        bool ranked = online != null && online.State != Online.OnlineServices.Status.Disabled;
+        Text note = null;
+        System.Action<bool> explain = on => {
+            if (on) {
+                note.text = ranked ? "Modo automático ligado: esta corrida não vale para o ranking se o piloto jogar" : "Modo automático ligado";
+            } else if (ranked && online.RunAssisted) {
+                note.text = "Modo manual: só vai contar para o ranking a partir da próxima corrida";
+            } else {
+                note.text = ranked ? "Modo manual: esta corrida vale para o ranking" : "Modo manual";
+            }
+        };
+        bool auto = input != null ? input.AutoEnabled : !ArenaDifficulty.Manual;
+        page.Choice("Modo automático", new[] { "Ligado", "Desligado" }, auto ? 0 : 1, i => {
+            bool on = i == 0;
+            if (input != null) {
+                input.SetAutoEnabled(on);
+            }
+            ArenaDifficulty.Manual = !on;   // the next run starts the same way
+            explain(on);
+        });
+        note = page.Label("");
+        explain(auto);
+        page.Button("Nova corrida", () => pauseStack.Push(NewRunPage()));
+        if (ranked) {
+            page.Button("Ranking", () => pauseStack.Push(OnlineScreens.Ranking(pauseStack, this, ArenaDifficulty.Current)));
+        }
+    }
+
+    private MenuPage NewRunPage() {
+        MenuPage page = new MenuPage(pauseStack.transform, "Nova corrida", 560f, new Vector2(0.5f, 0.5f));
+        page.Label("Dificuldade: " + ArenaDifficulty.Label(ArenaDifficulty.Current), MenuKit.TextSize);
+        Button auto = page.BigButton("Automática", "O piloto joga quando você para. Não vale para o ranking", () => StartArena(false));
+        Button manual = page.BigButton("Manual", "Só você joga. Vale para o ranking", () => StartArena(true));
+        page.Button("Voltar", pauseStack.Back);
+        page.SelectFirst = ArenaDifficulty.Manual ? manual : auto;
         return page;
     }
 

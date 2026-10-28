@@ -207,6 +207,30 @@ public static class MenuKit {
         return slider;
     }
 
+    // a text box (name, email, password) on the right of a labelled row; Submit / click starts typing
+    public static InputField MakeInput(Transform parent, string label, string value, bool password, int maxLength) {
+        Image row = MakeRow(parent, label, out _);
+        Image box = MakeImage("Input", row.transform, new Color(0.03f, 0.02f, 0.06f, 1f));
+        Size(box, 300f, -1f);
+        Text text = MakeText(box.transform, "", SmallTextSize, TextColor, TextAnchor.MiddleLeft);
+        text.supportRichText = false;
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        Stretch(text.rectTransform);
+        text.rectTransform.offsetMin = new Vector2(8f, 0f);
+        text.rectTransform.offsetMax = new Vector2(-8f, 0f);
+        InputField input = box.gameObject.AddComponent<InputField>();
+        input.textComponent = text;
+        input.targetGraphic = row;
+        input.colors = Colors();
+        input.characterLimit = maxLength;
+        input.lineType = InputField.LineType.SingleLine;
+        input.contentType = password ? InputField.ContentType.Password : InputField.ContentType.Standard;
+        input.caretColor = TitleColor;
+        input.selectionColor = new Color(0.68f, 0.24f, 0.82f, 0.5f);
+        input.text = value ?? "";
+        return input;
+    }
+
     public static MenuChoice MakeChoice(Transform parent, string label, string[] options, int index, Action<int> onChange) {
         Image row = MakeRow(parent, label, out _);
         Text valueText = MakeText(row.transform, "", TextSize, TextColor, TextAnchor.MiddleRight);
