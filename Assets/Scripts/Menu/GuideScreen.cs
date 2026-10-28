@@ -66,7 +66,7 @@ public static class GuideScreen {
         Entry(parent, art ? art.grenade : null, "Granada",
             "Segure para carregar a força, solte para lançar em arco; sem espera entre uma e outra. " +
             "Explode em 1 s, ao tocar um inimigo ou ao cair no chão: 3 de dano em todos num raio " +
-            "grande (mata quase todos; o Golem Vermelho aguenta 2) e quebra baús e vasos. Cuidado: perto demais, o Freny " +
+            "grande (mata quase todos; o Golem Vermelho aguenta uma) e quebra baús e vasos. Cuidado: perto demais, o Freny " +
             "também leva 2 de dano e é arremessado. Até 6.");
     }
 
