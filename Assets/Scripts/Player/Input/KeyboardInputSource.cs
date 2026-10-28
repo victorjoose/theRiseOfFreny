@@ -30,6 +30,14 @@ public class KeyboardInputSource : IPlayerInputSource {
         }
 
         RawMove = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
+        // the on-screen stick of touch screens, when it is pushed further than keys or gamepad
+        if (Mathf.Abs(TouchControls.Horizontal) > Mathf.Abs(RawMove)) {
+            RawMove = TouchControls.Horizontal;
+        }
+        if (Mathf.Abs(TouchControls.Vertical) > Mathf.Abs(vertical)) {
+            vertical = TouchControls.Vertical;
+        }
         float move = Mathf.Abs(RawMove) < Deadzone ? 0f : Mathf.Sign(RawMove);
 
         return new PlayerInputFrame {
@@ -41,8 +49,8 @@ public class KeyboardInputSource : IPlayerInputSource {
             // Shift is the sprint on the ground and the dash in the air (Dash only fires in the air)
             dashPressed = InputBindings.GetDown(GameAction.Dash) || InputBindings.GetDown(GameAction.Run),
             runHeld = InputBindings.Get(GameAction.Run),
-            crouchHeld = Input.GetAxisRaw("Vertical") < -0.5f,
-            aimUpHeld = Input.GetAxisRaw("Vertical") > 0.5f,
+            crouchHeld = vertical < -0.5f,
+            aimUpHeld = vertical > 0.5f,
             selectPistol = InputBindings.GetDown(GameAction.Pistol),
             selectShotgun = InputBindings.GetDown(GameAction.Shotgun),
             potionPressed = InputBindings.GetDown(GameAction.Potion),

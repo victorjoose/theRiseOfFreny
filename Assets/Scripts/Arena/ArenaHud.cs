@@ -30,7 +30,13 @@ public class ArenaHud : MonoBehaviour {
         director = FindAnyObjectByType<ArenaDirector>();
     }
 
+    // the panels (U) and the AI sliders (I) are dev tools: only in the Editor and Development builds
+    private static bool Available => Debug.isDebugBuild;
+
     private void Update() {
+        if (!Available) {
+            return;
+        }
         if (Input.GetKeyDown(togglePanelKey)) {
             hidden = !hidden;
         }
@@ -40,7 +46,7 @@ public class ArenaHud : MonoBehaviour {
     }
 
     private void OnGUI() {
-        if (GameMenus.Paused || hidden) {
+        if (!Available || GameMenus.Paused || hidden) {
             return;
         }
         if (player == null || input == null) {

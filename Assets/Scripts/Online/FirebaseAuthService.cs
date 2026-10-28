@@ -46,6 +46,8 @@ namespace Online {
 
         // Turns the current anonymous account into an email/password account,
         // keeping the same user id (and so the same leaderboard entry and save).
+        // Linking goes through signUp with the idToken, as the Firebase SDKs do: "update" is
+        // refused while email enumeration protection is on ("verify the new email first").
         public IEnumerator LinkEmail(string email, string password, Action<bool, string> done) {
             string token = null;
             yield return GetIdToken(t => token = t);
@@ -55,7 +57,7 @@ namespace Online {
             }
             string body = "{\"idToken\":\"" + Json.Escape(token) + "\",\"email\":\"" + Json.Escape(email) +
                           "\",\"password\":\"" + Json.Escape(password) + "\",\"returnSecureToken\":true}";
-            yield return PostIdentity("update", body, done);
+            yield return PostIdentity("signUp", body, done);
         }
 
         // Signs in to an existing email account, e.g. on a second computer.

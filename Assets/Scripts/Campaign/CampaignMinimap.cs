@@ -114,7 +114,8 @@ public class CampaignMinimap : MonoBehaviour {
     }
 
     private void OnGUI() {
-        if (!visible || map == null || GameMenus.Paused || player == null) {
+        // touch screens have no M key and their buttons sit in the minimap's corner
+        if (!visible || map == null || GameMenus.Paused || player == null || TouchControls.Active) {
             return;
         }
         float scale = Screen.height / 1080f;
