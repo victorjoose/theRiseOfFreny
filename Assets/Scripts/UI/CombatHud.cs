@@ -60,6 +60,7 @@ public class CombatHud : MonoBehaviour {
             Rect head;
             float heartsRight, rowRight, rowMiddle;
             FindHeartsRow(scale, out head, out heartsRight, out rowRight, out rowMiddle);
+            heartsMiddle = rowMiddle;
             // the energy (Corrida) and Rage bars right under the portrait and the hearts
             DrawBars(head.xMin, head.yMax + 6f * scale, heartsRight - head.xMin, scale);
             // the weapons loose on the right of the hearts (and of the armor hearts' places)
@@ -182,6 +183,7 @@ public class CombatHud : MonoBehaviour {
         }
         UpdatePortrait();
         UpdateArmorHearts();
+        HideScoreTexts();
     }
 
     // ---- Score and Combo: right of centre, and always clear of the weapons ----
@@ -191,6 +193,7 @@ public class CombatHud : MonoBehaviour {
     private Text scoreTitle, scoreValue, comboTitle, comboValue;
     private bool scoreSearched;
     private float weaponsRight = -1f;   // screen x where the weapon icons end
+    private float heartsMiddle = -1f;   // screen y of the hearts row, to keep the score on that line
     private GUIStyle scoreStyle;
 
     private void FindScoreTexts() {
@@ -203,7 +206,16 @@ public class CombatHud : MonoBehaviour {
                 case "ComboText": comboValue = text; break;
                 default: continue;
             }
-            text.enabled = false;   // the game keeps writing to it; this draws it
+        }
+    }
+
+    // invisible but still enabled: ComboManager blinks the combo by switching enabled on and
+    // off, and that blink is copied below
+    private void HideScoreTexts() {
+        foreach (Text text in new[] { scoreTitle, scoreValue, comboTitle, comboValue }) {
+            if (text != null) {
+                text.canvasRenderer.SetAlpha(0f);
+            }
         }
     }
 
@@ -218,8 +230,10 @@ public class CombatHud : MonoBehaviour {
             scoreStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.UpperLeft };
         }
         string score = (scoreTitle != null ? scoreTitle.text : "Score: ") + scoreValue.text;
+        HideScoreTexts();
         bool combo = comboValue != null && comboValue.gameObject.activeInHierarchy;
-        string comboLine = combo ? (comboTitle != null ? comboTitle.text + " " : "Combo: ") + comboValue.text : null;
+        // the value blinks while the combo runs out, like the old text
+        string comboLine = combo ? (comboTitle != null ? comboTitle.text + " " : "Combo: ") + (comboValue.enabled ? comboValue.text : "") : null;
 
         int scoreSize = Mathf.Max(10, Mathf.RoundToInt(40f * scale));
         int comboSize = Mathf.Max(8, Mathf.RoundToInt(26f * scale));
@@ -227,7 +241,8 @@ public class CombatHud : MonoBehaviour {
         float width = scoreStyle.CalcSize(new GUIContent(score)).x;
         // a bit right of the centre (José), and never over the last weapon icon
         float x = Mathf.Max(Screen.width * 0.58f - width / 2f, weaponsRight + 40f * scale);
-        float y = 34f * scale;
+        // on the line of the hearts and coins (the uGUI row moves with the screen's shape)
+        float y = heartsMiddle > 0f ? heartsMiddle - scoreSize * 0.8f : 34f * scale;
         ShadowLabel(new Rect(x, y, width + 20f, scoreSize * 1.4f), score, scoreStyle);
         if (comboLine != null) {
             scoreStyle.fontSize = comboSize;
