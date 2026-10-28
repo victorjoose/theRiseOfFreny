@@ -14,6 +14,7 @@ public class GameMenus : MonoBehaviour {
 
     public static GameMenus Instance { get; private set; }
     public static bool Paused => Instance != null && Instance.paused;
+    public static bool SawTouch => Application.isMobilePlatform || (Instance != null && Instance.sawTouch);
 
     private bool paused;
     private bool gameplayScene;
@@ -114,6 +115,9 @@ public class GameMenus : MonoBehaviour {
         if (CampaignLevels.IsStage(scene.name) || scene.name == ArenaScene) {
             SaveSystem.SetLastScene(scene.name);
             StartCoroutine(Loadout.ApplyAtStageStart());
+            if (HelpScreen.FirstTime) {
+                StartCoroutine(ShowHelpFirstTime());
+            }
         }
         SaveSystem.SaveNow();
         nextAutosave = Time.unscaledTime + AutosaveSeconds;
@@ -184,6 +188,14 @@ public class GameMenus : MonoBehaviour {
         pauseStack.ResetTo(PausePage());
     }
 
+    // testers did not know the buttons: the first run opens the pause menu on the Help page
+    private System.Collections.IEnumerator ShowHelpFirstTime() {
+        yield return null;   // after the scene's Start, so its HUD is there to hide
+        yield return null;
+        Pause();
+        pauseStack.Push(HelpScreen.Help(pauseStack));
+    }
+
     public void Resume() {
         if (!paused) {
             return;
@@ -232,6 +244,7 @@ public class GameMenus : MonoBehaviour {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             });
         }
+        page.Button("Ajuda", () => pauseStack.Push(HelpScreen.Help(pauseStack)));
         page.Button("Configurações", () => pauseStack.Push(SettingsScreens.Settings(pauseStack)));
 
         Button save = null;

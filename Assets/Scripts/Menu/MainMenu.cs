@@ -86,6 +86,7 @@ public class MainMenu : MonoBehaviour {
         }
         page.Button("Jogar", () => stack.Push(PlayPage()), true, CompactRow);
         page.Button("Configurações", () => stack.Push(SettingsScreens.Settings(stack)), true, CompactRow);
+        page.Button("Ajuda", () => stack.Push(HelpScreen.Help(stack)), true, CompactRow);
         if (Online.OnlineServices.Instance != null && Online.OnlineServices.Instance.State != Online.OnlineServices.Status.Disabled) {
             page.Button("Online", () => Online.OnlineHUD.Instance?.SetOpen(true), true, CompactRow);
             page.Button("Ranking", () => stack.Push(RankingPage()), true, CompactRow);
