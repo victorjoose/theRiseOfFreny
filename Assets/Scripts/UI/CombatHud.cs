@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 // What Freny carries and when it is ready again, drawn around the hearts of the uGUI HUD the
 // same way in the arena and in the campaign: under the portrait and hearts the Corrida energy
-// (yellow, only while not full) and Rage (red); on the right of the hearts the weapons, loose:
+// (yellow) and Rage (red); on the right of the hearts the weapons, loose:
 // sword charge, revolver bullets, shells, grenade. It also adds the armor hearts after the
 // life hearts and swaps the portrait's helmet (red in Rage, Berserker with armor). Lives on
 // the FrenyHud prefab (campaign) or on the player (arena, added by ArenaBootstrap; icons come
@@ -61,7 +61,7 @@ public class CombatHud : MonoBehaviour {
         // the energy (Corrida) and Rage bars right under the portrait and the hearts
         DrawBars(head.xMin, head.yMax + 6f * scale, heartsRight - head.xMin, scale);
         // the weapons loose on the right of the hearts (and of the armor hearts' places)
-        float size = 48f * scale;
+        float size = 84f * scale;   // the sword and gun sprites are small inside their frames
         DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
     }
 
@@ -155,14 +155,12 @@ public class CombatHud : MonoBehaviour {
         }
     }
 
-    // Corrida is an energy bar (yellow), shown only while it is not full; Rage (red) under it,
+    // Corrida is an energy bar (yellow), always shown; Rage (red) under it,
     // filled by kills and drained over the 20 s of Rage
     private void DrawBars(float x, float y, float width, float scale) {
         float height = 10f * scale;
         float run = player.RunMeter;
-        if (run < 1f || player.IsRunning) {
-            DrawMeter(new Rect(x, y, width, height), run, player.IsRunning ? EnergyColor : EnergyRefillColor);
-        }
+        DrawMeter(new Rect(x, y, width, height), run, player.IsRunning || run >= 1f ? EnergyColor : EnergyRefillColor);
         y += height + 6f * scale;
         DrawMeter(new Rect(x, y, width, height), player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : RageFillColor, RageBack);
         if (player.Raging) {
