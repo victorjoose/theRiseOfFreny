@@ -43,6 +43,7 @@ public static class HelpScreen {
 
         Text tip = page.Label("", MenuKit.SmallTextSize);
         tip.text = "Agachar+Pular desce plataformas. Teclas: Configurações > Controles";
+        page.Space(6f);
         page.Button("Voltar", stack.Back);
         return page;
     }
