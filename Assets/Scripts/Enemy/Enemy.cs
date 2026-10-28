@@ -136,6 +136,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private float restUntil;
     private float backOffUntil;
     private Transform ownPatrolA, ownPatrolB; // the patrol ends after it changed platforms
+    private float dropDir;                   // the side of its platform it walks to, to drop down to the target (0: none)
+    private float dropEdgeX;
+    private float nextDropPlan;
+    private const float DropScan = 16f;      // how far along its platform it looks for an edge
 
     // the collider's shape relative to the root, cached once. Feet and Center are computed from the
     // transform with it, not read from col.bounds: the bounds lag one physics step behind a transform
@@ -583,6 +587,17 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (canJump && herFeet > myFeet + 0.6f && TryJumpUp(dir)) {
             return; // she is on a platform above
         }
+        if (Climbs && herFeet < myFeet - 0.6f) {
+            // she is on a floor below: head for an edge it can walk off, not for the spot over her head
+            if (PlanDrop(Target.position.x, herFeet, out float dropX)) {
+                targetX = ArenaBounds.ClampX(dropX, 0.5f);
+                step = targetX - transform.position.x;
+                dir = step >= 0f ? 1f : -1f;
+            }
+        } else {
+            dropDir = 0f;
+            nextDropPlan = 0f;
+        }
         if (Mathf.Abs(step) < 0.01f) {
             return;
         }
@@ -593,7 +608,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             return; // never into a wall or onto spikes
         }
         if (!GroundAhead(dir)) {
-            if (canJump && herFeet < myFeet - 0.6f) {
+            if (canJump && herFeet < myFeet - 0.6f && FloorBelowEdge(Feet.x + dir * (HalfWidth + 0.15f), dir, out _)) {
                 StartAirborne(new Vector2(dir * MoveSpeed, 0f), false); // she is below: step off the edge
             } else if (canJump) {
                 TryJumpAcross(dir); // a gap at this height
@@ -705,6 +720,103 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             }
         }
         return false;
+    }
+
+    // She is on a floor below. Walking towards her x only gets it off its platform when she is beyond
+    // the edge: with her right underneath it just followed her along the top (the Licker on Hard).
+    // Enemies never drop through a platform the way Freny does with S+Space, so they go round: this
+    // looks for the edges of its own platform it can walk off onto a floor (not a pit or spikes) and
+    // picks the side with the shortest way to her. Returns the x to walk to, a little past that edge.
+    private bool PlanDrop(float herX, float herFeet, out float goalX) {
+        if (Time.time >= nextDropPlan) {
+            nextDropPlan = Time.time + 0.4f;
+            float feetX = Feet.x;
+            float bestDir = 0f, bestEdge = 0f, bestCost = float.PositiveInfinity;
+            float keepEdge = 0f, keepCost = float.PositiveInfinity;
+            for (int side = 0; side < 2; side++) {
+                float d = side == 0 ? -1f : 1f;
+                if (!FindDropEdge(d, out float edgeX, out Vector2 landing)) {
+                    continue;
+                }
+                float cost = Mathf.Abs(edgeX - feetX) + Mathf.Abs(landing.x - herX) + Mathf.Abs(landing.y - herFeet);
+                if (d == dropDir) {
+                    keepCost = cost;
+                    keepEdge = edgeX;
+                }
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestDir = d;
+                    bestEdge = edgeX;
+                }
+            }
+            // keeps the side it chose unless the other is clearly shorter, so Freny pacing underneath
+            // doesn't turn it back and forth
+            if (keepCost <= bestCost + 3f) {
+                bestDir = dropDir;
+                bestEdge = keepEdge;
+            }
+            dropDir = bestDir;
+            dropEdgeX = bestEdge;
+        }
+        goalX = dropEdgeX + dropDir * 1f;
+        return dropDir != 0f;
+    }
+
+    // walks the platform in direction `d` (as GroundAhead sees it) up to the first spot with no floor
+    // ahead; a wall, spikes or the arena's side first means there is no way down on that side
+    private bool FindDropEdge(float d, out float edgeX, out Vector2 landing) {
+        edgeX = 0f;
+        landing = Vector2.zero;
+        if (col == null) {
+            return false;
+        }
+        Vector3 feet = Feet;
+        float ahead = HalfWidth + 0.15f;
+        float wall = DropScan + ahead;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.useTriggers = false;
+        filter.SetLayerMask(GroundMask);
+        int count = Physics2D.Raycast(new Vector2(feet.x, feet.y + StepUp + 0.05f), new Vector2(d, 0f), filter, groundHits, wall);
+        for (int i = 0; i < count; i++) {
+            if (!groundHits[i].collider.usedByEffector) {
+                wall = Mathf.Min(wall, groundHits[i].distance);
+            }
+        }
+        for (float off = 0f; off <= DropScan && off + ahead < wall; off += 0.25f) {
+            float x = feet.x + d * off;
+            if (ArenaBounds.Active && !ArenaBounds.Inside(x, 0.5f)) {
+                return false;
+            }
+            float probeX = x + d * ahead;
+            if (Hazard.At(new Vector2(probeX, feet.y + 0.1f))) {
+                return false;
+            }
+            if (Physics2D.Raycast(new Vector2(probeX, feet.y + 0.3f), Vector2.down, 1.3f, GroundMask).collider != null) {
+                continue;
+            }
+            edgeX = x;
+            return FloorBelowEdge(probeX, d, out landing);
+        }
+        return false;
+    }
+
+    // the floor it lands on after walking off the edge at `edgeX` (it drifts on a little while falling):
+    // none when it is a pit, spikes, or below the level
+    private bool FloorBelowEdge(float edgeX, float d, out Vector2 landing) {
+        landing = Vector2.zero;
+        Vector3 feet = Feet;
+        float x = edgeX + d * (HalfWidth + 0.4f);
+        RaycastHit2D hit = Physics2D.Raycast(new Vector2(x, feet.y - 0.1f), Vector2.down, 30f, GroundMask);
+        if (hit.collider == null || hit.point.y > feet.y - 0.6f) {
+            return false;
+        }
+        float killY = ArenaBounds.Active ? ArenaBounds.Bottom - 3f
+            : CampaignRun.Instance ? CampaignRun.Instance.PitY : float.NegativeInfinity;
+        if (hit.point.y < killY || Hazard.At(hit.point + Vector2.up * 0.1f)) {
+            return false;
+        }
+        landing = hit.point;
+        return true;
     }
 
     // a ballistic hop whose apex is `apex` above the feet, landing at `landing`
