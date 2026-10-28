@@ -30,7 +30,7 @@ public class Sorcerer : Enemy {
         SorcererCastPosition = FindCastPosition();
     }
 
-    protected override Color DeathColor => predictive ? new Color(0.8f, 0.4f, 1f) : new Color(0.45f, 0.3f, 0.7f);
+    protected override Color DeathColor => predictive ? new Color(1f, 0.3f, 0.3f) : new Color(0.45f, 0.3f, 0.7f);
     protected override string SoundName => predictive ? "supreme" : "sorcerer";
 
     // the sorcerer stands still and casts on a steady rhythm; the Fire animation event calls Attack()
