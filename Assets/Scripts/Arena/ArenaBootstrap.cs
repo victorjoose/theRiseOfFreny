@@ -37,6 +37,12 @@ public static class ArenaBootstrap {
         // (enemies are kinematic bodies and would shove Freny: each one ignores his collider in
         // Enemy.Init, here and in the campaign, so he walks through them)
 
+        if (!System.Array.Exists(FindCompat.All<ArenaDayNight>(), d => d.gameObject.scene == scene)) {
+            GameObject dayNight = new GameObject("Day Night");
+            SceneManager.MoveGameObjectToScene(dayNight, scene);
+            dayNight.AddComponent<ArenaDayNight>();
+        }
+
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {
             return;

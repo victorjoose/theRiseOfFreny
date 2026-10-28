@@ -63,12 +63,18 @@ public static class BrightnessLights {
             if (light.lightType != Light2D.LightType.Global) {
                 continue;
             }
-            if (!baseIntensity.TryGetValue(light, out float intensity)) {
-                intensity = light.intensity;
-                baseIntensity[light] = intensity;
-            }
-            light.intensity = intensity * factor;
+            light.intensity = BaseIntensity(light) * factor;
         }
+    }
+
+    // the intensity a global light was painted with, before the Brilho factor (the arena's day and
+    // night cycle multiplies it too)
+    public static float BaseIntensity(Light2D light) {
+        if (!baseIntensity.TryGetValue(light, out float intensity)) {
+            intensity = light.intensity;
+            baseIntensity[light] = intensity;
+        }
+        return intensity;
     }
 }
 #endif
