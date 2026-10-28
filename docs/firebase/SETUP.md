@@ -37,16 +37,7 @@ Os passos abaixo servem para recriar tudo em outro projeto.
 1. Vá em **Build > Firestore Database > Criar banco de dados**.
 2. Escolha uma região perto dos jogadores (por exemplo `southamerica-east1`, São Paulo).
 3. Comece em **modo de produção**.
-4. Na aba **Regras**, apague o que estiver lá, cole o conteúdo de [`firebase/firestore.rules`](../../firebase/firestore.rules) e clique em **Publicar**.
-
-Ou, com a Firebase CLI instalada:
-
-```bash
-cd firebase
-firebase login
-firebase use --add   # escolha o projeto
-firebase deploy --only firestore:rules
-```
+4. Gere a chave de assinatura do ranking (passo 5) e, na aba **Regras**, apague o que estiver lá, cole o conteúdo de `Tools/ScoreKey/firestore.rules.publish` e clique em **Publicar**. Não publique o `firebase/firestore.rules` direto: ele tem `__SCORE_KEY__` no lugar da chave, e aí nenhuma pontuação seria aceita.
 
 ### 4. Configurar o jogo
 
@@ -56,7 +47,20 @@ firebase deploy --only firestore:rules
 
 Esse arquivo está no `.gitignore`. A `apiKey` do Firebase não é um segredo de verdade (ela vai dentro de qualquer build do jogo), quem protege os dados são as regras do Firestore. Mesmo assim, fora do repositório fica mais fácil trocar de projeto.
 
-Sem esse arquivo o jogo funciona normal, só que offline, e o painel do Tab avisa que os recursos online estão desligados.
+### 5. Chave de assinatura do ranking
+
+O jogo assina cada pontuação (`ScoreSignature.cs`) e as regras só aceitam pontuações com a assinatura certa. A chave não pode ir para o repositório, que é público:
+
+```bash
+python Tools/ScoreKey/make_score_key.py caminho/da/score.key          # chave que já existe
+python Tools/ScoreKey/make_score_key.py --new caminho/da/score.key    # chave nova
+```
+
+Isso escreve `Assets/Scripts/Online/ScoreKey.cs` (o jogo) e `Tools/ScoreKey/firestore.rules.publish` (as regras com a chave), os dois no `.gitignore`. A chave atual fica nos arquivos do projeto no Claude (`firebase/score.key`). Trocar a chave exige publicar as regras novas e soltar um build novo juntos. Um build sem `ScoreKey.cs` roda normal, mas não manda pontuação para o ranking.
+
+As regras também exigem o "ticket" da corrida (`runs/{uid}`, gravado com a hora do servidor quando uma corrida da Arena começa) e só aceitam uma pontuação que caiba no tempo real da corrida (`maxScoreAfter`).
+
+Sem o `FirebaseConfig.json` o jogo funciona normal, só que offline, e o painel do Tab avisa que os recursos online estão desligados.
 
 ### 5. Testar
 

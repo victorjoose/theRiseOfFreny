@@ -11,10 +11,12 @@ namespace Online {
     // https://firebase.google.com/docs/firestore/use-rest-api
     public class FirestoreClient {
         private readonly string _baseUrl;
+        private readonly string _docRoot;   // documents' resource name prefix, for :commit
         private readonly FirebaseAuthService _auth;
 
         public FirestoreClient(string projectId, FirebaseAuthService auth) {
-            _baseUrl = "https://firestore.googleapis.com/v1/projects/" + projectId + "/databases/(default)/documents";
+            _docRoot = "projects/" + projectId + "/databases/(default)/documents";
+            _baseUrl = "https://firestore.googleapis.com/v1/" + _docRoot;
             _auth = auth;
         }
 
@@ -31,6 +33,12 @@ namespace Online {
 
         // Creates or updates only the given fields of a document.
         public IEnumerator Patch(string path, FirestoreFields fields, Action<bool> done) {
+            if (fields.HasServerTimes) {
+                // PATCH can't ask for the server's clock; a commit with field transforms can
+                yield return Send("POST", ":commit", fields.ToCommitJson(_docRoot + "/" + path),
+                    (code, _) => done?.Invoke(code == 200));
+                yield break;
+            }
             StringBuilder query = new StringBuilder();
             foreach (string name in fields.Names) {
                 query.Append(query.Length == 0 ? "?" : "&");
@@ -72,8 +80,10 @@ namespace Online {
     // Builds the "fields" object of a Firestore document in its typed-value JSON format.
     public class FirestoreFields {
         private readonly Dictionary<string, string> _values = new Dictionary<string, string>();
+        private readonly List<string> _serverTimes = new List<string>();
 
         public IEnumerable<string> Names => _values.Keys;
+        public bool HasServerTimes => _serverTimes.Count > 0;
 
         public FirestoreFields Set(string name, string value) {
             _values[name] = "{\"stringValue\":\"" + Json.Escape(value) + "\"}";
@@ -94,6 +104,32 @@ namespace Online {
             string iso = utc.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
             _values[name] = "{\"timestampValue\":\"" + iso + "\"}";
             return this;
+        }
+
+        // The field gets the time the server receives the write (firestore.rules can check it
+        // against request.time, so the client's clock can't be faked).
+        public FirestoreFields SetServerTime(string name) {
+            if (!_serverTimes.Contains(name)) _serverTimes.Add(name);
+            return this;
+        }
+
+        // A :commit body with one write that updates only these fields of the document.
+        public string ToCommitJson(string documentName) {
+            StringBuilder sb = new StringBuilder("{\"writes\":[{\"update\":{\"name\":\"");
+            sb.Append(Json.Escape(documentName)).Append("\",").Append(ToJson().Substring(1)).Append(',');
+            sb.Append("\"updateMask\":{\"fieldPaths\":[");
+            bool first = true;
+            foreach (string name in _values.Keys) {
+                if (!first) sb.Append(',');
+                sb.Append('"').Append(Json.Escape(name)).Append('"');
+                first = false;
+            }
+            sb.Append("]},\"updateTransforms\":[");
+            for (int i = 0; i < _serverTimes.Count; i++) {
+                if (i > 0) sb.Append(',');
+                sb.Append("{\"fieldPath\":\"").Append(Json.Escape(_serverTimes[i])).Append("\",\"setToServerValue\":\"REQUEST_TIME\"}");
+            }
+            return sb.Append("]}]}").ToString();
         }
 
         public string ToJson() {

@@ -180,17 +180,13 @@ namespace Online {
 
             if (localAhead) yield return _saves.Save(Save, null);
 
-            // each ranked board: keep the higher of this device's best and the server's
+            // each ranked board: the server's best is the one that counts. A score only gets there
+            // at the end of the run that made it (firestore.rules checks it against the run's ticket),
+            // so a better local best (an offline run, or an edited save) is not uploaded.
             foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
                 long? server = null;
                 yield return _leaderboard.GetOwn(level, s => server = s);
-                if (server == null) continue;
-                long local = BestFor(level);
-                if (local > server.Value) {
-                    yield return _leaderboard.SubmitBest(level, Save.playerName, local, null);
-                } else {
-                    SetBest(level, server.Value);
-                }
+                if (server != null) SetBest(level, server.Value);
             }
         }
 
@@ -240,6 +236,9 @@ namespace Online {
                 if (!_sawAlive && _player != null) {
                     // Player.coins is the persistent total (FrenyProgress), so count this run's share.
                     _coinsAtStart = _player.coins;
+                }
+                if (!_sawAlive && _arenaRun && State == Status.Online) {
+                    StartCoroutine(_leaderboard.StartRun(_runLevel, null));
                 }
                 _sawAlive = true;
                 if (_input != null && _input.IsAutopilotDriving) {
