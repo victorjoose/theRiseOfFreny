@@ -10,8 +10,10 @@ public class MainMenu : MonoBehaviour {
     private static readonly string[] OldButtons = { "Start", "Options", "Quit" };
     private const float CompactRow = 38f;
 
+    // the campaign stays closed until the beta: only the Arena is played for now
+    public static readonly bool CampaignOpen = false;
+
     private MenuStack stack;
-    private bool onlineWasOpen;
 
     private void Start() {
         foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects()) {
@@ -54,22 +56,6 @@ public class MainMenu : MonoBehaviour {
         }
     }
 
-    private void Update() {
-        // the online panel is still IMGUI: hide the menu under it so clicks don't reach both
-        bool onlineOpen = Online.OnlineHUD.Instance != null && Online.OnlineHUD.Instance.IsOpen;
-        if (stack != null && stack.Top != null && onlineOpen != onlineWasOpen) {
-            stack.Top.Visible = !onlineOpen;
-            stack.enabled = !onlineOpen;
-            if (!onlineOpen) {
-                stack.ResetTo(MainPage());
-            }
-        }
-        if (onlineOpen && Input.GetButtonDown("Cancel")) {
-            Online.OnlineHUD.Instance.SetOpen(false);
-        }
-        onlineWasOpen = onlineOpen;
-    }
-
     private MenuPage MainPage() {
         MenuPage page = new MenuPage(stack.transform, "", 440f, new Vector2(0.5f, 0.5f), 4f);
         // under the title, on the right half of the art (title centre: x = 0.716 of the screen)
@@ -79,7 +65,9 @@ public class MainMenu : MonoBehaviour {
         page.Panel.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(20, 20, 14, 14);
         SaveData save = SaveSystem.Current;
 
-        if (save.HasProgress) {
+        if (!CampaignOpen) {
+            // nothing to continue yet: Jogar leads to the Arena
+        } else if (save.HasProgress) {
             page.BigButton("Continuar", save.ShortSummary, GameMenus.Continue);
         } else {
             page.Button("Começar", () => GameMenus.StartStage(CampaignLevels.All[0].id), true, CompactRow);
@@ -89,8 +77,8 @@ public class MainMenu : MonoBehaviour {
         page.Button("Ajuda", () => stack.Push(HelpScreen.Help(stack)), true, CompactRow);
         page.Button("Guia", () => stack.Push(GuideScreen.Guide(stack)), true, CompactRow);
         if (Online.OnlineServices.Instance != null && Online.OnlineServices.Instance.State != Online.OnlineServices.Status.Disabled) {
-            page.Button("Online", () => Online.OnlineHUD.Instance?.SetOpen(true), true, CompactRow);
-            page.Button("Ranking", () => stack.Push(RankingPage()), true, CompactRow);
+            page.Button("Ranking", () => stack.Push(OnlineScreens.Ranking(stack, this, ArenaDifficulty.Ranked[0])), true, CompactRow);
+            page.Button("Conta online", () => stack.Push(OnlineScreens.Account(stack)), true, CompactRow);
         }
         if (GameMenus.CanQuit) {
             page.Button("Sair", GameMenus.Quit, true, CompactRow);
@@ -101,69 +89,22 @@ public class MainMenu : MonoBehaviour {
     // Jogar: everything that starts or prepares a run
     private MenuPage PlayPage() {
         MenuPage page = new MenuPage(stack.transform, "Jogar", 520f, new Vector2(0.5f, 0.5f));
-        page.Button("Novo jogo", () => stack.Push(SlotsPage(true)));
-        page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)));
-        page.Button("Fases", () => stack.Push(StagesPage()));
-        page.Button("Arena", () => stack.Push(ArenaPage()), Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene));
+        page.Button(CampaignOpen ? "Campanha" : "Campanha (na versão beta)", () => stack.Push(CampaignPage()), CampaignOpen);
+        Button arena = page.Button("Arena", () => stack.Push(ArenaPage()), Application.CanStreamedLevelBeLoaded(GameMenus.ArenaScene));
         page.Button("Inventário", () => stack.Push(InventoryScreens.Inventory(stack)));
         page.Button("Armeiro", () => stack.Push(InventoryScreens.Armory(stack)));
         page.Button("Voltar", stack.Back);
+        page.SelectFirst = CampaignOpen ? null : arena;
         return page;
     }
 
-    // the arena's top 10 on each difficulty (Hard, the official one, first), refreshed from
-    // the server when the page opens
-    private MenuPage RankingPage() {
-        Online.OnlineServices online = Online.OnlineServices.Instance;
-        MenuPage page = new MenuPage(stack.transform, "Ranking", 560f, new Vector2(0.5f, 0.5f), 4f);
-        ArenaLevel board = ArenaDifficulty.Ranked[0];
-        Action fill = null;
-        string[] boardNames = System.Array.ConvertAll(ArenaDifficulty.Ranked, ArenaDifficulty.Label);
-        page.Choice("Dificuldade", boardNames, 0, i => {
-            board = ArenaDifficulty.Ranked[i];
-            fill();
-        });
-        Text status = page.Label("", MenuKit.SmallTextSize);
-        Text[] rows = new Text[Online.OnlineServices.LeaderboardSize];
-        for (int i = 0; i < rows.Length; i++) {
-            Image row = MenuKit.MakeRow(page.Content, "", out rows[i]);
-            row.color = new Color(1f, 1f, 1f, 0.04f);
-            MenuKit.Size(row, -1f, 30f);
-            rows[i].fontSize = MenuKit.SmallTextSize;
-            rows[i].supportRichText = true;
-        }
-        Text best = page.Label("", MenuKit.SmallTextSize);
-        page.Space(4f);
+    private MenuPage CampaignPage() {
+        MenuPage page = new MenuPage(stack.transform, "Campanha", 520f, new Vector2(0.5f, 0.5f));
+        page.Button("Novo jogo", () => stack.Push(SlotsPage(true)));
+        page.Button("Carregar jogo", () => stack.Push(SlotsPage(false)));
+        page.Button("Fases", () => stack.Push(StagesPage()));
         page.Button("Voltar", stack.Back);
-
-        fill = () => {
-            status.text = online.State == Online.OnlineServices.Status.Online ? "Só valem corridas manuais · o oficial é o do Difícil"
-                : online.State == Online.OnlineServices.Status.Connecting ? "Conectando..." : "Sem conexão: mostrando o último ranking";
-            string self = online.Auth != null ? online.Auth.UserId : null;
-            var top = online.TopFor(board);
-            for (int i = 0; i < rows.Length; i++) {
-                if (i >= top.Count) {
-                    rows[i].text = i == 0 ? "Ninguém no ranking ainda" : "";
-                    continue;
-                }
-                Online.LeaderboardEntry entry = top[i];
-                string line = (i + 1) + ". " + entry.name + "  " + entry.score;
-                rows[i].text = entry.userId == self ? "<color=#EE8FFC>" + line + "</color>" : line;
-            }
-            best.text = "Seu recorde no " + ArenaDifficulty.Label(board) + ": " + online.BestFor(board) + " · corridas: " + online.Save.runsPlayed;
-        };
-        fill();
-        StartCoroutine(RefreshRanking(online, page, fill));
         return page;
-    }
-
-    private System.Collections.IEnumerator RefreshRanking(Online.OnlineServices online, MenuPage page, Action fill) {
-        if (online.State == Online.OnlineServices.Status.Online) {
-            yield return online.RefreshLeaderboard();
-        }
-        if (page.Root != null) {   // still open
-            fill();
-        }
     }
 
     // newGame: pick a slot to start over in; otherwise pick a slot to continue

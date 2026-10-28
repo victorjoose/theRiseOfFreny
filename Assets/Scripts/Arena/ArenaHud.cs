@@ -64,7 +64,7 @@ public class ArenaHud : MonoBehaviour {
 
         string who;
         if (run && run.RunOver) {
-            who = $"Freny caiu após {run.RunSeconds:0}s (recorde {FrenyProgress.BestRunSeconds:0}s). Nova corrida em {run.SecondsUntilRestart:0}s";
+            who = $"Freny caiu após {run.RunSeconds:0}s (recorde {FrenyProgress.BestRunSeconds:0}s). " + (run.WaitsForKey ? "Espaço: nova corrida" : $"Nova corrida em {run.SecondsUntilRestart:0}s");
         } else if (input.IsAutopilotDriving) {
             who = "Autopiloto no controle (decisões no console)";
         } else if (input.AutoEnabled && input.HasAutopilot) {

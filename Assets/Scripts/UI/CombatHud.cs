@@ -18,10 +18,13 @@ public class CombatHud : MonoBehaviour {
     public Sprite armorHelmetIcon;
     public Sprite armorHeart;
 
-    private static readonly Color ReadyColor = new Color(0.35f, 0.9f, 0.35f);
-    private static readonly Color ChargingColor = new Color(1f, 0.6f, 0.2f);
-    private static readonly Color ActiveColor = new Color(0.3f, 0.8f, 1f);
+    // the menus' purple (MenuKit): pink when ready, dull violet while charging
+    private static readonly Color ReadyColor = MenuKit.TitleColor;
+    private static readonly Color ChargingColor = new Color(0.47f, 0.33f, 0.68f);
+    private static readonly Color ActiveColor = new Color(0.55f, 0.85f, 1f);
     private static readonly Color RageColor = new Color(1f, 0.25f, 0.2f);
+    private static readonly Color SlotColor = new Color(0.20f, 0.12f, 0.33f, 0.9f);
+    private static readonly Color MeterBack = new Color(0.04f, 0.02f, 0.08f, 1f);
 
     private Player player;
     private Dash dash;
@@ -44,18 +47,21 @@ public class CombatHud : MonoBehaviour {
 
         float scale = Screen.width / 1920f;
         if (labelStyle == null) {
-            labelStyle = new GUIStyle(GUI.skin.label);
+            labelStyle = new GUIStyle(GUI.skin.label) { font = MenuKit.Font, wordWrap = false, clipping = TextClipping.Overflow };
         }
-        labelStyle.fontSize = Mathf.Max(11, Mathf.RoundToInt(20f * scale));
+        labelStyle.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * scale));
         float size = 56f * scale;
         float x = 60f * scale;
         float y = 200f * scale; // a little under the portrait frame
         DrawWeapons(x, y, size, scale);
         // stacked on the left, below the sword bar, the bullet dots and the ammo counts
-        DrawCooldowns(60f * scale, y + size + 46f * scale, scale);
+        DrawCooldowns(60f * scale, y + size + 64f * scale, scale);
     }
 
     private void DrawWeapons(float x, float y, float size, float scale) {
+        int slots = 2 + (player.ShotgunOwned ? 1 : 0) + (player.Grenades > 0 ? 1 : 0);
+        float pad = 12f * scale;
+        DrawPanel(new Rect(x - pad, y - pad, slots * (size + IconGap(scale)) - IconGap(scale) + pad * 2f, size + 48f * scale), scale);
         float swordX = x;
         DrawIcon(player.GreatSwordActive ? Icon(greatSwordIcon, a => a.greatSwordIcon) : Icon(swordIcon, a => a.swordIcon), ref x, y, size);
         if (player.GreatSwordSwings > 0 && !FrenyProgress.HasGreatSword) {
@@ -107,14 +113,7 @@ public class CombatHud : MonoBehaviour {
             lastShotgun = shotgun;
             switchedAt = Time.time;
         }
-        float t = Mathf.Max(2f, 3f * scale);
-        Color old = GUI.color;
-        GUI.color = ReadyColor;
-        GUI.DrawTexture(new Rect(r.x, r.y, r.width, t), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(r.x, r.yMax - t, r.width, t), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(r.x, r.y, t, r.height), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(r.xMax - t, r.y, t, r.height), Texture2D.whiteTexture);
-        GUI.color = old;
+        DrawBorder(r, Mathf.Max(2f, 3f * scale), ReadyColor);
         if (Time.time - switchedAt < 1.2f) {
             ShadowLabel(new Rect(r.x, r.y - 30f * scale, 160f * scale, 28f * scale), shotgun ? "Escopeta" : "Pistola");
         }
@@ -122,9 +121,12 @@ public class CombatHud : MonoBehaviour {
 
     // run and dash readiness, so a key that does nothing shows why
     private void DrawCooldowns(float x, float y, float scale) {
-        float width = 170f * scale;
-        float height = 48f * scale;
+        float width = 216f * scale;
+        float height = 40f * scale;
         float step = height + 10f * scale;
+        int meters = dash ? 4 : 3;
+        float pad = 12f * scale;
+        DrawPanel(new Rect(x - pad, y - pad, width + pad * 2f, meters * step - 10f * scale + pad * 2f), scale);
         DrawLabeledMeter(new Rect(x, y, width, height), $"{(FrenyProgress.HasDoubleJump ? "Pulo duplo" : "Pulo")} ({Key(GameAction.Jump)})", player.JumpReady ? 1f : 0f,
             player.JumpReady ? ReadyColor : ChargingColor, scale);
         y += step;
@@ -139,7 +141,7 @@ public class CombatHud : MonoBehaviour {
         // kills fill it; full, it drains over the 20 s of Rage
         y += step;
         DrawLabeledMeter(new Rect(x, y, width, height), player.Raging ? $"FÚRIA! {Mathf.CeilToInt(player.RageLeft * 20f)}s" : "Fúria",
-            player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : new Color(0.75f, 0.3f, 0.25f), scale);
+            player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : new Color(0.8f, 0.3f, 0.45f), scale);
     }
 
     // ---- the uGUI part: helmet and armor hearts ------------------------------------------------
@@ -214,8 +216,8 @@ public class CombatHud : MonoBehaviour {
 
     private void DrawLabeledMeter(Rect rect, string label, float fill, Color color, float scale) {
         // label on top, a clear gap, then the bar
-        ShadowLabel(new Rect(rect.x, rect.y, rect.width + 40f * scale, rect.height - 18f * scale), label);
-        DrawMeter(new Rect(rect.x, rect.yMax - 10f * scale, rect.width, 10f * scale), fill, color);
+        ShadowLabel(new Rect(rect.x, rect.y, rect.width + 40f * scale, rect.height - 16f * scale), label);
+        DrawMeter(new Rect(rect.x, rect.yMax - 12f * scale, rect.width, 12f * scale), fill, color);
     }
 
     // white text with a dark outline, readable over the cave background
@@ -228,7 +230,7 @@ public class CombatHud : MonoBehaviour {
         GUI.Label(new Rect(rect.x + o, rect.y, rect.width, rect.height), text, labelStyle);
         GUI.Label(new Rect(rect.x, rect.y - o, rect.width, rect.height), text, labelStyle);
         GUI.Label(new Rect(rect.x, rect.y + o, rect.width, rect.height), text, labelStyle);
-        labelStyle.normal.textColor = Color.white;
+        labelStyle.normal.textColor = MenuKit.TextColor;
         GUI.Label(rect, text, labelStyle);
         labelStyle.normal.textColor = oldText;
         GUI.color = old;
@@ -258,18 +260,47 @@ public class CombatHud : MonoBehaviour {
         return ArenaAssets.Instance ? arena(ArenaAssets.Instance) : null;
     }
 
+    // a dark well with a violet edge, filled from the left
     private static void DrawMeter(Rect rect, float fill, Color color) {
+        float t = Mathf.Max(1f, rect.height / 6f);
+        Fill(rect, ButtonEdge);
+        Rect inner = new Rect(rect.x + t, rect.y + t, rect.width - 2f * t, rect.height - 2f * t);
+        Fill(inner, MeterBack);
+        Fill(new Rect(inner.x, inner.y, inner.width * Mathf.Clamp01(fill), inner.height), color);
+    }
+
+    private static readonly Color ButtonEdge = new Color(0.36f, 0.22f, 0.55f, 1f);
+
+    // the menus' panel: deep purple with a violet edge
+    private static void DrawPanel(Rect rect, float scale) {
+        Fill(rect, MenuKit.PanelColor * new Color(1f, 1f, 1f, 0.9f));
+        DrawBorder(rect, Mathf.Max(1f, 2f * scale), ButtonEdge);
+    }
+
+    private static void DrawBorder(Rect r, float t, Color color) {
+        Fill(new Rect(r.x, r.y, r.width, t), color);
+        Fill(new Rect(r.x, r.yMax - t, r.width, t), color);
+        Fill(new Rect(r.x, r.y, t, r.height), color);
+        Fill(new Rect(r.xMax - t, r.y, t, r.height), color);
+    }
+
+    private static void Fill(Rect rect, Color color) {
         Color old = GUI.color;
-        GUI.Box(rect, GUIContent.none);
-        GUI.color = color;
-        GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(fill), rect.height), Texture2D.whiteTexture);
+        GUI.color = color * old;
+        GUI.DrawTexture(rect, Texture2D.whiteTexture);
         GUI.color = old;
+    }
+
+    private static float IconGap(float scale) {
+        return 10f * scale;
     }
 
     private static void DrawIcon(Sprite sprite, ref float x, float y, float size, bool selected = true) {
         if (sprite == null) {
             return;
         }
+        float scale = Screen.width / 1920f;
+        Fill(new Rect(x, y, size, size), SlotColor);
         Color old = GUI.color;
         if (!selected) {
             GUI.color = new Color(old.r, old.g, old.b, old.a * 0.35f);
@@ -277,8 +308,14 @@ public class CombatHud : MonoBehaviour {
         Rect tr = sprite.textureRect;
         Texture tex = sprite.texture;
         Rect uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
-        GUI.DrawTextureWithTexCoords(new Rect(x, y, size, size), tex, uv);
+        // fit the drawn pixels in the slot, a little inset, without stretching
+        float inset = 6f * scale;
+        float box = size - 2f * inset;
+        float aspect = tr.width / Mathf.Max(1f, tr.height);
+        float w = aspect >= 1f ? box : box * aspect;
+        float h = aspect >= 1f ? box / aspect : box;
+        GUI.DrawTextureWithTexCoords(new Rect(x + (size - w) / 2f, y + (size - h) / 2f, w, h), tex, uv);
         GUI.color = old;
-        x += size + 6f;
+        x += size + IconGap(scale);
     }
 }
