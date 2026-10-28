@@ -77,7 +77,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     [SerializeField]
     protected float attackWindup = 0.35f; // seconds between the Attack animation and the hit
     [SerializeField]
-    protected float knockback = 0f; // horizontal push given to Freny by a hit (0 = none)
+    protected float knockback = 0f; // a heavy hit: shoves Freny this hard and knocks her down (0 = only the light shove)
+    // every hit pushes Freny back a little, so two enemies can't keep her pinned between them
+    private const float LightKnockback = 4f;
     private bool isPlayerInRange = false;
     private float patrolPositionTolerance = 0.1f;
     public LayerMask ignoreLayer;
@@ -151,8 +153,13 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // ground enemies are moved by their transform and kept on the floor by StickToGround; the Bat flies
     protected virtual bool WalksOnGround => true;
-    // the one-hit enemies (Bug, Bat), which the arena's harder levels speed up the most
+    // the one-hit enemies (Bug, Bat), which the arena's harder levels speed up the most. Any hit kills
+    // them, whatever the prefab or the scene says
     protected virtual bool Small => false;
+    // how hard Freny's hits push it back (units per second at the start of the push; heavy ones less)
+    protected virtual float HitPush => 6f;
+    private float pushVelocity;              // > 0 right, < 0 left; fades out over a moment
+    private const float PushDrag = 40f;
     // arena difficulty on attack rhythm (1 outside the arena)
     protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp : 1f;
 
@@ -198,7 +205,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
                 }
             }
         }
-        Health = health; // the inspector value
+        Health = Small ? 1 : health; // the inspector value
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
         hasMovingParam = anim && HasParameter(anim, "Moving");
         hasInCombatParam = anim && HasParameter(anim, "InCombat");
@@ -275,6 +282,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Vector3 before = transform.position;
         if (airborne) {
             MoveInAir();
+        } else if (UpdatePush()) {
+            if (WalksOnGround) {
+                StickToGround();
+            }
         } else {
             Movement();
             if (WalksOnGround) {
@@ -900,14 +911,20 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // hearts one hit takes (the Golem hits for 2)
     protected virtual int HitDamage => 1;
 
-    // damages Freny and, for heavy hitters, shoves her away from the enemy (she stays down for a moment)
+    // damages Freny and shoves her away from the enemy: a little for most, hard for heavy hitters
+    // (those knock her down for a moment)
     protected void HitPlayer() {
         if (!player.TryDamage(HitDamage)) {
             return;
         }
-        if (knockback > 0f) {
-            float dir = Mathf.Sign(player_t.position.x - transform.position.x);
+        float dir = Mathf.Sign(player_t.position.x - transform.position.x);
+        if (dir == 0f) {
+            dir = FacingRight ? 1f : -1f;
+        }
+        if (knockback > LightKnockback) {
             player.Knockback(new Vector2(dir * knockback, knockback * 0.5f));
+        } else {
+            player.Knockback(new Vector2(dir * LightKnockback, LightKnockback * 0.4f), false);
         }
     }
 
@@ -1015,7 +1032,37 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         TakeHit(true);
         if (Health < 1) {
             Die(true);
+        } else {
+            PushedBack();
         }
+    }
+
+    // a hit from Freny shoves it a little away from her (walkers only, and never through a wall,
+    // into spikes or off a ledge); it doesn't walk while the push lasts
+    private void PushedBack() {
+        if (!WalksOnGround || player_t == null || airborne) {
+            return;
+        }
+        float dir = Mathf.Sign(transform.position.x - player_t.position.x);
+        if (dir == 0f) {
+            dir = FacingRight ? -1f : 1f;
+        }
+        pushVelocity = dir * HitPush;
+    }
+
+    // moves it along the push; true while it is still being pushed (Update skips Movement)
+    protected bool UpdatePush() {
+        if (pushVelocity == 0f) {
+            return false;
+        }
+        float dir = Mathf.Sign(pushVelocity);
+        if (Blocked(dir) || !GroundAhead(dir)) {
+            pushVelocity = 0f;
+            return false;
+        }
+        transform.position += Vector3.right * (pushVelocity * Time.deltaTime);
+        pushVelocity = Mathf.MoveTowards(pushVelocity, 0f, PushDrag * Time.deltaTime);
+        return true;
     }
 
     // flinch, fight back, and bleed a few particles
