@@ -63,8 +63,10 @@ public static class GuideScreen {
             "3 balas em leque, 1 cartucho por tiro. Troque com o botão Escopeta. Vem de baús " +
             "da Arena ou do Armeiro (6 cartuchos por fase). Até 30 cartuchos.");
         Entry(parent, art ? art.grenade : null, "Granada",
-            "Segure para carregar a força, solte para lançar em arco. Explode em 1 s ou ao tocar " +
-            "um inimigo, acerta todos em volta e quebra baús e vasos. Até 6.");
+            "Segure para carregar a força, solte para lançar em arco; sem espera entre uma e outra. " +
+            "Explode em 1 s, ao tocar um inimigo ou ao cair no chão: 3 de dano em todos num raio " +
+            "grande (mata qualquer inimigo) e quebra baús e vasos. Cuidado: perto demais, o Freny " +
+            "também leva 2 de dano e é arremessado. Até 6.");
     }
 
     private static void Defense(Transform parent, MenuArt art) {

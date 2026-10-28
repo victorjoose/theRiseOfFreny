@@ -813,7 +813,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private bool InLobRange(Vector2 me, Enemy enemy) {
         float dx = enemy.transform.position.x - me.x;
-        if (Mathf.Abs(dx) < 1.5f || Mathf.Abs(dx) > 8f) {
+        // never so close that Freny would be caught in his own blast
+        if (Mathf.Abs(dx) < Grenade.BlastRadius + 1f || Mathf.Abs(dx) > 8f) {
             return false;
         }
         return player.GrenadeChargeFor(dx, enemy.Center.y - (me.y + 0.6f)) >= 0f;
