@@ -46,8 +46,10 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private float attackCooldown = 0.5f;  // the sword; the guns have their own
     [SerializeField] private float pistolCooldown = 0.2f;  // between revolver shots
     [SerializeField] private float shotgunCooldown = 0.6f;
-    [SerializeField] private float invulnerableTime = 0.8f; // blinking after a hit: two enemies landing together take one heart
+    // blinking after a hit: nothing can hurt her meanwhile, so enemies around her can't chain their hits
+    private const float InvulnerableTime = 1.2f;
     [SerializeField] private float stunTime = 0.3f;        // crouched and helpless after a knockback
+    private const float ShoveTime = 0.2f;                   // no control while a light hit shoves her back
     [SerializeField] private float knockbackDrag = 14f;    // how fast the shove dies out (units/s²)
     [SerializeField] private int shellsPerRun = 6;         // shotgun shells at the start of a run; chests add more
     [SerializeField] private int revolverCapacity = 4;     // shots before the revolver has to be reloaded
@@ -561,8 +563,9 @@ public class Player : MonoBehaviour, IDamageable {
         dropThroughPlatform = null;
     }
 
-    // a hit from a heavy enemy shoves Freny back and knocks her down for stunTime
-    public void Knockback(Vector2 velocity) {
+    // a hit from a heavy enemy shoves Freny back and knocks her down for stunTime; a light one
+    // (knockDown false) only pushes her away, still on her feet, for a moment
+    public void Knockback(Vector2 velocity, bool knockDown = true) {
         if (isDead || rg2d == null) {
             return;
         }
@@ -577,6 +580,10 @@ public class Player : MonoBehaviour, IDamageable {
 
         rg2d.SetVel(velocity);
         stunned = true;
+        if (!knockDown) {
+            stunnedUntil = Mathf.Max(stunnedUntil, Time.time + ShoveTime);
+            return;
+        }
         stunnedUntil = Time.time + stunTime;
         _playerAnim.Stunned(true);
         Sfx.Play("freny_stun", transform.position);
@@ -801,7 +808,7 @@ public class Player : MonoBehaviour, IDamageable {
         if (isDead || IsInvulnerable) {
             return false;
         }
-        invulnerableUntil = Time.time + invulnerableTime;
+        invulnerableUntil = Time.time + InvulnerableTime;
         AddRage(RagePerHurt);
         int toArmor = armorAbsorbs ? Mathf.Min(Armor, Mathf.Max(1, amount)) : 0;
         int toLife = Mathf.Max(1, amount) - toArmor;
