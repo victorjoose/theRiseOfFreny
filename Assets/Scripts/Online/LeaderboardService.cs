@@ -27,9 +27,16 @@ namespace Online {
         }
 
         public IEnumerator SubmitBest(ArenaLevel level, string playerName, long score, Action<bool> done) {
+            string sig = ScoreSignature.Sign(_auth.UserId, Collection(level), score);
+            if (sig == null) {
+                Debug.LogWarning("[Online] No ScoreKey.cs in this build, the score is not sent (see ScoreSignature.cs).");
+                done?.Invoke(false);
+                yield break;
+            }
             FirestoreFields fields = new FirestoreFields()
                 .Set("name", playerName)
                 .Set("score", score)
+                .Set("sig", sig)
                 .SetServerTime("updatedAt");
             yield return _db.Patch(Collection(level) + "/" + _auth.UserId, fields, done);
         }
