@@ -4,10 +4,9 @@ using UnityEngine;
 // An item lying on the floor: a potion, revolver bullets, shotgun shells, grenades, a shotgun, a
 // great sword (a few big swings), the Berserker helmet (armor) or a diamond (25 coins). Enemies drop
 // one now and then where they die; chests and vases hold them too. Built at runtime (no prefab): a
-// sprite, a soft halo behind it, a trigger and the same small arc and float as the coins. Freny
-// collects it by touching it;
-// an item he has no use for (a potion at full health, a full reserve, full armor) stays where it is
-// until it fades.
+// sprite, a soft halo behind it, a trigger and the same small arc as the coins, falling to rest
+// just above the floor. Freny collects it by touching it; an item he has no use for (a potion at
+// full health, a full reserve, full armor) stays where it is until it fades.
 public class ItemPickup : MonoBehaviour {
 
     public enum Kind { Potion, Bullets, Shells, Grenades, Shotgun, GreatSword, Armor, Diamond }
@@ -33,7 +32,9 @@ public class ItemPickup : MonoBehaviour {
     private const float PickupRadius = 0.45f;    // world units, whatever the art's size
     private const float HaloSize = 1.6f;         // halo diameter, relative to the art's longest side
     private static readonly Color HaloColor = new Color(1f, 0.88f, 0.5f, 0.5f);
-    private const float BobHeight = 0.12f;
+    private const float BobHeight = 0.06f;       // bobs up from its resting spot, never into the floor
+    private const float RestGap = 0.08f;         // how far the art's bottom rests above the floor
+    private const float MaxFallSpeed = 14f;
 
     public static readonly List<ItemPickup> Active = new List<ItemPickup>();
 
@@ -43,6 +44,7 @@ public class ItemPickup : MonoBehaviour {
     private Vector2 velocity;
     private bool tossing;
     private float hoverY;
+    private float restLift = 0.25f;  // from the floor to the pivot, so the art's bottom sits just above it
     private float bobPhase;
     private float dieAt;
     private SpriteRenderer sprite;
@@ -108,6 +110,7 @@ public class ItemPickup : MonoBehaviour {
         pickup.sprite = renderer;
         pickup.halo = haloRenderer;
         pickup.velocity = toss;
+        pickup.restLift = RestGap - art.min.y * scale;
         pickup.tossing = true;
         pickup.dieAt = Time.time + Lifetime;
         return pickup;
@@ -304,25 +307,22 @@ public class ItemPickup : MonoBehaviour {
             }
         }
         if (!tossing) {
-            // floats where the arc peaked, bobbing like the coins, so it is easy to see and reach
+            // rests just above the floor, bobbing a little like the coins
             Vector3 p = transform.position;
-            p.y = hoverY + Mathf.Sin(Time.time * 3f + bobPhase) * BobHeight;
+            p.y = hoverY + (Mathf.Sin(Time.time * 3f + bobPhase) + 1f) * 0.5f * BobHeight;
             transform.position = p;
             return;
         }
 
-        velocity.y += TossGravity * Time.deltaTime;
-        if (velocity.y <= 0f) {
-            Hover(transform.position.y);
-            return;
-        }
+        velocity.y = Mathf.Max(velocity.y + TossGravity * Time.deltaTime, -MaxFallSpeed);
         Vector3 pos = transform.position;
         Vector3 next = pos + (Vector3)(velocity * Time.deltaTime);
         if (velocity.y < 0f) {
+            // falls until the first floor under it
             float drop = pos.y - next.y;
-            RaycastHit2D hit = Physics2D.Raycast(pos, Vector2.down, drop + 0.25f, GroundMask);
+            RaycastHit2D hit = Physics2D.Raycast(pos, Vector2.down, drop + restLift, GroundMask);
             if (hit.collider != null) {
-                next.y = hit.point.y + 0.25f;
+                next.y = hit.point.y + restLift;
                 Hover(next.y);
             }
         }

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A coin lying in the arena: Freny collects it by touching it. Enemies drop one where they die;
-// a broken chest tosses a handful that fly out in a small arc and float where it peaks.
+// a broken chest tosses a handful that fly out in a small arc and fall to rest just above the floor.
 public class Coin : MonoBehaviour {
 
     public int coins = 1;
@@ -12,7 +12,9 @@ public class Coin : MonoBehaviour {
     private static int groundMask = -1;
     private static int GroundMask => groundMask >= 0 ? groundMask : (groundMask = LayerMask.GetMask("Ground"));
 
-    private const float BobHeight = 0.1f;
+    private const float BobHeight = 0.06f;  // bobs up from its resting spot, never into the floor
+    private const float RestLift = 0.2f;    // pivot above the floor
+    private const float MaxFallSpeed = 14f;
     private const float Lifetime = 29f;   // dropped coins: 25 s steady, then blink for the last 4 (like the items)
     private const float BlinkFor = 4f;
     private float dieAt = -1f;            // < 0: a coin placed in a level, it stays
@@ -62,9 +64,9 @@ public class Coin : MonoBehaviour {
             }
         }
         if (hovering) {
-            // a chest coin floats where its arc peaked, bobbing, easy to see and grab
+            // rests just above the floor, bobbing a little, easy to see and grab
             Vector3 p = transform.position;
-            p.y = hoverY + Mathf.Sin(Time.time * 3f + bobPhase) * BobHeight;
+            p.y = hoverY + (Mathf.Sin(Time.time * 3f + bobPhase) + 1f) * 0.5f * BobHeight;
             Place(p);
             return;
         }
@@ -72,26 +74,22 @@ public class Coin : MonoBehaviour {
             return;
         }
 
-        velocity.y += TossGravity * Time.deltaTime;
-        if (velocity.y <= 0f) {
-            tossing = false;
-            hovering = true;
-            hoverY = transform.position.y;
-            bobPhase = Random.Range(0f, Mathf.PI * 2f);
-            return;
-        }
+        velocity.y = Mathf.Max(velocity.y + TossGravity * Time.deltaTime, -MaxFallSpeed);
         Vector3 pos = transform.position;
         Vector3 next = pos + (Vector3)(velocity * Time.deltaTime);
 
         if (velocity.y < 0f) {
             float drop = pos.y - next.y;
-            RaycastHit2D hit = Physics2D.Raycast(pos, Vector2.down, drop + 0.2f, GroundMask);
+            RaycastHit2D hit = Physics2D.Raycast(pos, Vector2.down, drop + RestLift, GroundMask);
             if (hit.collider != null) {
-                next.y = hit.point.y + 0.2f;
+                next.y = hit.point.y + RestLift;
                 tossing = false;
+                hovering = true;
+                hoverY = next.y;
+                bobPhase = Random.Range(0f, Mathf.PI * 2f);
             }
         }
-        if (next.y < -50f) {
+        if (next.y < -50f || (ArenaBounds.Active && next.y < ArenaBounds.Bottom - 3f)) {
             Destroy(gameObject); // fell out of the world
             return;
         }
