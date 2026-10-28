@@ -105,8 +105,9 @@ public static class GuideScreen {
         Entry(parent, art ? art.grenade : null, "Baú (Arena)",
             "Surge a cada 30 s e some em 20 s; quebra com golpe ou tiro. Dá 2 granadas (35%), " +
             "escopeta com 6 cartuchos (35%) ou 10-25 moedas (30%, às vezes com diamante).");
-        Entry(parent, art ? art.diamond : null, "Vaso (Arena)",
-            "Até 3 por vez, um novo a cada 12 s. Pode ter diamante 12%, poção 18%, balas 10%, " +
+        Entry(parent, art ? art.diamond : null, "Vasos, caixas e barris",
+            "Quebram com golpe, tiro ou granada. Na Arena surge um vaso novo a cada 12 s (até 3), e os " +
+            "do cenário voltam 90 s depois de quebrados. Pode ter diamante 12%, poção 18%, balas 10%, " +
             "granada 8% ou armadura 3%.");
     }
 
