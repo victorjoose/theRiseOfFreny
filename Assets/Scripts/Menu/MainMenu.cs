@@ -110,7 +110,7 @@ public class MainMenu : MonoBehaviour {
         return page;
     }
 
-    // the arena's top 10 on each ranked difficulty (Hard, the main one, first), refreshed from
+    // the arena's top 10 on each difficulty (Hard, the official one, first), refreshed from
     // the server when the page opens
     private MenuPage RankingPage() {
         Online.OnlineServices online = Online.OnlineServices.Instance;
@@ -136,7 +136,7 @@ public class MainMenu : MonoBehaviour {
         page.Button("Voltar", stack.Back);
 
         fill = () => {
-            status.text = online.State == Online.OnlineServices.Status.Online ? "Só valem corridas manuais no Difícil ou no Freny"
+            status.text = online.State == Online.OnlineServices.Status.Online ? "Só valem corridas manuais · o oficial é o do Difícil"
                 : online.State == Online.OnlineServices.Status.Connecting ? "Conectando..." : "Sem conexão: mostrando o último ranking";
             string self = online.Auth != null ? online.Auth.UserId : null;
             var top = online.TopFor(board);
@@ -214,7 +214,7 @@ public class MainMenu : MonoBehaviour {
         MenuPage page = new MenuPage(stack.transform, "Arena", 560f, new Vector2(0.5f, 0.5f));
         page.Choice("Controle", new[] { "Automático", "Manual" }, ArenaDifficulty.Manual ? 1 : 0,
             i => ArenaDifficulty.Manual = i == 1);
-        page.Label("Ranking: só corridas manuais do começo ao fim, no Difícil ou no Freny.");
+        page.Label("Só corridas manuais do começo ao fim valem para o ranking. O oficial é o do Difícil.");
         Button current = null;
         foreach (ArenaLevel level in System.Enum.GetValues(typeof(ArenaLevel))) {
             ArenaLevel chosen = level;

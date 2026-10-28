@@ -122,14 +122,14 @@ namespace Online {
             GUILayout.EndArea();
         }
 
-        // one tab per ranked difficulty, the main one (Hard) first
+        // one tab per difficulty, the official one (Hard) first
         private void DrawLeaderboard() {
             GUILayout.BeginHorizontal();
             foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
                 if (GUILayout.Toggle(_board == level, ArenaDifficulty.Label(level), GUI.skin.button)) _board = level;
             }
             GUILayout.EndHorizontal();
-            GUILayout.Label("Só corridas manuais no Difícil ou no Freny valem.");
+            GUILayout.Label("Só corridas manuais valem. O ranking oficial é o do Difícil.");
 
             List<LeaderboardEntry> top = _online.TopFor(_board);
             if (top.Count == 0) {

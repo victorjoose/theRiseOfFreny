@@ -11,7 +11,7 @@ namespace Online {
         public long score;
     }
 
-    // One board per ranked arena difficulty ("leaderboard_hard", "leaderboard_freny"), with
+    // One board per arena difficulty ("leaderboard_hard", "leaderboard_freny", "_medium", "_easy"), with
     // one document per player keyed by user id holding that player's best score there.
     // firestore.rules only lets a score go up. The old mixed "leaderboard" is no longer used.
     public class LeaderboardService {
