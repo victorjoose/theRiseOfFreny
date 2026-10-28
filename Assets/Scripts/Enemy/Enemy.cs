@@ -1127,7 +1127,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Coin coin = dropped.GetComponent<Coin>();
         if (coin) {
             coin.coins = coins;
-            coin.Expire();
+            coin.Toss(new Vector2(Random.Range(-0.6f, 0.6f), 3.5f)); // a small hop, then falls to the floor (bats die mid-air)
         }
     }
 
