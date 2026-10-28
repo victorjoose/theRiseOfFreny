@@ -58,7 +58,7 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private int revolverReserveMax = 16;
     [SerializeField] private int shellsMax = 30;
 
-    [Header("Grenade (G)")]
+    [Header("Grenade (E)")]
     [SerializeField] private int grenadesFromUpgrade = 2;  // the shop's grenade upgrade starts each run with these
     [SerializeField] private int grenadesMax = 6;
     [SerializeField] private float grenadeAngle = 55f;     // degrees above the horizontal
@@ -728,7 +728,7 @@ public class Player : MonoBehaviour, IDamageable {
         return true;
     }
 
-    // Worms style: hold G to charge, release to lob the grenade forward in an arc whose range
+    // Worms style: hold the grenade button (E) to charge, release to lob the grenade forward in an arc whose range
     // depends on the charge. The autopilot sends the charge it wants directly.
     private void ThrowGrenade() {
         PlayerInputFrame input = _input.Current;
