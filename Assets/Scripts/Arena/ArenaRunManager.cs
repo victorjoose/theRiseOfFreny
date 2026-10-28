@@ -60,6 +60,9 @@ public class ArenaRunManager : MonoBehaviour {
 
     // the end of the run in the middle of the screen, in the menus' style
     private void ShowBanner() {
+        if (player.gameOver != null && player.gameOver.activeSelf) {
+            player.gameOver.SetActive(false);   // the scene's old "Press SPACE to play again..."
+        }
         if (banner == null) {
             Canvas canvas = MenuKit.CreateCanvas("Run Over", 60, null);   // not under the player, who flips
             Image panel = MenuKit.MakeImage("Panel", canvas.transform, MenuKit.PanelColor);

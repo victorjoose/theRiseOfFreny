@@ -68,7 +68,15 @@ public class GameMenus : MonoBehaviour {
         CampaignRun.LoadStage(stageId);
     }
 
+    // one Space on the ranking after a run reached the menu's Space, the button (Submit) and
+    // the arena's own wait at once: the scene loaded three times
+    private static int arenaLoadFrame = -1;
+
     public static void StartArena() {
+        if (arenaLoadFrame == Time.frameCount) {
+            return;
+        }
+        arenaLoadFrame = Time.frameCount;
         if (Instance != null) {
             Instance.Resume();
         }
@@ -118,15 +126,15 @@ public class GameMenus : MonoBehaviour {
         OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
     }
 
-    // small and dim, just under the coins so it never covers the HUD
+    // small and dim, at the bottom centre: at the top right it covered the coin counter
     private void CreateVersionLabel() {
         Canvas canvas = MenuKit.CreateCanvas("Version", 30000, transform);
-        Text label = MenuKit.MakeText(canvas.transform, Version, MenuKit.TextSize, MenuKit.DimTextColor, TextAnchor.UpperRight);
+        Text label = MenuKit.MakeText(canvas.transform, Version, MenuKit.SmallTextSize, MenuKit.DimTextColor, TextAnchor.LowerCenter);
         label.raycastTarget = false;
         label.horizontalOverflow = HorizontalWrapMode.Overflow;
         RectTransform rect = label.rectTransform;
-        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
-        rect.anchoredPosition = new Vector2(-8f, -46f);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0f);
+        rect.anchoredPosition = new Vector2(0f, 6f);
         rect.sizeDelta = new Vector2(300f, 22f);
     }
 
@@ -274,7 +282,7 @@ public class GameMenus : MonoBehaviour {
     }
 
     private MenuPage PausePage() {
-        MenuPage page = new MenuPage(pauseStack.transform, "Pausado", 520f, new Vector2(0.5f, 0.5f));
+        MenuPage page = new MenuPage(pauseStack.transform, "Pausado", 600f, new Vector2(0.5f, 0.5f));
         string scene = SceneManager.GetActiveScene().name;
 
         page.Button("Continuar", Resume);
