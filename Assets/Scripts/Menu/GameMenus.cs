@@ -115,13 +115,13 @@ public class GameMenus : MonoBehaviour {
     // small and dim, just under the coins so it never covers the HUD
     private void CreateVersionLabel() {
         Canvas canvas = MenuKit.CreateCanvas("Version", 30000, transform);
-        Text label = MenuKit.MakeText(canvas.transform, Version, 10, MenuKit.DimTextColor, TextAnchor.UpperRight);
+        Text label = MenuKit.MakeText(canvas.transform, Version, MenuKit.TextSize, MenuKit.DimTextColor, TextAnchor.UpperRight);
         label.raycastTarget = false;
         label.horizontalOverflow = HorizontalWrapMode.Overflow;
         RectTransform rect = label.rectTransform;
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
         rect.anchoredPosition = new Vector2(-8f, -46f);
-        rect.sizeDelta = new Vector2(200f, 16f);
+        rect.sizeDelta = new Vector2(300f, 22f);
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
