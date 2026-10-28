@@ -17,16 +17,24 @@ public class MenuArt : ScriptableObject {
     public Sprite sword;        // Items 100x100: the small sword (Recarga)
     public Sprite jump;         // Player jump 1_1 (Pulo duplo)
     public Sprite run;          // Player run_1 (Velocidade)
+    // the Guia's extra icons (GuideScreen)
+    public Sprite revolver;     // Items 100x100_0
+    public Sprite rageHelmet;   // Items 100x100_rage_helmet
+    public Sprite armorHeart;   // Interface/HealthArmor
+    public Sprite diamond;      // Items/Diamond 60x60, first frame
+    public Sprite coin;         // Interface/Cash
 
     private static MenuArt loaded;
 
     // the drawn part of each icon inside its frame (pixels from the frame's bottom-left), measured
     // from the PNGs: the item frames are mostly empty, so untrimmed icons came out tiny or huge
     private static readonly Dictionary<string, RectInt> Content = new Dictionary<string, RectInt> {
+        { "Items 100x100_0", new RectInt(32, 32, 36, 24) },
         { "Items 100x100_1", new RectInt(24, 20, 48, 48) },
         { "Items 100x100_2", new RectInt(24, 32, 56, 24) },
         { "Items 100x100_3", new RectInt(12, 12, 76, 76) },
         { "Items 100x100_4", new RectInt(28, 36, 44, 28) },
+        { "Items 100x100_5", new RectInt(32, 28, 36, 44) },
         { "Player jump 1_1", new RectInt(60, 8, 84, 116) },
         { "Player run_1", new RectInt(56, 0, 92, 128) },
         { "HealthFull", new RectInt(4, 4, 44, 44) },

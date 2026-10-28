@@ -34,3 +34,8 @@ MonoBehaviour:
   sword: {fileID: -8525561222273819436, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
   jump: {fileID: 2585791992712628342, guid: 3d4a77280e1e7d44fbacbd2d025acdd2, type: 3}
   run: {fileID: 9115711866327617280, guid: 45720687a9289484faf269ec5a285804, type: 3}
+  revolver: {fileID: -6624225963862695163, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  rageHelmet: {fileID: -6195256354666351195, guid: 2dd8d3d177b6b614fbaac451fb7f4e49, type: 3}
+  armorHeart: {fileID: 21300000, guid: 2e17e6cf835045fdbc3b1bab52a82c63, type: 3}
+  diamond: {fileID: -2460661597379837166, guid: 503970e533e628f49908628b78e709fc, type: 3}
+  coin: {fileID: 21300000, guid: c7b13bf1966d93545a190c943972d4f7, type: 3}
