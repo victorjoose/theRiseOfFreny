@@ -39,6 +39,7 @@ public class Sorcerer : Enemy {
         if (isDead || FellOutOfWorld()) {
             return;
         }
+        UpdatePush(); // Freny's hits shove it back a little like everyone else
         StickToGround(); // stands still, but on the floor (one spawned over a gap floated there)
         ClampToArena();
         UpdateRival(); // an enemy that hit it gets the hexballs until the fight ends
