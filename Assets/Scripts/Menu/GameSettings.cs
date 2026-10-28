@@ -1,8 +1,8 @@
 using System;
 using UnityEngine;
 
-// Player settings that are not progress (they stay when a save slot changes): volumes and the
-// screen. Saved in PlayerPrefs. Game speed keeps living in GameSpeed, controls in InputBindings.
+// Player settings that are not progress (they stay when a save slot changes): volumes, brightness
+// and the screen. Saved in PlayerPrefs. Game speed keeps living in GameSpeed, controls in InputBindings.
 // Music and effects volumes are read by MusicPlayer and by whatever plays sounds later.
 public static class GameSettings {
 
@@ -13,6 +13,11 @@ public static class GameSettings {
     private const string SfxKey = "freny.settings.volume.sfx";
     private const string FullscreenKey = "freny.settings.fullscreen";
     private const string ResolutionKey = "freny.settings.resolution"; // "1920x1080"
+    private const string BrightnessKey = "freny.settings.brightness";
+
+    // testers found the stages too dark, so the default sits two steps above the scenes as painted
+    public const int BrightnessSteps = 10;
+    public const int DefaultBrightness = 7;
 
     public static float MasterVolume {
         get => PlayerPrefs.GetFloat(MasterKey, 1f);
@@ -27,6 +32,21 @@ public static class GameSettings {
     public static float SfxVolume {
         get => PlayerPrefs.GetFloat(SfxKey, 1f);
         set { PlayerPrefs.SetFloat(SfxKey, Mathf.Clamp01(value)); ApplyAudio(); }
+    }
+
+    // 0..BrightnessSteps; 5 shows the scenes as they were lit in the editor
+    public static int Brightness {
+        get => Mathf.Clamp(PlayerPrefs.GetInt(BrightnessKey, DefaultBrightness), 0, BrightnessSteps);
+        set { PlayerPrefs.SetInt(BrightnessKey, Mathf.Clamp(value, 0, BrightnessSteps)); Changed?.Invoke(); }
+    }
+
+    // what the scenes' global 2D lights are multiplied by (BrightnessLights): 0.4x at 0, 1x at 5,
+    // 2.5x at 10. Steps above 5 are bigger because at 1.6x the stages still looked dark.
+    public static float BrightnessFactor {
+        get {
+            int b = Brightness;
+            return b <= 5 ? 0.4f + b * 0.12f : 1f + (b - 5) * 0.3f;
+        }
     }
 
     // a phone or a browser tab decides the window itself
