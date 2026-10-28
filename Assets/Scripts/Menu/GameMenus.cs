@@ -10,6 +10,8 @@ public class GameMenus : MonoBehaviour {
 
     public const string MainMenuScene = "UI - Main Menu";
     public const string ArenaScene = "ZE Arena";
+    // shown in the top right corner on every screen, to know which build is running
+    public const string Version = "v0.0.28/10/2026";
     private const float AutosaveSeconds = 60f;
 
     public static GameMenus Instance { get; private set; }
@@ -24,6 +26,9 @@ public class GameMenus : MonoBehaviour {
     private Canvas pauseCanvas;
     private MenuStack pauseStack;
     private Canvas touchCanvas;
+    private TouchControls touchControls;
+    private int lastScreenWidth;
+    private int lastScreenHeight;
     private readonly List<Canvas> hiddenHuds = new List<Canvas>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -103,7 +108,20 @@ public class GameMenus : MonoBehaviour {
     }
 
     private void Start() {
+        CreateVersionLabel();
         OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+    }
+
+    // small and dim, just under the coins so it never covers the HUD
+    private void CreateVersionLabel() {
+        Canvas canvas = MenuKit.CreateCanvas("Version", 30000, transform);
+        Text label = MenuKit.MakeText(canvas.transform, Version, MenuKit.TextSize, MenuKit.DimTextColor, TextAnchor.UpperRight);
+        label.raycastTarget = false;
+        label.horizontalOverflow = HorizontalWrapMode.Overflow;
+        RectTransform rect = label.rectTransform;
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-8f, -46f);
+        rect.sizeDelta = new Vector2(300f, 22f);
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
@@ -132,6 +150,7 @@ public class GameMenus : MonoBehaviour {
             sawTouch = true;
         }
         UpdateTouchButton();
+        RedrawTextsOnResize();
 
         if (!gameplayScene) {
             return;
@@ -261,22 +280,46 @@ public class GameMenus : MonoBehaviour {
         return page;
     }
 
-    // a pause button for touch screens, top centre
+    // In the web build the canvas can change size after the menus are built (page layout, phone
+    // rotation, address bar); text built at the old size once showed as giant blurry glyphs, so
+    // every text is rebuilt whenever the screen size changes.
+    private void RedrawTextsOnResize() {
+        if (Screen.width == lastScreenWidth && Screen.height == lastScreenHeight) {
+            return;
+        }
+        lastScreenWidth = Screen.width;
+        lastScreenHeight = Screen.height;
+        foreach (Text text in FindObjectsByType<Text>(FindObjectsSortMode.None)) {
+            text.SetAllDirty();
+        }
+    }
+
+    // touch screens: a pause button and the on-screen controls
     private void UpdateTouchButton() {
         bool show = gameplayScene && !paused && (Application.isMobilePlatform || sawTouch);
         if (!show) {
             if (touchCanvas != null) {
                 touchCanvas.gameObject.SetActive(false);
             }
+            if (touchControls != null) {
+                touchControls.gameObject.SetActive(false);
+            }
             return;
+        }
+        if (touchControls == null) {
+            touchControls = TouchControls.Create(transform);
+        } else if (!touchControls.gameObject.activeSelf) {
+            touchControls.gameObject.SetActive(true);
         }
         if (touchCanvas == null) {
             touchCanvas = MenuKit.CreateCanvas("Touch Pause", 29000, transform);
             Button button = MenuKit.MakeButton(touchCanvas.transform, "II", Pause, MenuKit.TitleSize);
             RectTransform rect = (RectTransform)button.transform;
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -12f);
+            // top right under the coins, clear of the score and combo at the top centre
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-12f, -70f);
             rect.sizeDelta = new Vector2(72f, 72f);
+            button.GetComponentInChildren<Text>().horizontalOverflow = HorizontalWrapMode.Overflow;
             Navigation none = new Navigation { mode = Navigation.Mode.None };
             button.navigation = none;
         }
