@@ -24,7 +24,8 @@ public class Merchant : MonoBehaviour {
     private void OnTriggerStay2D(Collider2D other) {
         if (other.CompareTag("Player")) {
             interaction.SetActive(true);
-            if (Input.GetKey(KeyCode.E)) {
+            // the door button (W, up arrow); E throws the grenade now
+            if (InputBindings.Get(GameAction.Interact)) {
                 _player = other.GetComponent<Player>();
                 if (_player == null) {
                     return;
