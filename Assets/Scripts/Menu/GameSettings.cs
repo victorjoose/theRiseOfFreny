@@ -40,8 +40,14 @@ public static class GameSettings {
         set { PlayerPrefs.SetInt(BrightnessKey, Mathf.Clamp(value, 0, BrightnessSteps)); Changed?.Invoke(); }
     }
 
-    // what the scenes' global 2D lights are multiplied by (BrightnessLights): 0.4x to 1.6x
-    public static float BrightnessFactor => 1f + (Brightness - 5) * 0.12f;
+    // what the scenes' global 2D lights are multiplied by (BrightnessLights): 0.4x at 0, 1x at 5,
+    // 2.5x at 10. Steps above 5 are bigger because at 1.6x the stages still looked dark.
+    public static float BrightnessFactor {
+        get {
+            int b = Brightness;
+            return b <= 5 ? 0.4f + b * 0.12f : 1f + (b - 5) * 0.3f;
+        }
+    }
 
     // a phone or a browser tab decides the window itself
     public static bool CanChangeScreen =>
