@@ -7,7 +7,7 @@ using UnityEngine;
 public class Grenade : MonoBehaviour {
 
     public const float BlastRadius = 2.5f;
-    public const int EnemyDamage = 3;      // every enemy has 3 HP or less: one grenade kills it
+    public const int EnemyDamage = 3;      // one grenade kills any enemy but the red Golem (6 HP)
     public const int SelfDamage = 2;       // what Freny takes in his own blast (armor first)
     public const float SelfKnockback = 7f;
 
