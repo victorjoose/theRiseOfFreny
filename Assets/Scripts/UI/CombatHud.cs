@@ -90,11 +90,8 @@ public class CombatHud : MonoBehaviour {
             ShadowLabel(new Rect(sx + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.ShotgunShells}");
         }
         if (player.Grenades > 0) {
-            Color old = GUI.color;
-            GUI.color = player.GrenadeReady ? Color.white : new Color(1f, 1f, 1f, 0.35f);
             float gx = x;
             DrawIcon(Icon(grenadeIcon, a => a.grenadeIcon), ref x, y, size);
-            GUI.color = old;
             ShadowLabel(new Rect(gx + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.Grenades}");
             if (player.ChargingGrenade) {
                 // power bar while G is held

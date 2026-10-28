@@ -59,7 +59,6 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private int shellsMax = 30;
 
     [Header("Grenade (G)")]
-    [SerializeField] private float grenadeCooldown = 1f;   // only so two don't go off by accident: they are counted
     [SerializeField] private int grenadesFromUpgrade = 2;  // the shop's grenade upgrade starts each run with these
     [SerializeField] private int grenadesMax = 6;
     [SerializeField] private float grenadeAngle = 55f;     // degrees above the horizontal
@@ -118,7 +117,6 @@ public class Player : MonoBehaviour, IDamageable {
     private const int RageMeleeDamage = 2;
     private float stunnedUntil;
     private float runStamina = 1f;
-    private float nextGrenadeTime;
     private float nextDustTime;
 
     private float _baseSpeed;
@@ -148,8 +146,7 @@ public class Player : MonoBehaviour, IDamageable {
     public bool AttackReady => Time.time >= attackReadyAt;
     public bool FacingRight => transform.localScale.x > 0;
     public bool RunReady => !IsRunning && runStamina >= RunMinStamina;
-    public bool GrenadeReady => Time.time >= nextGrenadeTime;      // the cooldown between throws
-    public bool CanThrowGrenade => Grenades > 0 && GrenadeReady;
+    public bool CanThrowGrenade => Grenades > 0;                   // no cooldown: as many as he carries
     public bool UsingShotgun => ShotgunOwned && ShotgunEquipped && ShotgunShells > 0;
     public bool Reloading => reloadReadyAt > 0f;
     public bool RevolverDry => RevolverBullets <= 0 && RevolverReserve <= 0 && !Reloading;
@@ -742,7 +739,6 @@ public class Player : MonoBehaviour, IDamageable {
             return;
         }
         Grenades--;
-        nextGrenadeTime = Time.time + grenadeCooldown;
         ChargingGrenade = false;
 
         Vector3 from = transform.position + Vector3.up * 0.6f;
