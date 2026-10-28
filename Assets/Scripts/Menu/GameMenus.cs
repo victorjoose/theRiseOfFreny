@@ -10,6 +10,8 @@ public class GameMenus : MonoBehaviour {
 
     public const string MainMenuScene = "UI - Main Menu";
     public const string ArenaScene = "ZE Arena";
+    // shown in the top right corner on every screen, to know which build is running
+    public const string Version = "v0.0.28/10/2026";
     private const float AutosaveSeconds = 60f;
 
     public static GameMenus Instance { get; private set; }
@@ -106,7 +108,20 @@ public class GameMenus : MonoBehaviour {
     }
 
     private void Start() {
+        CreateVersionLabel();
         OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+    }
+
+    // small and dim, just under the coins so it never covers the HUD
+    private void CreateVersionLabel() {
+        Canvas canvas = MenuKit.CreateCanvas("Version", 30000, transform);
+        Text label = MenuKit.MakeText(canvas.transform, Version, 10, MenuKit.DimTextColor, TextAnchor.UpperRight);
+        label.raycastTarget = false;
+        label.horizontalOverflow = HorizontalWrapMode.Overflow;
+        RectTransform rect = label.rectTransform;
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-8f, -46f);
+        rect.sizeDelta = new Vector2(200f, 16f);
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
