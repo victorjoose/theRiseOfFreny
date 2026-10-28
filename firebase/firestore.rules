@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// Security rules for Ryse of Freny.
+// Security rules for The Rise of Freny.
 // Publish them in the Firebase console (Firestore Database > Rules)
 // or with `firebase deploy --only firestore:rules` from this folder.
 service cloud.firestore {

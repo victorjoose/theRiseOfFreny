@@ -8,7 +8,7 @@ O jogo tem três recursos online, todos em `Assets/Scripts/Online/`:
 
 ## Por que REST e não o Firebase Unity SDK
 
-O Firebase Unity SDK só tem suporte oficial para Android e iOS. No Windows/Mac/Linux ele roda apenas como "beta para desenvolvimento" e não funciona em WebGL. Como o Ryse of Freny é um jogo de PC, a integração usa as APIs REST do Firebase com `UnityWebRequest`. Assim não tem pacote nativo para importar, nada muda no `Packages/manifest.json`, e o mesmo código funciona em PC, WebGL e mobile.
+O Firebase Unity SDK só tem suporte oficial para Android e iOS. No Windows/Mac/Linux ele roda apenas como "beta para desenvolvimento" e não funciona em WebGL. Como o The Rise of Freny é um jogo de PC, a integração usa as APIs REST do Firebase com `UnityWebRequest`. Assim não tem pacote nativo para importar, nada muda no `Packages/manifest.json`, e o mesmo código funciona em PC, WebGL e mobile.
 
 Se um dia o jogo for para celular e precisar de Crashlytics ou push, dá para adicionar o SDK nessa hora.
 
@@ -22,7 +22,7 @@ Os passos abaixo servem para recriar tudo em outro projeto.
 
 ### 1. Criar o projeto
 
-1. Abra https://console.firebase.google.com e clique em **Adicionar projeto**. Pode chamar de `ryse-of-freny`. O Google Analytics é opcional.
+1. Abra https://console.firebase.google.com e clique em **Adicionar projeto**. Pode chamar de `the-rise-of-freny`. O Google Analytics é opcional.
 2. Na tela do projeto, clique no ícone **Web (`</>`)** para registrar um app. Qualquer apelido serve, e não precisa ativar o Hosting.
 3. O console mostra um bloco `firebaseConfig`. Anote o `apiKey` e o `projectId`.
 
