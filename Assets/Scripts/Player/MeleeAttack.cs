@@ -29,7 +29,7 @@ public class MeleeAttack : MonoBehaviour
             return;
         }
 
-        // the sword hitbox overlaps Freny herself, and she is IDamageable too
+        // the sword hitbox overlaps Freny himself, and he is IDamageable too
         if (other.CompareTag("Player") || other.transform.IsChildOf(transform.root)) {
             return;
         }

@@ -6,7 +6,7 @@ using UnityEngine;
 // body stays still, only the cut moves) with a hit-stop, dash afterimages, a flip on the double jump, a springy flinch when hurt and
 // a body that breaks into tumbling pieces on death (a small ragdoll).
 //
-// Everything moves a "Rig" transform placed at her feet, between the Player root (physics, facing
+// Everything moves a "Rig" transform placed at his feet, between the Player root (physics, facing
 // flip) and the animated Sprite child, so the Animator, the colliders and the ground check are
 // untouched. Added at runtime by PlayerAnimation, which also forwards the action events.
 public class FrenyMotion : MonoBehaviour {
@@ -24,7 +24,7 @@ public class FrenyMotion : MonoBehaviour {
 
     [Header("Slash")]
     public float windup = 0f;              // delay before the arc appears
-    public float swordReach = 1.0f;        // the sword hitbox length, in units ahead of her hand
+    public float swordReach = 1.0f;        // the sword hitbox length, in units ahead of his hand
     public float hitStop = 0.06f;
 
     private const float SpringStiff = 320f, SpringDamp = 16f;    // squash: bouncy
@@ -40,13 +40,13 @@ public class FrenyMotion : MonoBehaviour {
     private Transform swordBox;
     private BoxCollider2D swordCollider;
 
-    // "Player slash.png": her own sword held straight out (melee frame 3, blade lengthened)
+    // "Player slash.png": his own sword held straight out (melee frame 3, blade lengthened)
     private static readonly Vector2 Hand = new Vector2(0.34f, -0.5f);        // grip, in the Sprite's space
     private static readonly Vector2 CrouchHand = new Vector2(0.38f, -0.66f); // the same, crouched
-    // where the sword sprite's grip goes: her fist in "Player slash", and crouched
+    // where the sword sprite's grip goes: his fist in "Player slash", and crouched
     private static readonly Vector2 SlashGrip = new Vector2(0.46f, -0.34f);
     private static readonly Vector2 CrouchGrip = new Vector2(0.36f, -0.68f);
-    // the cut: a crescent in front of the blade, swept from above her shoulder to below her hips
+    // the cut: a crescent in front of the blade, swept from above his shoulder to below his hips
     private const float ArcAhead = 0.42f, ArcRadius = 0.5f, ArcLift = 0.1f;
     private const float ArcFrom = 80f, ArcTo = -80f;
     private const float GreatSwordScale = 1.8f;  // the great sword's cut and hitbox, "bem maior"
@@ -54,7 +54,7 @@ public class FrenyMotion : MonoBehaviour {
     // the great sword in hand: bought at the shop, or dropped for a few swings (Player.GreatSwordActive)
     private bool GreatSword => player && player.GreatSwordActive;
     private Vector3 rigBase;
-    private float bodyCenter = 0.6f;       // height of her middle above the feet
+    private float bodyCenter = 0.6f;       // height of his middle above the feet
 
     private Spring squash, angle, lunge;
     private float lastVx, lastVy;
@@ -79,8 +79,8 @@ public class FrenyMotion : MonoBehaviour {
     // shooting crouched) and shooting in the air. Tools/ArtGen/freny_poses.py builds them.
     private Dictionary<string, Sprite> poses;
 
-    // the sword she swings is the item itself (Items 100x100_1, or _3 for the long sword), held
-    // in her fist while the cut lasts; the slash frames have an empty fist
+    // the sword he swings is the item itself (Items 100x100_1, or _3 for the long sword), held
+    // in his fist while the cut lasts; the slash frames have an empty fist
     private SpriteRenderer sword;
     private Sprite normalSword, longSword;
 
@@ -153,12 +153,12 @@ public class FrenyMotion : MonoBehaviour {
         }
         head.sprite = helmet;
         head.flipX = body.flipX;
-        head.enabled = body.enabled; // blinks with her
+        head.enabled = body.enabled; // blinks with him
         // Rage: the red helmet glows
         head.color = player.Raging ? Color.Lerp(Color.white, new Color(1f, 0.6f, 0.55f), 0.5f + 0.5f * Mathf.Sin(Time.time * 10f)) : Color.white;
     }
 
-    // the rig pivots at the feet, so squashing and leaning keep her standing on the floor
+    // the rig pivots at the feet, so squashing and leaning keep him standing on the floor
     private void BuildRig() {
         Transform sprite = body.transform;
         Vector3 feet = player && player.feetPos ? player.feetPos.position : body.bounds.min;
@@ -236,7 +236,7 @@ public class FrenyMotion : MonoBehaviour {
 
         float facing = transform.localScale.x >= 0f ? 1f : -1f;
         Vector2 vel = rb ? rb.Vel() : Vector2.zero;
-        float vx = vel.x * facing;          // in her own space: + is forward
+        float vx = vel.x * facing;          // in his own space: + is forward
         float vy = vel.y;
         bool grounded = player == null || player.IsGrounded;
         bool dashing = dash && dash.IsDashing;
@@ -269,7 +269,7 @@ public class FrenyMotion : MonoBehaviour {
         float angleTarget = -Mathf.Clamp(vx * leanPerSpeed, -maxLean, maxLean);
         float lungeTarget = 0f;
         if (grounded) {
-            // lean into speeding up only: a braking lean read as her slowly straightening herself out
+            // lean into speeding up only: a braking lean read as him slowly straightening himself out
             float accel = (Mathf.Abs(vx) - Mathf.Abs(lastVx)) / dt;
             angleTarget -= Mathf.Sign(vx) * Mathf.Clamp(accel, 0f, 40f) * accelLean * 0.05f;
             if (Mathf.Abs(vx) < 0.1f) {
@@ -290,8 +290,8 @@ public class FrenyMotion : MonoBehaviour {
         if (player && player.IsStunned) {
             angleTarget = 8f;
         }
-        // the body stays planted and upright while she swings (only the arm and the arc move),
-        // and while she climbs (the climbing frames do the moving)
+        // the body stays planted and upright while he swings (only the arm and the arc move),
+        // and while he climbs (the climbing frames do the moving)
         if ((sinceSlash < 0.3f && grounded) || climbing) {
             angleTarget = 0f;
             squashTarget = 0f;
@@ -322,13 +322,13 @@ public class FrenyMotion : MonoBehaviour {
         Vector3 shake = Time.time < frozenUntil ? (Vector3)(Random.insideUnitCircle * 0.03f) : Vector3.zero;
         Quaternion flipRot = Quaternion.Euler(0f, 0f, flip);
         Vector3 pivot = new Vector3(0f, bodyCenter, 0f);
-        Vector3 flipOffset = pivot - flipRot * pivot;  // the flip turns around her middle, not her feet
+        Vector3 flipOffset = pivot - flipRot * pivot;  // the flip turns around his middle, not his feet
 
         rig.localRotation = Quaternion.Euler(0f, 0f, angle.x + flip);
         rig.localScale = new Vector3(1f - squash.x * 0.8f, 1f + squash.x, 1f);
         rig.localPosition = rigBase + new Vector3(lunge.x, 0f, 0f) + flipOffset + shake;
 
-        // The sword hitbox covers the whole cut: from her hand forward by the reach, from above the
+        // The sword hitbox covers the whole cut: from his hand forward by the reach, from above the
         // shoulder to below the hip. The Melee Attack clip still keys the old box (and switches it
         // on), so its shape is set here, after the Animator, every frame; the great sword reaches 1.8x.
         if (swordBox) {
@@ -356,7 +356,7 @@ public class FrenyMotion : MonoBehaviour {
         float sinceShot = Time.time - shotStart;
         string pose = null;
         if (climbing) {
-            // hand over hand: the next frame every ClimbStride climbed, held while she stays put
+            // hand over hand: the next frame every ClimbStride climbed, held while he stays put
             climbed += Mathf.Abs(vy) * dt;
             pose = "Freny climb_" + (int)(climbed / ClimbStride) % 2;
         } else if (crouching) {
@@ -390,7 +390,7 @@ public class FrenyMotion : MonoBehaviour {
         sword.transform.localPosition = grip;
     }
 
-    // LadderClimber (campaign) holds her on a ladder; it is looked up by name so this file doesn't
+    // LadderClimber (campaign) holds him on a ladder; it is looked up by name so this file doesn't
     // depend on the campaign scripts, and again now and then since it can be added after Start
     private const float ClimbStride = 0.35f;
     private System.Func<bool> climbingProbe;
@@ -590,7 +590,7 @@ public class FrenyMotion : MonoBehaviour {
                 float y0 = rect.y + rect.height * Cuts[i];
                 float h = rect.height * (Cuts[i + 1] - Cuts[i]);
                 Sprite part = Sprite.Create(sprite.texture, new Rect(x0, y0, w, h), new Vector2(0.5f, 0.5f), ppu);
-                // where this slice sits on her body, in the sprite's local space
+                // where this slice sits on his body, in the sprite's local space
                 Vector2 local = new Vector2(x0 - rect.x + w * 0.5f, y0 - rect.y + h * 0.5f) - sprite.pivot;
                 GameObject go = new GameObject("FrenyPiece");
                 go.transform.SetPositionAndRotation(t.TransformPoint(local / ppu), t.rotation);

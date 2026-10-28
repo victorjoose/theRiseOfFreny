@@ -5,7 +5,7 @@ using UnityEngine;
 // great sword (a few big swings), the Berserker helmet (armor) or a diamond (25 coins). Enemies drop
 // one now and then where they die; chests and vases hold them too. Built at runtime (no prefab): a
 // sprite, a trigger and the same small arc and float as the coins. Freny collects it by touching it;
-// an item she has no use for (a potion at full health, a full reserve, full armor) stays where it is
+// an item he has no use for (a potion at full health, a full reserve, full armor) stays where it is
 // until it fades.
 public class ItemPickup : MonoBehaviour {
 
@@ -13,11 +13,11 @@ public class ItemPickup : MonoBehaviour {
 
     // enemy drops, rolled once per death on top of its coin (lower since the arena got busier)
     private const float PotionChance = 0.15f;
-    private const float BulletsChance = 0.12f;  // only when her reserve isn't full
-    private const float ShellsChance = 0.10f;   // only when she has the shotgun
+    private const float BulletsChance = 0.12f;  // only when his reserve isn't full
+    private const float ShellsChance = 0.10f;   // only when he has the shotgun
     private const float GrenadeChance = 0.06f;
-    private const float GreatSwordChance = 0.04f; // only when she can use one
-    private const float ArmorChance = 0.04f;      // only when her armor is not full
+    private const float GreatSwordChance = 0.04f; // only when he can use one
+    private const float ArmorChance = 0.04f;      // only when his armor is not full
     private const float DiamondChance = 0.04f;
     public const int DiamondValue = 25;           // coins
     private const float DiamondFrameTime = 0.08f;
@@ -268,7 +268,7 @@ public class ItemPickup : MonoBehaviour {
         bobPhase = Random.Range(0f, Mathf.PI * 2f);
     }
 
-    // would Freny take it right now (the autopilot skips the ones she can't use)
+    // would Freny take it right now (the autopilot skips the ones he can't use)
     public bool UsefulTo(Player player) {
         if (player == null) {
             return false;
@@ -300,7 +300,7 @@ public class ItemPickup : MonoBehaviour {
         }
     }
 
-    // Stay, not Enter: a potion touched at full health is taken as soon as she gets hurt
+    // Stay, not Enter: a potion touched at full health is taken as soon as he gets hurt
     private void OnTriggerStay2D(Collider2D other) {
         if (!other.CompareTag("Player")) {
             return;

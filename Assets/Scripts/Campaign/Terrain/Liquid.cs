@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // A pool of acid or water (made by StageTerrain from the Liquids tiles): one per connected group of
-// cells, with the surface height of each column. LiquidSwimmer on Freny asks At() where she is;
+// cells, with the surface height of each column. LiquidSwimmer on Freny asks At() where he is;
 // acid also eats the enemies that walk into it (they avoid it, see Hazard.At).
 public class Liquid : MonoBehaviour {
 

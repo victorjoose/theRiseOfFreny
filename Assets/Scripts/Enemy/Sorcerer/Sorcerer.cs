@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Ranged enemy: stands still and lobs hexballs at Freny wherever she is (any height, any side).
+// Ranged enemy: stands still and lobs hexballs at Freny wherever he is (any height, any side).
 // The Attack animation calls Attack() through SorcererAnimationEvent when the cast hand opens.
 public class Sorcerer : Enemy {
     public GameObject hexballEffectPrefab;
@@ -9,7 +9,7 @@ public class Sorcerer : Enemy {
     // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second)
     private const int HomingScore = 15000;
     private const float HomingTurn = 70f;
-    // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where she is
+    // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where he is
     [SerializeField] private bool predictive = false;
     private float nextCastTime;
     private Rigidbody2D playerRb;
@@ -80,7 +80,7 @@ public class Sorcerer : Enemy {
         Fx.Burst(castPosition, DeathColor, 8, 1.5f, 0.08f, 0.4f);
         Sfx.Play("hexball_launch", castPosition);
 
-        // aim at Freny wherever she is (below, above, diagonal), not only left or right
+        // aim at Freny wherever he is (below, above, diagonal), not only left or right
         HexballEffect effect = hexball.GetComponent<HexballEffect>();
         if (effect) {
             // quick from the start of an arena run, and faster with the difficulty and the overtime

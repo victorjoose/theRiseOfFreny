@@ -6,7 +6,7 @@ using UnityEngine;
 // Difficulty climbs from 0 to 1 over Tuning.RampSeconds (5 minutes by default): more enemies
 // alive at once, shorter gaps between spawns, and tougher enemy types unlocking over time.
 // Where things appear is random: any clear spot on a platform Freny can reach (ArenaMap), never
-// right next to her. Sorcerers take the towers first (ledges against the side walls, out of her
+// right next to him. Sorcerers take the towers first (ledges against the side walls, out of his
 // reach, so they leave after a few casts). The scene's EnemySpawners are only a fallback.
 public class ArenaDirector : MonoBehaviour {
 
@@ -59,7 +59,7 @@ public class ArenaDirector : MonoBehaviour {
     public float SpawnInterval => Mathf.Lerp(3f, 0.8f, Difficulty) * ArenaDifficulty.SpawnIntervalFactor / (1f + 0.15f * Overtime);
 
     // how many enemies go after Freny from anywhere in the arena (Enemy.JoinChase); the ones that
-    // see her up close always fight, the rest patrol until a place frees up
+    // see him up close always fight, the rest patrol until a place frees up
     public static int MaxChasers => Mathf.RoundToInt(Mathf.Lerp(4f, 6f, CurrentDifficulty) + Mathf.Min(3f, CurrentOvertime * 0.5f));
     // enemy pace over the run, on top of the menu level (ArenaDifficulty): slower at the start,
     // faster at the peak and still faster in overtime

@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 
 // One attempt at a campaign stage, on the player (added by CampaignBootstrap). Dying sends Freny
-// back to the last checkpoint; falling into a pit costs a heart and puts her back on the last
+// back to the last checkpoint; falling into a pit costs a heart and puts him back on the last
 // solid ground; the exit door finishes the stage and opens the next one.
 // The attempt (timer, deaths, checkpoint) is static because a respawn reloads the scene.
 public class CampaignRun : MonoBehaviour {

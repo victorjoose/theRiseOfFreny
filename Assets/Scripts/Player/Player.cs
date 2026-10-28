@@ -3,7 +3,7 @@ using UnityEngine;
 // Freny. Reads one PlayerInputFrame per frame (keyboard or arena autopilot, picked by FrenyInput)
 // and turns it into movement, jumps and attacks. Nothing here knows who is driving.
 //
-//   Update       what she wants to do this frame: ground check, stun, move, sprint, jump, weapons
+//   Update       what he wants to do this frame: ground check, stun, move, sprint, jump, weapons
 //   FixedUpdate  the physics: horizontal speed, fast fall, knockback slide
 //
 // Animation goes through PlayerAnimation; the Melee Attack clip switches the sword hitbox on and off.
@@ -22,7 +22,7 @@ public class Player : MonoBehaviour, IDamageable {
     private float _speed = 3.0f;
     private float jumpHeight = 2.6f;      // units; arena platforms are 2 apart
     private float gravityScale = 3f;      // heavier than Unity's default: a snappy jump
-    private float fallMultiplier = 1.6f;  // extra gravity on the way down (2 fell so fast the camera lost her)
+    private float fallMultiplier = 1.6f;  // extra gravity on the way down (2 fell so fast the camera lost him)
     private float maxFallSpeed = 12f;     // units/s: about the jump's take-off speed, so the camera keeps up
     private float checkRadius = 0.4f;     // ground check circle at feetPos
     private float coyoteTime = 0.1f;      // may still jump this long after walking off an edge
@@ -46,10 +46,10 @@ public class Player : MonoBehaviour, IDamageable {
     [SerializeField] private float attackCooldown = 0.5f;  // the sword; the guns have their own
     [SerializeField] private float pistolCooldown = 0.2f;  // between revolver shots
     [SerializeField] private float shotgunCooldown = 0.6f;
-    // blinking after a hit: nothing can hurt her meanwhile, so enemies around her can't chain their hits
+    // blinking after a hit: nothing can hurt him meanwhile, so enemies around him can't chain their hits
     private const float InvulnerableTime = 1.2f;
     [SerializeField] private float stunTime = 0.3f;        // crouched and helpless after a knockback
-    private const float ShoveTime = 0.2f;                   // no control while a light hit shoves her back
+    private const float ShoveTime = 0.2f;                   // no control while a light hit shoves him back
     [SerializeField] private float knockbackDrag = 14f;    // how fast the shove dies out (units/s²)
     [SerializeField] private int shellsPerRun = 6;         // shotgun shells at the start of a run; chests add more
     [SerializeField] private int revolverCapacity = 4;     // shots before the revolver has to be reloaded
@@ -88,12 +88,12 @@ public class Player : MonoBehaviour, IDamageable {
     private bool isDead;
     private int airJumpsLeft;          // double jump upgrade
     private float lastGroundedTime = -10f;
-    private float fallPeakY;            // the highest point since she last stood on the ground
+    private float fallPeakY;            // the highest point since he last stood on the ground
     private float jumpPressedTime = -10f;
     private float jumpStartTime = -10f;
     private float attackReadyAt;
     private float gunReadyAt;
-    private float meleePressedTime = -10f;  // a swing pressed while knocked down happens when she gets up
+    private float meleePressedTime = -10f;  // a swing pressed while knocked down happens when he gets up
     private float rangedPressedTime = -10f;
     private const float AttackBuffer = 0.3f;
     private float dropThroughUntil;         // Down + Jump on a pass-through platform
@@ -139,7 +139,7 @@ public class Player : MonoBehaviour, IDamageable {
     public bool IsAirborne => !isGrounded || isJumping;
     public bool IsDead => isDead;
     public bool IsStunned => stunned;
-    // down held on the ground: she stays put (turning is allowed), lower and shorter
+    // down held on the ground: he stays put (turning is allowed), lower and shorter
     public bool IsCrouching { get; private set; }
     public bool IsInvulnerable => Time.time < invulnerableUntil;
     public bool CanAirJump => !isGrounded && airJumpsLeft > 0;
@@ -186,11 +186,11 @@ public class Player : MonoBehaviour, IDamageable {
     public float MaxSpeed => _speed * runMultiplier;
     public float BodyHalfWidth => col2d ? col2d.bounds.extents.x : 0.28f;
     public float BodyHeight => col2d ? col2d.bounds.size.y : 1.3f;
-    // the middle of her body (the transform sits near the head), where flyers should aim
+    // the middle of his body (the transform sits near the head), where flyers should aim
     public Vector3 BodyCenter => col2d ? (Vector3)col2d.bounds.center : transform.position;
     public float VerticalSpeed => rg2d ? rg2d.Vel().y : 0f;
-    // where the sorcerers aim: her head when she stands. Crouched, a shot from her height passes
-    // over her (the crouched collider top is about 0.4 lower), so ducking dodges it
+    // where the sorcerers aim: his head when he stands. Crouched, a shot from his height passes
+    // over him (the crouched collider top is about 0.4 lower), so ducking dodges it
     public Vector3 HeadPoint {
         get {
             if (col2d == null || standSize == Vector2.zero) {
@@ -240,7 +240,7 @@ public class Player : MonoBehaviour, IDamageable {
             rg2d.gravityScale = gravityScale;
         }
         if (col2d) {
-            // no friction: she slides down walls instead of sticking to them (only the arena had this)
+            // no friction: he slides down walls instead of sticking to them (only the arena had this)
             col2d.sharedMaterial = Frictionless;
         }
 
@@ -294,7 +294,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
         if (UpdateStun()) {
             RecoverStamina();
-            return; // knocked down: no control until she gets up (a swing pressed now is kept)
+            return; // knocked down: no control until he gets up (a swing pressed now is kept)
         }
 
         Movement();
@@ -316,7 +316,7 @@ public class Player : MonoBehaviour, IDamageable {
 
         Vector2 velocity = rg2d.Vel();
         if (stunned) {
-            // the shove carries her and fades out instead of stopping dead
+            // the shove carries him and fades out instead of stopping dead
             velocity.x = Mathf.MoveTowards(velocity.x, 0f, knockbackDrag * Time.fixedDeltaTime);
         } else if (_dash == null || !_dash.IsDashing) {
             // while dashing, Dash owns the horizontal velocity
@@ -371,7 +371,7 @@ public class Player : MonoBehaviour, IDamageable {
     // ==== movement =============================================================================
 
     private void CheckGround() {
-        // dropping through a platform: the feet circle still overlaps it, but she is falling
+        // dropping through a platform: the feet circle still overlaps it, but he is falling
         isGrounded = dropThroughPlatform == null && Physics2D.OverlapCircle(Feet, checkRadius, whatIsGround);
         if (isGrounded) {
             // the feet circle still touches the ground for a moment after take-off
@@ -407,7 +407,7 @@ public class Player : MonoBehaviour, IDamageable {
         fallPeakY = transform.position.y;
     }
 
-    // true while she is still down
+    // true while he is still down
     private bool UpdateStun() {
         if (!stunned) {
             return false;
@@ -468,7 +468,7 @@ public class Player : MonoBehaviour, IDamageable {
         transform.localScale = scale;
     }
 
-    // Shift: a sprint that drains the stamina bar; it refills (from where it stopped) when she lets go
+    // Shift: a sprint that drains the stamina bar; it refills (from where it stopped) when he lets go
     private void Run() {
         PlayerInputFrame input = _input.Current;
         bool wantsRun = input.runHeld && input.move != 0f;
@@ -529,8 +529,8 @@ public class Player : MonoBehaviour, IDamageable {
         _playerAnim.Jump(!isGrounded || isJumping);
     }
 
-    // Down + Jump on a pass-through platform (one with a PlatformEffector2D): she drops to the
-    // one below. Solid floors ignore it and she just jumps.
+    // Down + Jump on a pass-through platform (one with a PlatformEffector2D): he drops to the
+    // one below. Solid floors ignore it and he just jumps.
     private bool TryDropThrough() {
         if (!isGrounded || col2d == null) {
             return false;
@@ -563,8 +563,8 @@ public class Player : MonoBehaviour, IDamageable {
         dropThroughPlatform = null;
     }
 
-    // a hit from a heavy enemy shoves Freny back and knocks her down for stunTime; a light one
-    // (knockDown false) only pushes her away, still on her feet, for a moment
+    // a hit from a heavy enemy shoves Freny back and knocks him down for stunTime; a light one
+    // (knockDown false) only pushes him away, still on his feet, for a moment
     public void Knockback(Vector2 velocity, bool knockDown = true) {
         if (isDead || rg2d == null) {
             return;
@@ -618,7 +618,7 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     // the revolver holds revolverCapacity shots; empty, it reloads by itself over revolverReloadTime
-    // with bullets from the reserve. With no reserve left it stays empty until she picks some up.
+    // with bullets from the reserve. With no reserve left it stays empty until he picks some up.
     private void Reload() {
         if (Reloading) {
             if (Time.time >= reloadReadyAt) {
@@ -635,7 +635,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
-    // up held (W / arrow up): she fires straight up, from above her head
+    // up held (W / arrow up): he fires straight up, from above his head
     public bool AimingUp => _input != null && _input.Current.aimUpHeld && !IsCrouching;
 
     private void Shoot() {
@@ -687,7 +687,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
 
-    // ---- pickups (ItemPickup): each returns false when she has no use for it, so it stays on the floor
+    // ---- pickups (ItemPickup): each returns false when he has no use for it, so it stays on the floor
 
     public bool AddBullets(int amount) {
         if (!WantsBullets) {
@@ -705,7 +705,7 @@ public class Player : MonoBehaviour, IDamageable {
         return true;
     }
 
-    // a shotgun found in a chest: hers for the rest of the run; one she already has just gets the shells
+    // a shotgun found in a chest: his for the rest of the run; one he already has just gets the shells
     public bool GiveShotgun(int shells) {
         if (ShotgunOwned) {
             if (!WantsShells) {
@@ -814,7 +814,7 @@ public class Player : MonoBehaviour, IDamageable {
         int toLife = Mathf.Max(1, amount) - toArmor;
         Armor -= toArmor;
         if (toLife <= 0) {
-            // the armor takes the hit: she blinks as usual but keeps her life
+            // the armor takes the hit: he blinks as usual but keeps his life
             _playerAnim.Hit();
             Fx.Burst(transform.position + Vector3.up * 0.4f, new Color(0.75f, 0.78f, 0.85f), 12, 2.5f, 0.08f, 0.4f);
             Sfx.Play("sword_hit", transform.position);
