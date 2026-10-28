@@ -4,7 +4,8 @@ using UnityEngine;
 // An item lying on the floor: a potion, revolver bullets, shotgun shells, grenades, a shotgun, a
 // great sword (a few big swings), the Berserker helmet (armor) or a diamond (25 coins). Enemies drop
 // one now and then where they die; chests and vases hold them too. Built at runtime (no prefab): a
-// sprite, a trigger and the same small arc and float as the coins. Freny collects it by touching it;
+// sprite, a soft halo behind it, a trigger and the same small arc and float as the coins. Freny
+// collects it by touching it;
 // an item he has no use for (a potion at full health, a full reserve, full armor) stays where it is
 // until it fades.
 public class ItemPickup : MonoBehaviour {
@@ -28,7 +29,10 @@ public class ItemPickup : MonoBehaviour {
     private const float TossGravity = -18f;
     private const float Lifetime = 29f;   // 25 s steady, then blinks for the last 4
     private const float BlinkFor = 4f;
-    private const float WorldSize = 0.85f;       // on screen size, the shotgun a bit bigger (WorldSizeFor)
+    private const float WorldSize = 0.75f;       // the drawn art's longest side, the shotgun a bit bigger (WorldSizeFor)
+    private const float PickupRadius = 0.45f;    // world units, whatever the art's size
+    private const float HaloSize = 1.6f;         // halo diameter, relative to the art's longest side
+    private static readonly Color HaloColor = new Color(1f, 0.88f, 0.5f, 0.5f);
     private const float BobHeight = 0.12f;
 
     public static readonly List<ItemPickup> Active = new List<ItemPickup>();
@@ -42,9 +46,12 @@ public class ItemPickup : MonoBehaviour {
     private float bobPhase;
     private float dieAt;
     private SpriteRenderer sprite;
+    private SpriteRenderer halo;
     private static int groundMask = -1;
     private static int GroundMask => groundMask >= 0 ? groundMask : (groundMask = LayerMask.GetMask("Ground"));
     private static Sprite fallbackSprite;
+    private static Sprite haloSprite;
+    private static Material unlitMaterial;
 
     public bool Landed => !tossing;
 
@@ -66,14 +73,32 @@ public class ItemPickup : MonoBehaviour {
         renderer.sprite = SpriteFor(kind);
         renderer.color = TintFor(kind);
         renderer.sortingOrder = 40;
-        if (renderer.sprite != null) {
-            float size = Mathf.Max(renderer.sprite.bounds.size.x, renderer.sprite.bounds.size.y);
-            obj.transform.localScale = Vector3.one * (size > 0.001f ? WorldSizeFor(kind) / size : 1f);
+        // unlit, so it stays bright in the dark corners the torches don't reach
+        if (UnlitMaterial != null) {
+            renderer.sharedMaterial = UnlitMaterial;
         }
+        // the icons sit small in the middle of 100x100 cells, so size by the drawn part, not the cell
+        Bounds art = ArtBounds(renderer.sprite);
+        float artSize = Mathf.Max(art.size.x, art.size.y);
+        float scale = artSize > 0.001f ? WorldSizeFor(kind) / artSize : 1f;
+        obj.transform.localScale = Vector3.one * scale;
+
+        GameObject haloObj = new GameObject("Halo");
+        haloObj.transform.SetParent(obj.transform, false);
+        haloObj.transform.localPosition = art.center;
+        SpriteRenderer haloRenderer = haloObj.AddComponent<SpriteRenderer>();
+        haloRenderer.sprite = HaloSprite();
+        haloRenderer.color = HaloColor;
+        haloRenderer.sortingOrder = 39;
+        if (UnlitMaterial != null) {
+            haloRenderer.sharedMaterial = UnlitMaterial;
+        }
+        haloObj.transform.localScale = Vector3.one * (artSize > 0.001f ? artSize * HaloSize : 1f);
 
         CircleCollider2D trigger = obj.AddComponent<CircleCollider2D>();
         trigger.isTrigger = true;
-        trigger.radius = renderer.sprite != null ? renderer.sprite.bounds.extents.x : 0.3f;
+        trigger.offset = art.center;
+        trigger.radius = PickupRadius / scale;
         Rigidbody2D body = obj.AddComponent<Rigidbody2D>();
         body.bodyType = RigidbodyType2D.Kinematic; // triggers need a body; the arc moves it by hand
 
@@ -81,6 +106,7 @@ public class ItemPickup : MonoBehaviour {
         pickup.kind = kind;
         pickup.amount = amount;
         pickup.sprite = renderer;
+        pickup.halo = haloRenderer;
         pickup.velocity = toss;
         pickup.tossing = true;
         pickup.dieAt = Time.time + Lifetime;
@@ -147,9 +173,9 @@ public class ItemPickup : MonoBehaviour {
 
     private static float WorldSizeFor(Kind kind) {
         switch (kind) {
-            case Kind.Shotgun: return WorldSize * 1.35f;
-            case Kind.GreatSword: return WorldSize * 1.5f;
-            case Kind.Diamond: return WorldSize * 0.75f;
+            case Kind.Shotgun: return WorldSize * 1.3f;
+            case Kind.GreatSword: return WorldSize * 1.4f;
+            case Kind.Diamond: return WorldSize * 0.8f;
             default: return WorldSize;
         }
     }
@@ -185,6 +211,57 @@ public class ItemPickup : MonoBehaviour {
         }
     }
 
+    // the opaque part of a sprite in its own units: the Tight mesh hugs the art, the rect doesn't
+    private static Bounds ArtBounds(Sprite sprite) {
+        if (sprite == null) {
+            return new Bounds(Vector3.zero, Vector3.one * 0.6f);
+        }
+        Vector2[] vertices = sprite.vertices;
+        if (vertices == null || vertices.Length == 0) {
+            return sprite.bounds;
+        }
+        Bounds bounds = new Bounds(vertices[0], Vector3.zero);
+        for (int i = 1; i < vertices.Length; i++) {
+            bounds.Encapsulate(vertices[i]);
+        }
+        return bounds;
+    }
+
+    // Sprites/Default ignores the 2D lights and is always in the build (see Fx)
+    private static Material UnlitMaterial {
+        get {
+            if (unlitMaterial == null) {
+                Shader shader = Shader.Find("Sprites/Default");
+                if (shader != null) {
+                    unlitMaterial = new Material(shader);
+                }
+            }
+            return unlitMaterial;
+        }
+    }
+
+    // a soft round glow, bright in the middle and fading to nothing at the edge (1 unit wide)
+    private static Sprite HaloSprite() {
+        if (haloSprite != null) {
+            return haloSprite;
+        }
+        const int size = 64;
+        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.filterMode = FilterMode.Bilinear;
+        texture.wrapMode = TextureWrapMode.Clamp;
+        float r = size * 0.5f;
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                float dx = x - r + 0.5f, dy = y - r + 0.5f;
+                float t = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy) / r);
+                texture.SetPixel(x, y, new Color(1f, 1f, 1f, t * t));
+            }
+        }
+        texture.Apply();
+        haloSprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        return haloSprite;
+    }
+
     // a plain disc, for an item whose icon is not set (the campaign scenes have no ArenaAssets)
     private static Sprite FallbackSprite() {
         if (fallbackSprite != null) {
@@ -215,6 +292,13 @@ public class ItemPickup : MonoBehaviour {
         if (sprite) {
             // blinks for its last seconds, so it is clear it is about to go
             sprite.enabled = dieAt - Time.time > BlinkFor || Mathf.Repeat(Time.time, 0.3f) < 0.18f;
+            if (halo) {
+                // breathes gently, so it catches the eye without looking like a hit flash
+                halo.enabled = sprite.enabled;
+                Color c = HaloColor;
+                c.a *= 0.7f + 0.3f * Mathf.Sin(Time.time * 4f + bobPhase);
+                halo.color = c;
+            }
             if (kind == Kind.Diamond) {
                 AnimateDiamond();
             }
