@@ -151,7 +151,7 @@ public class CampaignMinimap : MonoBehaviour {
                 Mark(enemy.transform, box, left, bottom, ppc, EnemyColor, 3f);
             }
         }
-        // Freny blinks a little so she is easy to find
+        // Freny blinks a little so he is easy to find
         if (Mathf.Repeat(Time.unscaledTime, 0.8f) < 0.6f) {
             Mark(transform, box, left, bottom, ppc, FrenyColor, 5f);
         }

@@ -34,8 +34,8 @@ public static class ArenaBootstrap {
                 area.gameObject.SetActive(false);
             }
         }
-        // (enemies are kinematic bodies and would shove Freny: each one ignores her collider in
-        // Enemy.Init, here and in the campaign, so she walks through them)
+        // (enemies are kinematic bodies and would shove Freny: each one ignores his collider in
+        // Enemy.Init, here and in the campaign, so he walks through them)
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {

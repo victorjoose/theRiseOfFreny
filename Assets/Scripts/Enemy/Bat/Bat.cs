@@ -1,18 +1,18 @@
 using UnityEngine;
 
-// Flying enemy: hovers near its spawn point and, when Freny comes into sight, swoops at her.
-// Next to her it stops, rears back and flashes for a moment (the wind-up), then lunges and bites;
-// she can strike it or step away during the wind-up. After a bite it pulls back before coming in
-// again. It ignores platforms, so it reaches her wherever she is.
+// Flying enemy: hovers near its spawn point and, when Freny comes into sight, swoops at him.
+// Next to him it stops, rears back and flashes for a moment (the wind-up), then lunges and bites;
+// he can strike it or step away during the wind-up. After a bite it pulls back before coming in
+// again. It ignores platforms, so it reaches him wherever he is.
 public class Bat : Enemy {
 
     [SerializeField] private float hoverAmplitude = 0.4f;
     [SerializeField] private float hoverFrequency = 2.5f;
     [SerializeField] private float biteDistance = 0.9f;   // horizontal, when at body height
     [SerializeField] private float biteCooldown = 1.4f;
-    [SerializeField] private float sideOffset = 0.7f;     // comes in beside Freny, not down onto her head
+    [SerializeField] private float sideOffset = 0.7f;     // comes in beside Freny, not down onto his head
     [SerializeField] private float biteWindup = 0.45f;    // seconds it hangs back, flashing, before the bite
-    [SerializeField] private float rearBack = 0.45f;      // how far it pulls away from her during the wind-up
+    [SerializeField] private float rearBack = 0.45f;      // how far it pulls away from him during the wind-up
     [SerializeField] private float retreatTime = 0.5f;    // seconds it backs off after a bite
     private static readonly Color WindupTint = new Color(1f, 0.45f, 0.45f);
     private float side = 1f;
@@ -48,7 +48,7 @@ public class Bat : Enemy {
         UpdateRival();
         Enemy foe = Rival;
         distance = Vector2.Distance(transform.position, player_t.position);
-        // in the arena it comes for her from anywhere while there is room among the chasers
+        // in the arena it comes for him from anywhere while there is room among the chasers
         bool nearby = distance <= radius * Tuning.EnemyAggro.Value || isHit;
         bool chasing = foe != null || (player.Health > 0 && JoinChase(nearby));
         if (foe != null || player.Health <= 0) {
@@ -62,14 +62,14 @@ public class Bat : Enemy {
         Vector3 centerOffset = (Vector3)Center - transform.position; // its own body vs its pivot
         Vector3 goal;
         if (chasing) {
-            // approach from the side it is already on, its body level with the middle of hers
+            // approach from the side it is already on, its body level with the middle of him
             // (aiming at player_t put it at head height, over the sword and the shots)
             if (Mathf.Abs(transform.position.x - body.x) > sideOffset * 1.5f) {
                 side = Mathf.Sign(transform.position.x - body.x);
             }
             goal = body + new Vector3(side * sideOffset, 0f, 0f) - centerOffset;
             if (windupEnd >= 0f) {
-                // rear back, a little up and away from her, so the bite is readable
+                // rear back, a little up and away from him, so the bite is readable
                 goal += new Vector3(side * rearBack, rearBack * 0.5f, 0f);
             } else if (Time.time < retreatUntil) {
                 goal += new Vector3(side * 1.6f, 0.8f, 0f);
@@ -89,7 +89,7 @@ public class Bat : Enemy {
 
         float dx = transform.position.x - before.x;
         if (windupEnd >= 0f) {
-            dx = body.x - transform.position.x; // keeps facing her while it rears back
+            dx = body.x - transform.position.x; // keeps facing him while it rears back
         }
         if (Mathf.Abs(dx) > 0.0001f) {
             // sprites face left by default, so scale.x = -1 means looking right
@@ -125,7 +125,7 @@ public class Bat : Enemy {
             return;
         }
 
-        // the lunge: she can still have moved out of reach (it rears back, so the reach is longer)
+        // the lunge: he can still have moved out of reach (it rears back, so the reach is longer)
         EndWindup();
         PlaySound("attack");
         Vector3 lunge = new Vector3(-side * rearBack, -rearBack * 0.5f, 0f);
