@@ -7,6 +7,11 @@ using UnityEngine.SceneManagement;
 // prefab), added here to stages that have no uGUI HUD (UIManager) of their own.
 public class CampaignHud : MonoBehaviour {
 
+    // where the stage panel starts on touch screens (screen pixels from the top, below the coins)
+    public const float TouchStatusTop = 140f;
+
+    private static string DoorKey => TouchControls.Active ? "Direcional para cima" : "W";
+
     [SerializeField] private KeyCode stageListKey = KeyCode.Tab;
 
     private Player player;
@@ -66,7 +71,7 @@ public class CampaignHud : MonoBehaviour {
 
         if (LevelDoor.Current && LevelDoor.Current.pressUp && !run.Finished && !player.IsDead) {
             string what = LevelDoor.Current.Locked ? "Derrote o chefe para abrir a porta"
-                : LevelDoor.Current.kind == LevelDoor.Kind.Exit ? "W: sair da fase" : "W: entrar";
+                : LevelDoor.Current.kind == LevelDoor.Kind.Exit ? DoorKey + ": sair da fase" : DoorKey + ": entrar";
             GUI.Label(new Rect(0, Screen.height * 0.7f, Screen.width, 40), what, bigStyle);
         }
 
@@ -85,8 +90,10 @@ public class CampaignHud : MonoBehaviour {
     }
 
     private void DrawStatus() {
-        // bottom right: the HUD has hearts and weapons top left, score and combo top center, coins top right
-        GUILayout.BeginArea(new Rect(Screen.width - 290, Screen.height - 110, 280, 100));
+        // bottom right: the HUD has hearts and weapons top left, score and combo top center, coins top right;
+        // on touch screens the buttons own the bottom right, so it goes under the coins
+        float top = TouchControls.Active ? TouchStatusTop : Screen.height - 110;
+        GUILayout.BeginArea(new Rect(Screen.width - 290, top, 280, 100));
         GUILayout.BeginVertical(boxStyle);
         int index = CampaignLevels.IndexOf(run.StageId);
         CampaignLevels.Stage stage = CampaignLevels.All[index];

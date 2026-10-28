@@ -118,16 +118,16 @@ public static class InputBindings {
     // ---- reading ----
 
     public static bool Get(GameAction action) {
-        return Key(Keyboard(action)) || Key(Gamepad(action)) || Extra(action, Input.GetKey);
+        return Key(Keyboard(action)) || Key(Gamepad(action)) || Extra(action, Input.GetKey) || TouchControls.Get(action);
     }
 
     public static bool GetDown(GameAction action) {
-        return KeyDown(Keyboard(action)) || KeyDown(Gamepad(action)) || Extra(action, Input.GetKeyDown) ||
+        return KeyDown(Keyboard(action)) || KeyDown(Gamepad(action)) || Extra(action, Input.GetKeyDown) || TouchControls.GetDown(action) ||
                (action == GameAction.Interact && StickUpPressed());
     }
 
     public static bool GetUp(GameAction action) {
-        return KeyUp(Keyboard(action)) || KeyUp(Gamepad(action)) || Extra(action, Input.GetKeyUp);
+        return KeyUp(Keyboard(action)) || KeyUp(Gamepad(action)) || Extra(action, Input.GetKeyUp) || TouchControls.GetUp(action);
     }
 
     // fixed second keys that were there before the bindings existed
