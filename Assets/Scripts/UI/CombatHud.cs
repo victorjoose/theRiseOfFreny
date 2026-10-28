@@ -62,7 +62,7 @@ public class CombatHud : MonoBehaviour {
         DrawBars(head.xMin, head.yMax + 6f * scale, heartsRight - head.xMin, scale);
         // the weapons loose on the right of the hearts (and of the armor hearts' places)
         float size = 84f * scale;   // the sword and gun sprites are small inside their frames
-        DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
+        weaponsRight = DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
     }
 
     // the portrait and hearts of the uGUI HUD, on screen in GUI coordinates (y down); a fixed
@@ -101,7 +101,8 @@ public class CombatHud : MonoBehaviour {
         return Rect.MinMaxRect(min.x, Screen.height - max.y, max.x, Screen.height - min.y);
     }
 
-    private void DrawWeapons(float x, float y, float size, float scale) {
+    // returns where the last icon ends, so the score can keep clear of it
+    private float DrawWeapons(float x, float y, float size, float scale) {
         float swordX = x;
         DrawIcon(player.GreatSwordActive ? Icon(greatSwordIcon, a => a.greatSwordIcon) : Icon(swordIcon, a => a.swordIcon), ref x, y, size);
         if (player.GreatSwordSwings > 0 && !FrenyProgress.HasGreatSword) {
@@ -138,6 +139,7 @@ public class CombatHud : MonoBehaviour {
                 DrawMeter(new Rect(gx, y + size + 2f, size, 6f * scale), player.GrenadeCharge, Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge));
             }
         }
+        return x;
     }
 
     // the gun in hand: a bright frame around its icon, and its name for a moment after a switch
@@ -176,6 +178,64 @@ public class CombatHud : MonoBehaviour {
         }
         UpdatePortrait();
         UpdateArmorHearts();
+        MoveScore();
+    }
+
+    // ---- the scene's Score and Combo texts: right of centre, and always clear of the weapons ----
+
+    private static readonly string[] ScoreParts = { "ScoreTitleText", "ScoreText", "ComboTitleText", "ComboText" };
+    private readonly List<RectTransform> scoreParts = new List<RectTransform>();
+    private readonly List<Vector3> scoreHome = new List<Vector3>();
+    private float weaponsRight = -1f;   // screen x where the weapon icons end (OnGUI)
+    private bool scoreSearched;
+
+    private void MoveScore() {
+        if (!scoreSearched) {
+            scoreSearched = true;
+            foreach (Text text in FindCompat.All<Text>()) {
+                if (System.Array.IndexOf(ScoreParts, text.name) >= 0) {
+                    scoreParts.Add(text.rectTransform);
+                }
+            }
+            // a part inside another part moves with it
+            scoreParts.RemoveAll(part => scoreParts.Exists(other => other != part && part.IsChildOf(other)));
+            foreach (RectTransform part in scoreParts) {
+                scoreHome.Add(part.position);
+            }
+        }
+        if (scoreParts.Count == 0 || weaponsRight < 0f) {
+            return;
+        }
+        float left = float.MaxValue, right = float.MinValue;
+        for (int i = 0; i < scoreParts.Count; i++) {
+            if (scoreParts[i] == null) {
+                return;
+            }
+            scoreParts[i].position = scoreHome[i];
+            Rect r = ScreenRect(scoreParts[i]);
+            left = Mathf.Min(left, r.xMin);
+            right = Mathf.Max(right, r.xMax);
+        }
+        // a bit right of the centre (José), and never over the last weapon icon
+        float scale = Screen.width / 1920f;
+        float wantLeft = Screen.width * 0.58f - (right - left) / 2f;
+        wantLeft = Mathf.Max(wantLeft, weaponsRight + 40f * scale);
+        float dx = wantLeft - left;
+        for (int i = 0; i < scoreParts.Count; i++) {
+            scoreParts[i].position = ScreenShift(scoreParts[i], scoreHome[i], dx);
+        }
+    }
+
+    // the world position dx screen pixels to the right of home, on this rect's canvas
+    private static Vector3 ScreenShift(RectTransform rect, Vector3 home, float dx) {
+        Canvas canvas = rect.GetComponentInParent<Canvas>();
+        Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(camera, home) + new Vector2(dx, 0f);
+        RectTransform parent = rect.parent as RectTransform;
+        if (parent != null && RectTransformUtility.ScreenPointToWorldPointInRectangle(parent, screen, camera, out Vector3 world)) {
+            return new Vector3(world.x, world.y, home.z);
+        }
+        return home;
     }
 
     private void UpdatePortrait() {
