@@ -67,7 +67,7 @@ service cloud.firestore {
       let d = request.resource.data;
       return d.keys().hasOnly(['name', 'score', 'sig', 'updatedAt'])
           && d.name is string && d.name.size() > 0 && d.name.size() <= 16
-          && d.score is int && d.score >= 0 && d.score <= 10000000
+          && d.score is int && d.score >= 0 && d.score <= 1000000000
           && d.updatedAt == request.time;
     }
 
@@ -87,10 +87,13 @@ service cloud.firestore {
           && request.resource.data.score <= maxScoreAfter((request.time - get(path).data.startedAt).seconds());
     }
 
-    // Most points a run can make in s seconds. The combo grows with every kill, so the score
-    // grows faster the longer a run lasts.
+    // Most points a run can make in s real seconds. The combo only resets when Freny stops
+    // killing, so a long run grows about with the cube of its length. Measured with the arena
+    // autopilot on Hard and Freny (2026-10-28, invulnerable up to 20 min) and fitted with ~1.5x
+    // room: 300 g + 0.03 g^3 points after g game seconds. The game runs at up to 1.5x speed,
+    // so g = 1.5 s: 450 s + 0.10125 s^3.
     function maxScoreAfter(s) {
-      return s * (1000 + 20 * s);
+      return 450 * s + 0.10125 * s * s * s;
     }
 
     function validSave() {
