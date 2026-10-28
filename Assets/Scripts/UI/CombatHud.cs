@@ -27,6 +27,7 @@ public class CombatHud : MonoBehaviour {
     private static readonly Color EnergyColor = new Color(1f, 0.86f, 0.2f);
     private static readonly Color EnergyRefillColor = new Color(0.85f, 0.65f, 0.15f);
     private static readonly Color RageFillColor = new Color(0.75f, 0.15f, 0.15f);
+    private static readonly Color RageBack = new Color(0.22f, 0.04f, 0.06f, 1f);   // reads red even when empty
     private static readonly Color MeterBack = new Color(0.04f, 0.02f, 0.08f, 1f);
 
     private Player player;
@@ -79,8 +80,13 @@ public class CombatHud : MonoBehaviour {
         head = ScreenRect(portrait.rectTransform);
         Rect heart = ScreenRect(lastHeart.rectTransform);
         heartsRight = heart.xMax;
-        Image lastArmor = armorHearts.Count > 0 ? armorHearts[armorHearts.Count - 1] : null;
-        rowRight = lastArmor != null ? ScreenRect(lastArmor.rectTransform).xMax : heartsRight;
+        // right after the last heart shown: the weapons move over when armor comes or goes
+        rowRight = heartsRight;
+        foreach (Image armor in armorHearts) {
+            if (armor != null && armor.enabled) {
+                rowRight = Mathf.Max(rowRight, ScreenRect(armor.rectTransform).xMax);
+            }
+        }
         rowMiddle = heart.center.y;
     }
 
@@ -161,7 +167,7 @@ public class CombatHud : MonoBehaviour {
             DrawMeter(new Rect(x, y, width, height), run, player.IsRunning ? EnergyColor : EnergyRefillColor);
         }
         y += height + 6f * scale;
-        DrawMeter(new Rect(x, y, width, height), player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : RageFillColor);
+        DrawMeter(new Rect(x, y, width, height), player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : RageFillColor, RageBack);
         if (player.Raging) {
             ShadowLabel(new Rect(x + width + 8f * scale, y - 6f * scale, 160f * scale, 22f * scale), $"FÚRIA! {Mathf.CeilToInt(player.RageLeft * 20f)}s");
         }
@@ -227,7 +233,7 @@ public class CombatHud : MonoBehaviour {
         }
         for (int i = 0; i < armorHearts.Count; i++) {
             if (armorHearts[i]) {
-                armorHearts[i].enabled = i < player.Armor;
+                armorHearts[i].enabled = i < player.Armor && !player.IsDead;
             }
         }
     }
@@ -279,10 +285,14 @@ public class CombatHud : MonoBehaviour {
 
     // a dark well with a violet edge, filled from the left
     private static void DrawMeter(Rect rect, float fill, Color color) {
+        DrawMeter(rect, fill, color, MeterBack);
+    }
+
+    private static void DrawMeter(Rect rect, float fill, Color color, Color back) {
         float t = Mathf.Max(1f, rect.height / 6f);
         Fill(rect, ButtonEdge);
         Rect inner = new Rect(rect.x + t, rect.y + t, rect.width - 2f * t, rect.height - 2f * t);
-        Fill(inner, MeterBack);
+        Fill(inner, back);
         Fill(new Rect(inner.x, inner.y, inner.width * Mathf.Clamp01(fill), inner.height), color);
     }
 
