@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public static class GuideScreen {
 
     private const float IconBox = 34f;
-    private static readonly string[] Topics = { "Armas", "Fúria e defesa", "Itens", "Onde achar", "Armeiro", "Arena" };
+    private static readonly string[] Topics = { "Armas", "Fúria e defesa", "Itens", "Onde achar", "Armeiro", "Inimigos", "Arena" };
     private static int lastTopic;
 
     public static MenuPage Guide(MenuStack stack) {
@@ -46,6 +46,7 @@ public static class GuideScreen {
             case 2: Items(entries, art); break;
             case 3: Drops(entries, art); break;
             case 4: Shop(entries, art); break;
+            case 5: Enemies(entries, art); break;
             default: Arena(entries, art); break;
         }
     }
@@ -65,7 +66,7 @@ public static class GuideScreen {
         Entry(parent, art ? art.grenade : null, "Granada",
             "Segure para carregar a força, solte para lançar em arco; sem espera entre uma e outra. " +
             "Explode em 1 s, ao tocar um inimigo ou ao cair no chão: 3 de dano em todos num raio " +
-            "grande (mata qualquer inimigo) e quebra baús e vasos. Cuidado: perto demais, o Freny " +
+            "grande (mata quase todos; o Golem Vermelho aguenta uma) e quebra baús e vasos. Cuidado: perto demais, o Freny " +
             "também leva 2 de dano e é arremessado. Até 6.");
     }
 
@@ -125,6 +126,22 @@ public static class GuideScreen {
         Entry(parent, art ? art.heart : null, "Vida, Velocidade e Recarga",
             "+1 coração, +8% de velocidade, -10% de recarga por nível. Custam 100, +50 a cada " +
             "nível. O Inventário deixa armas compradas em casa.");
+    }
+
+    // the tough ones; the Arena brings them in as the run heats up (ArenaDirector's list in the scene)
+    private static void Enemies(Transform parent, MenuArt art) {
+        Entry(parent, null, "Golem",
+            "Lento e teimoso: depois que vê o Freny, não larga. O soco tira 2 corações e derruba. " +
+            "2 de vida.");
+        Entry(parent, null, "Golem Vermelho",
+            "Pedra vermelha e olhos acesos. Um tanque: 6 de vida (aguenta uma granada), quase não " +
+            "recua com os golpes e o soco tira 2 e derruba. Vale 500 pontos e 6 moedas.");
+        Entry(parent, null, "Feiticeiro",
+            "Fica parado e lança bolas que tiram 2 e empurram; abaixar desvia de um tiro reto. " +
+            "Nas torres, some depois de 8 feitiços. 2 de vida.");
+        Entry(parent, null, "Feiticeiro Supremo",
+            "Olho e manto vermelhos. Mira onde o Freny vai estar, não onde ele está: mude de " +
+            "direção. 3 de vida; é o último a aparecer na Arena.");
     }
 
     private static void Arena(Transform parent, MenuArt art) {
