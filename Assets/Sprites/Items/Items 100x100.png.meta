@@ -26,6 +26,12 @@ TextureImporter:
   - first:
       213: -2503445470904615350
     second: Items 100x100_7
+  - first:
+      213: -6195256354666351195
+    second: Items 100x100_rage_helmet
+  - first:
+      213: -6371926176569892122
+    second: Items 100x100_berserker_helmet
   externalObjects: {}
   serializedVersion: 12
   mipmaps:
@@ -314,6 +320,48 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: Items 100x100_rage_helmet
+      rect:
+        serializedVersion: 2
+        x: 636
+        y: 32
+        width: 32
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4bb677a5ecdc34920800000000000000
+      internalID: -6195256354666351195
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Items 100x100_berserker_helmet
+      rect:
+        serializedVersion: 2
+        x: 724
+        y: 32
+        width: 56
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 569f125c15c798bf0800000000000000
+      internalID: -6371926176569892122
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -333,6 +381,8 @@ TextureImporter:
       Items 100x100_5: -146668759384179144
       Items 100x100_6: -1480233837858187749
       Items 100x100_7: -2503445470904615350
+      Items 100x100_rage_helmet: -6195256354666351195
+      Items 100x100_berserker_helmet: -6371926176569892122
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

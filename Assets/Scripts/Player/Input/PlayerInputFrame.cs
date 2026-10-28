@@ -1,0 +1,29 @@
+using UnityEngine;
+
+// One frame of player intent. Player.cs only reads this, so a person and the arena
+// autopilot drive Freny through exactly the same actions, physics and cooldowns.
+public struct PlayerInputFrame {
+    public float move;          // -1 left .. 1 right
+    public bool jumpPressed;    // this frame only
+    public bool jumpHeld;       // not used by the fixed-height jump; kept for a variable jump later
+    public bool meleePressed;
+    public bool rangedPressed;
+    public bool dashPressed;
+    public bool runHeld;         // sprint while held (short, with a cooldown)
+    public bool crouchHeld;      // down: crouch while on the ground
+    public bool aimUpHeld;       // up: the gun fires straight up
+    public bool selectPistol;    // weapon keys
+    public bool selectShotgun;
+    public bool potionPressed;
+    public bool grenadePressed;  // release: throw now
+    public bool grenadeHeld;     // charging (the HUD shows the power bar)
+    public float grenadeCharge;  // 0..1 power of the throw when grenadePressed
+
+    public bool IsEmpty =>
+        Mathf.Approximately(move, 0f) && !jumpPressed && !jumpHeld && !meleePressed &&
+        !rangedPressed && !dashPressed && !potionPressed && !grenadePressed && !grenadeHeld && !runHeld && !crouchHeld && !aimUpHeld && !selectPistol && !selectShotgun;
+}
+
+public interface IPlayerInputSource {
+    PlayerInputFrame ReadInput();
+}

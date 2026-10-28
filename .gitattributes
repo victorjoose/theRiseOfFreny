@@ -1,0 +1,70 @@
+# Ver CONTRIBUTING.md para o porquê de cada regra.
+
+# ---------- Arquivos YAML da Unity: Smart Merge ----------
+# "unityyamlmerge" é configurado por clone com Tools/git/setup.ps1 (ou setup.sh).
+# Sem essa configuração o Git usa o merge de texto normal.
+*.unity            merge=unityyamlmerge text eol=lf
+*.prefab           merge=unityyamlmerge text eol=lf
+*.asset            merge=unityyamlmerge text eol=lf
+*.anim             merge=unityyamlmerge text eol=lf
+*.controller       merge=unityyamlmerge text eol=lf
+*.overrideController merge=unityyamlmerge text eol=lf
+*.mat              merge=unityyamlmerge text eol=lf
+*.physicsMaterial2D merge=unityyamlmerge text eol=lf
+*.physicsmaterial2d merge=unityyamlmerge text eol=lf
+*.playable         merge=unityyamlmerge text eol=lf
+*.mask             merge=unityyamlmerge text eol=lf
+*.terrainlayer     merge=unityyamlmerge text eol=lf
+*.spriteatlas      merge=unityyamlmerge text eol=lf
+*.spriteatlasv2    merge=unityyamlmerge text eol=lf
+*.meta             text eol=lf
+*.scenetemplate    text eol=lf
+
+# ---------- Binários comuns: ficam no Git normal ----------
+# O repo é pequeno (sprites em pixel art, áudio curto) e as sessões do Claude na nuvem
+# não conseguem enviar objetos LFS, por isso PNG/OGG/fontes não vão para o LFS.
+# "binary" = sem diff de texto, sem merge e sem conversão de fim de linha.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.tga   binary
+*.bmp   binary
+*.ogg   binary
+*.mp3   binary
+*.ttf   binary
+*.otf   binary
+*.dll   binary
+*.so    binary
+*.a     binary
+
+# ---------- Arquivos grandes ou fonte de arte: Git LFS com trava ----------
+# Impossíveis de mesclar. "lockable" deixa o arquivo só-leitura até a pessoa rodar
+# "git lfs lock <arquivo>". Nenhum existe no repo ainda; valem para os novos.
+*.psd       filter=lfs diff=lfs merge=lfs -text lockable
+*.psb       filter=lfs diff=lfs merge=lfs -text lockable
+*.aseprite  filter=lfs diff=lfs merge=lfs -text lockable
+*.ase       filter=lfs diff=lfs merge=lfs -text lockable
+*.kra       filter=lfs diff=lfs merge=lfs -text lockable
+*.xcf       filter=lfs diff=lfs merge=lfs -text lockable
+*.blend     filter=lfs diff=lfs merge=lfs -text lockable
+*.fbx       filter=lfs diff=lfs merge=lfs -text lockable
+*.FBX       filter=lfs diff=lfs merge=lfs -text lockable
+*.wav       filter=lfs diff=lfs merge=lfs -text lockable
+*.aif       filter=lfs diff=lfs merge=lfs -text lockable
+*.aiff      filter=lfs diff=lfs merge=lfs -text lockable
+*.flac      filter=lfs diff=lfs merge=lfs -text lockable
+*.tif       filter=lfs diff=lfs merge=lfs -text
+*.tiff      filter=lfs diff=lfs merge=lfs -text
+*.exr       filter=lfs diff=lfs merge=lfs -text
+*.hdr       filter=lfs diff=lfs merge=lfs -text
+*.mp4       filter=lfs diff=lfs merge=lfs -text
+*.mov       filter=lfs diff=lfs merge=lfs -text
+*.zip       filter=lfs diff=lfs merge=lfs -text
+*.7z        filter=lfs diff=lfs merge=lfs -text
+
+# ---------- Código ----------
+*.cs    text diff=csharp
+*.py    text eol=lf
+*.sh    text eol=lf
+*.ps1   text eol=crlf

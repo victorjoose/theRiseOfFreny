@@ -1,34 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using Utility;
 
-public class Golem : Enemy, IDamageable
-{
-    public int Health { get; set; }
-    //Use for initialize
-    public override void Init()
-    {
-        base.Init();
-
-        //gets the inspector value
-        Health = base.health;
-    }
-
-    public void Damage()
-    {
-        if (!Util.IsAlive(isDead, gameObject)) {
-            return;
-        }
-        Debug.Log("Golem::Damage()");
-        Health--;
-        anim.SetTrigger("Hit");
-        isHit = true;
-        anim.SetBool("InCombat", true);
-
-        if (Util.ShouldBeDead(Health))
-        {
-            isDead = Util.Dies(anim, gameObject);
-        }
-    }
+// Heavy melee enemy: slow but stubborn (sight 7 in the prefab, and it keeps after Freny), and its
+// punch takes two hearts and shoves her back (knockback in the prefab). Everything else is the Enemy base.
+public class Golem : Enemy {
+    protected override int HitDamage => 2;
+    protected override Color DeathColor => new Color(0.6f, 0.55f, 0.5f);
+    protected override string SoundName => "golem";
 }

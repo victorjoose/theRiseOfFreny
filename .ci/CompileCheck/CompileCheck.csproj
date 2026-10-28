@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0414;CS0169;CS0649;NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" />
+    <!-- real uGUI (UnityEngine.UI) for the menus; its monolithic UnityEngine dependency is left out
+         because UnityEngine.Modules already provides those types -->
+    <PackageReference Include="Unity3D.UnityEngine.UI" Version="2020.3.21" />
+    <PackageReference Include="Unity3D.UnityEngine" Version="2020.3.21" ExcludeAssets="all" />
+    <Compile Include="../../Assets/Scripts/**/*.cs" />
+    <Compile Include="../../Assets/*.cs" />
+    <Compile Include="../../Assets/Runner/Scripts/*.cs" />
+  </ItemGroup>
+</Project>

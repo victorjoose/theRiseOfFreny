@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// Security rules for The Rise of Freny.
+// Publish them in the Firebase console (Firestore Database > Rules)
+// or with `firebase deploy --only firestore:rules` from this folder.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // One board per arena difficulty (leaderboard_hard, _freny, _medium, _easy), with one
+    // entry per player holding their best score there. Anyone can read a board; a player can
+    // only write their own entry, and the score can only go up.
+    // "leaderboard" is the old board that mixed every difficulty; the game no longer writes it,
+    // but builds already out there (the web build) still do until they are replaced.
+    match /{board}/{userId} {
+      allow read: if isBoard(board);
+      allow create: if isBoard(board) && isOwner(userId) && validEntry();
+      allow update: if isBoard(board) && isOwner(userId) && validEntry()
+                    && request.resource.data.score >= resource.data.score;
+      allow delete: if false;
+    }
+
+    // Each player's profile and lifetime stats, private to them.
+    match /saves/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && validSave();
+      allow delete: if false;
+    }
+
+    // The player's three save slots (coins, XP, upgrades, stages), private to them.
+    // "slots" is the JSON written by CloudProgressSync.
+    match /progress/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+                            && request.resource.data.keys().hasOnly(['slots', 'updatedAt'])
+                            && request.resource.data.slots is string
+                            && request.resource.data.slots.size() <= 200000;
+      allow delete: if false;
+    }
+
+    function isBoard(board) {
+      return board in ['leaderboard', 'leaderboard_hard', 'leaderboard_freny', 'leaderboard_medium', 'leaderboard_easy'];
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function validEntry() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'score', 'updatedAt'])
+          && d.name is string && d.name.size() > 0 && d.name.size() <= 16
+          && d.score is int && d.score >= 0 && d.score <= 10000000;
+    }
+
+    function validSave() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['playerName', 'bestScore', 'runsPlayed', 'totalCoins', 'updatedAt'])
+          && d.playerName is string && d.playerName.size() <= 16
+          && d.bestScore is int && d.runsPlayed is int && d.totalCoins is int;
+    }
+  }
+}

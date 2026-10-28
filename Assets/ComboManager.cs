@@ -13,6 +13,7 @@ public class ComboManager : MonoBehaviour
     private float combo = 1.0f;
     private Color originalColor;
     private Coroutine mainCoroutine;
+    private float shownCombo = -1f;
 
     // Start is called before the first frame update
     void Start()
@@ -27,8 +28,8 @@ public class ComboManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        UpdateComboText();
         timeRemaining -= Time.deltaTime;
+        UpdateComboText();
     }
 
 
@@ -58,13 +59,18 @@ public class ComboManager : MonoBehaviour
 
     public void HandleComboManager() {
         SetCombo(combo += 0.1f);
+        Sfx.Play("combo", 1f, Mathf.Min(1f + (combo - 1f) * 0.5f, 1.8f)); // higher with each kill in a row
         RestartBlinkingRoutine();
     }
     public void UpdateComboText() {
         if (timeRemaining <= 0) {
             combo = 1.0f;   
         }
-        comboText.text = combo.ToString("0.0", CultureInfo.InvariantCulture) + "x";
+        // building the string every frame created garbage for the GC; only rebuild it when it changes
+        if (combo != shownCombo) {
+            shownCombo = combo;
+            comboText.text = combo.ToString("0.0", CultureInfo.InvariantCulture) + "x";
+        }
     }
 
     public float GetCombo() {
