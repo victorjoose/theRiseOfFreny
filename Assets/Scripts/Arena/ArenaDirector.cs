@@ -352,22 +352,10 @@ public class ArenaDirector : MonoBehaviour {
         return false;
     }
 
-    // platforms a walker, a chest or a vase can go to: the ones Freny can reach
+    // platforms a walker, a flyer, a chest or a vase can go to: the ones Freny can reach (a flyer over
+    // a closed-off ledge or a scrap under the floor would be stuck there)
     private List<ArenaMap.Platform> Reachable(ArenaMap map) {
         return map == null || map.Floor == null ? null : map.ReachableFrom(map.Floor);
-    }
-
-    // a flyer can come out over any platform but the tower pockets (no room up there)
-    private static List<ArenaMap.Platform> Open(ArenaMap map) {
-        List<ArenaMap.Platform> open = new List<ArenaMap.Platform>();
-        if (map != null) {
-            foreach (ArenaMap.Platform p in map.Platforms) {
-                if (!p.tower) {
-                    open.Add(p);
-                }
-            }
-        }
-        return open;
     }
 
     // two points at the ends of the platform: the enemy patrols the whole of it
@@ -392,7 +380,7 @@ public class ArenaDirector : MonoBehaviour {
         float headroom = entry.flying ? 3.2f : sorcerer ? 1.6f : 2.2f;
         int tower = sorcerer && map != null ? TowerForNewSorcerer(map) : -1;
         List<ArenaMap.Platform> candidates = tower >= 0 ? TowerLedges(map, tower)
-            : entry.flying ? Open(map) : Reachable(map);
+            : Reachable(map);
         if (!RandomSpot(candidates, headroom, out Vector3 floorPoint, out ArenaMap.Platform platform)
             && (tower < 0 || !RandomSpot(Reachable(map), headroom, out floorPoint, out platform))) {
             if (spawners.Count > 0) {
