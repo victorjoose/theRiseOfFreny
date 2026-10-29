@@ -136,7 +136,8 @@ public class Cyclops : Enemy {
         }
         float scale = Screen.width / 1920f;
         float width = 640f * scale, height = 22f * scale;
-        Rect bar = new Rect((Screen.width - width) / 2f, 70f * scale, width, height);
+        // under the score and combo lines of the HUD (CombatHud), not over them
+        Rect bar = new Rect((Screen.width - width) / 2f, 200f * scale, width, height);
         Color old = GUI.color;
         GUI.color = new Color(0.04f, 0.02f, 0.08f, 0.9f);
         GUI.DrawTexture(new Rect(bar.x - 3f * scale, bar.y - 3f * scale, bar.width + 6f * scale, bar.height + 6f * scale), Texture2D.whiteTexture);

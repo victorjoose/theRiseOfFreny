@@ -87,7 +87,8 @@ public class Player : MonoBehaviour, IDamageable {
 
     private bool isGrounded;
     private bool wasGrounded;
-    private int groundedChecks;         // CheckGround calls in a row that found the ground
+    private bool landed;                // standing still on the ground since the last fall ended
+    private const float LandedSpeed = 1.5f; // falling slower than this on the ground = he has landed
     private bool isJumping;
     private bool stunned;
     private bool isDead;
@@ -398,15 +399,19 @@ public class Player : MonoBehaviour, IDamageable {
                 Fx.Dust(Feet, 5); // landed
                 Sfx.Play("freny_land", Feet);
             }
-            // the fall only ends once he has stood for two checks in a row: the wide feet circle
-            // grazed the platforms he fell past, and each graze used to restart the fall there, so
-            // a long drop through the arena never hurt (José, 2026-10-29)
-            groundedChecks++;
-            if (groundedChecks == 2 && !justTookOff) {
-                FallDamage(fallPeakY - transform.position.y);
-            }
-            if (groundedChecks >= 2) {
+            // the fall only ends once he has really stopped on the ground: the wide feet circle
+            // grazes the ledges he falls past for several frames, and each graze used to restart
+            // the fall there, so a long drop through the arena never hurt (José, 2026-10-29)
+            bool stopped = rg2d == null || rg2d.Vel().y > -LandedSpeed;
+            if (stopped) {
+                if (!landed && !justTookOff) {
+                    FallDamage(fallPeakY - transform.position.y);
+                }
+                landed = true;
                 fallPeakY = transform.position.y;
+            } else {
+                landed = false;
+                fallPeakY = Mathf.Max(fallPeakY, transform.position.y);
             }
             if (!justTookOff) {
                 isJumping = false;
@@ -414,7 +419,7 @@ public class Player : MonoBehaviour, IDamageable {
             airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
             lastGroundedTime = Time.time;
         } else {
-            groundedChecks = 0;
+            landed = false;
             fallPeakY = Mathf.Max(fallPeakY, transform.position.y);
         }
         wasGrounded = isGrounded;
