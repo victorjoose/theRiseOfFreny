@@ -92,24 +92,35 @@ namespace Online {
             });
         }
 
+        // a dropped connection or a server error is tried again a few times (a phone on a weak
+        // signal would otherwise lose the record); a refusal (4xx) is final
+        private const int Attempts = 3;
+
         private IEnumerator Post(string path, string body, Action<long, string> done) {
-            string token = null;
-            yield return _auth.GetIdToken(t => token = t);
-            if (token == null) {
-                done?.Invoke(0, null);
-                yield break;
-            }
-            using (UnityWebRequest req = new UnityWebRequest(_baseUrl + path, "POST")) {
-                req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body));
-                req.downloadHandler = new DownloadHandlerBuffer();
-                req.SetRequestHeader("Content-Type", "application/json");
-                req.SetRequestHeader("Authorization", "Bearer " + token);
-                yield return req.SendWebRequest();
-                if (req.result != UnityWebRequest.Result.Success) {
-                    Debug.LogWarning("[Online] API " + path + " failed (" + req.responseCode + "): " + req.downloadHandler.text);
+            long code = 0;
+            string text = null;
+            for (int attempt = 1; attempt <= Attempts; attempt++) {
+                string token = null;
+                yield return _auth.GetIdToken(t => token = t);
+                if (token != null) {
+                    using (UnityWebRequest req = new UnityWebRequest(_baseUrl + path, "POST")) {
+                        req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body));
+                        req.downloadHandler = new DownloadHandlerBuffer();
+                        req.SetRequestHeader("Content-Type", "application/json");
+                        req.SetRequestHeader("Authorization", "Bearer " + token);
+                        req.timeout = 20;
+                        yield return req.SendWebRequest();
+                        code = req.responseCode;
+                        text = req.downloadHandler.text;
+                        if (req.result != UnityWebRequest.Result.Success) {
+                            Debug.LogWarning("[Online] API " + path + " failed (" + code + "), try " + attempt + ": " + text);
+                        }
+                    }
                 }
-                done?.Invoke(req.responseCode, req.downloadHandler.text);
+                if (code >= 200 && code < 500) break;
+                if (attempt < Attempts) yield return new WaitForSecondsRealtime(2f * attempt);
             }
+            done?.Invoke(code, text);
         }
 
         [Serializable] private class Reply {

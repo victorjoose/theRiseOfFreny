@@ -51,6 +51,7 @@ namespace Online {
         private int _coinsAtStart;
         private RunLog _runLog;      // the ranked run's kills, for the ranking API
         private string _runToken;    // its ticket from the API (null until it answers)
+        private bool _tokenAsked;    // asked for it already (as soon as the game is online)
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap() {
@@ -217,6 +218,11 @@ namespace Online {
                     if (sig != null) {
                         bool written = false;
                         yield return _leaderboard.SubmitBest(level, Save.playerName, score, sig, ok => written = ok);
+                        if (!written) {
+                            // once more, for a dropped connection (the rules take one write per 20 s)
+                            yield return new WaitForSecondsRealtime(21f);
+                            yield return _leaderboard.SubmitBest(level, Save.playerName, score, sig, ok => written = ok);
+                        }
                         if (!written) refused = "o ranking não gravou a pontuação";
                     }
                 }
@@ -231,6 +237,7 @@ namespace Online {
 
         private IEnumerator StartRankedRun(ArenaLevel level) {
             RunLog log = _runLog;
+            _tokenAsked = true;
             yield return _api.StartRun(LeaderboardService.Collection(level), token => {
                 if (_runLog == log) _runToken = token;   // still the same run
             });
@@ -259,6 +266,7 @@ namespace Online {
             _runLevel = ArenaDifficulty.Current;
             _runLog = null;
             _runToken = null;
+            _tokenAsked = false;
         }
 
         private void Update() {
@@ -279,8 +287,12 @@ namespace Online {
                     // Player.coins is the persistent total (FrenyProgress), so count this run's share.
                     _coinsAtStart = _player.coins;
                 }
-                if (!_sawAlive && _arenaRun && State == Status.Online) {
+                // the log starts with the run even if the login is still going on (a new player who
+                // goes straight to the arena); the ticket is asked for as soon as the game is online
+                if (!_sawAlive && _arenaRun) {
                     _runLog = new RunLog(Time.time);
+                }
+                if (_runLog != null && !_tokenAsked && State == Status.Online) {
                     StartCoroutine(StartRankedRun(_runLevel));
                 }
                 _sawAlive = true;
