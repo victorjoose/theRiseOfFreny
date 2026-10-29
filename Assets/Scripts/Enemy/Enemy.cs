@@ -1061,8 +1061,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (isDead) {
             return;
         }
-        Health -= Mathf.Max(0, amount - 1);
-        TakeDamage();
+        TakeDamage(Mathf.Max(1, amount));
     }
 
     // a harder hit from Freny (the sword during Rage): the extra points first, then the usual hit
@@ -1070,8 +1069,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (isDead || BlockedHit()) {
             return;
         }
-        Health -= Mathf.Max(0, amount - 1);
-        TakeDamage();
+        TakeDamage(Mathf.Max(1, amount));
     }
 
     // how much of a point a bullet or shotgun pellet takes (the Escudeiro shrugs shots off)
@@ -1090,11 +1088,11 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         shotWear -= 1f;
         pushScale = push;
-        TakeDamage();
+        TakeDamage(1);
         pushScale = 1f;
     }
 
-        // a sword hit: push scales how far it is shoved back (the combo's third hit pushes harder)
+    // a sword hit: push scales how far it is shoved back (the combo's third hit pushes harder)
     public void Damage(int amount, float push) {
         pushScale = push;
         Damage(amount);
@@ -1106,15 +1104,16 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (isDead || BlockedHit()) {
             return;
         }
-        TakeDamage();
+        TakeDamage(1);
     }
 
-    private void TakeDamage() {
+    private void TakeDamage(int amount) {
         if (isDead) {
             return;
         }
         rival = null; // Freny hit it: he is the one it goes after now
-        Health--;
+        Health -= amount;
+        DamageNumbers.Show(Center + Vector3.up * (HalfHeight + 0.2f), "-" + amount, DamageNumbers.Hit);
         TakeHit(true);
         if (Health < 1) {
             Die(true);
