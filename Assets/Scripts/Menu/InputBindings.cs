@@ -146,16 +146,22 @@ public static class InputBindings {
 
     // the stick (or d-pad) pushed up this frame, for doors
     private static int stickFrame = -1;
-    private static float stickNow;
-    private static float stickBefore;
+    private static bool stickUpArmed = true;
+    private static bool stickUpNow;
+    private const float StickUpRelease = 0.4f; // a stick shaking around the threshold must not knock twice
 
     private static bool StickUpPressed() {
         if (stickFrame != Time.frameCount) {
             stickFrame = Time.frameCount;
-            stickBefore = stickNow;
-            stickNow = Input.GetAxisRaw("Vertical");
+            float vertical = Input.GetAxisRaw("Vertical");
+            stickUpNow = stickUpArmed && vertical > StickUpThreshold;
+            if (stickUpNow) {
+                stickUpArmed = false;
+            } else if (vertical < StickUpRelease) {
+                stickUpArmed = true;
+            }
         }
-        return stickNow > StickUpThreshold && stickBefore <= StickUpThreshold;
+        return stickUpNow;
     }
 
     // ---- names for the menus ----
