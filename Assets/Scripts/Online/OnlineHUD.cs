@@ -96,6 +96,7 @@ namespace Online {
         }
 
         private void OnRankingRefused(long score, string reason) {
+            if (_online.Record != OnlineServices.RecordStatus.None) return;   // the NOVO RECORDE box says it
             LastResult = score + " pontos · o servidor não aceitou no ranking (" + reason + ")";
         }
     }

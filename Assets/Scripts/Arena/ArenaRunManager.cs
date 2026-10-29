@@ -92,14 +92,14 @@ public class ArenaRunManager : MonoBehaviour {
             RectTransform rect = panel.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = new Vector2(0f, AutoRun || hasRecord ? 70f : 40f);
-            rect.sizeDelta = new Vector2(AutoRun ? 760f : 640f, (AutoRun ? 190f : 130f) + (hasRecord ? 80f : 0f));
+            rect.sizeDelta = new Vector2(AutoRun || hasRecord ? 820f : 640f, (AutoRun ? 190f : 130f) + (hasRecord ? 100f : 0f));
             Outline edge = panel.gameObject.AddComponent<Outline>();
             edge.effectColor = MenuKit.ButtonColor;
             edge.effectDistance = new Vector2(3f, -3f);
             banner = MenuKit.MakeText(panel.transform, "", MenuKit.TextSize, MenuKit.TextColor, TextAnchor.MiddleCenter);
             banner.raycastTarget = false;
             banner.supportRichText = true;
-            banner.lineSpacing = AutoRun ? 1.3f : 1.6f;
+            banner.lineSpacing = AutoRun || hasRecord ? 1.3f : 1.6f;
             MenuKit.Stretch(banner.rectTransform);
             if (asking) {
                 AddChoices(canvas.transform);
@@ -149,16 +149,17 @@ public class ArenaRunManager : MonoBehaviour {
             default: status = "<color=#FF7A7A>O recorde não pode ser salvo: " + online.RecordNote + "</color>"; break;
         }
         return "<size=30><color=#FFD84A>" + (online.RecordOnlyToday ? "RECORDE DO DIA!" : "NOVO RECORDE!") + "</color></size>\n" +
-               "<size=14>" + online.RecordScore + " pontos no " + ArenaDifficulty.Label(online.RecordLevel) + " · " + status + "</size>\n";
+               "<size=16>" + online.RecordScore + " pontos no " + ArenaDifficulty.Label(online.RecordLevel) + "</size>\n" +
+               "<size=14>" + status + "</size>\n";
     }
 
     private void AddSaveButton(Transform canvas) {
         MenuKit.EnsureEventSystem();
         RectTransform row = MenuKit.MakeRect("Save Record", canvas);
         row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
-        row.anchoredPosition = new Vector2(0f, -95f);   // under the record banner
-        row.sizeDelta = new Vector2(320f, 50f);
-        Button save = MenuKit.MakeButton(row, "SALVAR RECORDE", () => Online.OnlineServices.Instance?.SaveRecord(), MenuKit.TitleSize - 6);
+        row.anchoredPosition = new Vector2(0f, -120f);   // under the record banner
+        row.sizeDelta = new Vector2(420f, 64f);
+        Button save = MenuKit.MakeButton(row, "SALVAR RECORDE", () => Online.OnlineServices.Instance?.SaveRecord(), MenuKit.TextSize + 6);
         MenuKit.Stretch(save.GetComponent<RectTransform>());
         save.Select();
         saveButton = row.gameObject;
@@ -169,7 +170,7 @@ public class ArenaRunManager : MonoBehaviour {
         MenuKit.EnsureEventSystem();
         RectTransform row = MenuKit.MakeRect("Choices", canvas);
         row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
-        row.anchoredPosition = new Vector2(0f, bannerHasRecord ? -100f : -60f);   // under the auto panel
+        row.anchoredPosition = new Vector2(0f, bannerHasRecord ? -115f : -60f);   // under the auto panel
         row.sizeDelta = new Vector2(600f, 44f);
         HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 20f;
