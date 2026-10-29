@@ -382,7 +382,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         return floorY;
     }
 
-        // is there floor to step on just ahead (within one unit below the feet)? Ground enemies stop
+    // is there floor to step on just ahead (within one unit below the feet)? Ground enemies stop
     // or turn at platform edges instead of walking off into a hole
     protected bool GroundAhead(float direction) {
         if (col == null) {
@@ -653,6 +653,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             }
             return; // otherwise hold the edge and keep facing him
         }
+        // it faces the way it walks: heading for an edge to drop from, or clamped back into its
+        // patrol range, it walked backwards facing Freny ("moonwalk", José 2026-10-29)
+        transform.localScale = new Vector3(-dir, 1, 1);
         Vector2 target = new Vector2(targetX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, target, MoveSpeed * Time.deltaTime);
     }
@@ -1047,13 +1050,25 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // the small bar over its head (EnemyHealthBar); a boss draws its own
     public virtual bool ShowsHealthBar => true;
 
-    // true when the hit from Freny at that point bounces off (the Escudeiro's shield)
-    protected virtual bool Blocks(Vector3 from) {
-        return false;
+    // how much of a hit from Freny at that point gets through: 1 for most, less on the Escudeiro's
+    // shield and more on its back. shot: a bullet or shotgun pellet rather than the sword
+    protected virtual float HitScale(Vector3 from, bool shot) {
+        return 1f;
     }
 
-    private bool BlockedHit() {
-        return !isDead && player_t != null && Blocks(player != null ? player.Feet : player_t.position);
+    // hits scaled below a point add up here until they make one
+    private float wear;
+
+    private void ScaledHit(int amount, bool shot) {
+        float scale = player_t != null ? HitScale(player != null ? player.Feet : player_t.position, shot) : 1f;
+        wear += Mathf.Max(1, amount) * scale;
+        int whole = Mathf.FloorToInt(wear + 0.001f);
+        if (whole < 1) {
+            TakeHit(true);   // it flinches, but holds
+            return;
+        }
+        wear = Mathf.Max(0f, wear - whole);
+        TakeDamage(whole);
     }
 
     // a blast catches it whole: no shield in the way
@@ -1064,31 +1079,21 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         TakeDamage(Mathf.Max(1, amount));
     }
 
-    // a harder hit from Freny (the sword during Rage): the extra points first, then the usual hit
+    // a harder hit from Freny (the sword during Rage, the combo)
     public void Damage(int amount) {
-        if (isDead || BlockedHit()) {
+        if (isDead) {
             return;
         }
-        TakeDamage(Mathf.Max(1, amount));
+        ScaledHit(amount, false);
     }
 
-    // how much of a point a bullet or shotgun pellet takes (the Escudeiro shrugs shots off)
-    protected virtual float ShotFactor => 1f;
-    private float shotWear;
-
-    // a bullet or pellet from Freny: a full point, or ShotFactor of one, adding up until it makes one
+    // a bullet or pellet from Freny
     public void ShotDamage(float push) {
-        if (isDead || BlockedHit()) {
+        if (isDead) {
             return;
         }
-        shotWear += ShotFactor;
-        if (shotWear < 1f) {
-            TakeHit(true);   // it flinches, but holds
-            return;
-        }
-        shotWear -= 1f;
         pushScale = push;
-        TakeDamage(1);
+        ScaledHit(1, true);
         pushScale = 1f;
     }
 
@@ -1101,10 +1106,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // one point of damage from Freny's sword, a bullet or a grenade
     public virtual void Damage() {
-        if (isDead || BlockedHit()) {
+        if (isDead) {
             return;
         }
-        TakeDamage(1);
+        ScaledHit(1, false);
     }
 
     private void TakeDamage(int amount) {
@@ -1134,6 +1139,8 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         pushVelocity = dir * HitPush * pushScale;
     }
+
+    protected bool BeingPushed => pushVelocity != 0f;
 
     // moves it along the push; true while it is still being pushed (Update skips Movement)
     protected bool UpdatePush() {
