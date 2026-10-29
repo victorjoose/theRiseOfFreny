@@ -76,8 +76,16 @@ namespace Online {
             });
         }
 
-        // done(sig, null) when the run is accepted, done(null, reason) when it isn't
-        public IEnumerator FinishRun(string json, Action<string, string> done) {
+        // what the API gives an accepted run: the signature for the all-time board, and today's
+        // board with its own signature
+        public class Signed {
+            public string sig;
+            public string dailyBoard;
+            public string dailySig;
+        }
+
+        // done(signed, null) when the run is accepted, done(null, reason) when it isn't
+        public IEnumerator FinishRun(string json, Action<Signed, string> done) {
             yield return Post("/api/run/finish", json, (code, body) => {
                 Reply reply = null;
                 try {
@@ -85,7 +93,7 @@ namespace Online {
                 } catch (ArgumentException) {
                 }
                 if (code == 200 && !string.IsNullOrEmpty(reply?.sig)) {
-                    done?.Invoke(reply.sig, null);
+                    done?.Invoke(new Signed { sig = reply.sig, dailyBoard = reply.dailyBoard, dailySig = reply.dailySig }, null);
                 } else {
                     done?.Invoke(null, !string.IsNullOrEmpty(reply?.error) ? reply.error : "servidor fora do ar (" + code + ")");
                 }
@@ -126,6 +134,8 @@ namespace Online {
         [Serializable] private class Reply {
             public string token;
             public string sig;
+            public string dailyBoard;
+            public string dailySig;
             public string error;
         }
     }

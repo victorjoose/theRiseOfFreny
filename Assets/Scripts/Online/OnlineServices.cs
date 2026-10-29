@@ -15,6 +15,7 @@ namespace Online {
         public const int MaxNameLength = 16;
         private const string LocalSavePref = "online.save";
         private const string LocalBestPref = "online.best.";   // + level, this account's best on each ranked board
+        private const string LocalDailyPref = "online.daily.";  // + level, "<daily board>|<best>" for today's board
 
         public static OnlineServices Instance { get; private set; }
 
@@ -36,6 +37,7 @@ namespace Online {
         // when the player moves on), or says why it can't (the autopilot played, no connection).
         public enum RecordStatus { None, CanSave, Saving, Saved, CannotSave, Refused }
         public RecordStatus Record { get; private set; }
+        public bool RecordOnlyToday { get; private set; }   // beats today's best, not the all-time one
         public long RecordScore { get; private set; }
         public ArenaLevel RecordLevel { get; private set; }
         public string RecordNote { get; private set; }   // why it can't be / wasn't saved
@@ -46,6 +48,7 @@ namespace Online {
             public ArenaLevel level;
             public long score;
             public long previousBest;
+            public bool allTime;   // beats the all-time best too, not only today's
             public RunLog log;
             public string token;
         }
@@ -141,8 +144,23 @@ namespace Online {
             PlayerPrefs.Save();
         }
 
+        // this account's best on today's board (0 once the day turns)
+        public long DailyBestFor(ArenaLevel level) {
+            string[] saved = PlayerPrefs.GetString(LocalDailyPref + level, "").Split('|');
+            return saved.Length == 2 && saved[0] == LeaderboardService.DailyCollection(level) &&
+                   long.TryParse(saved[1], out long best) ? best : 0;
+        }
+
+        private static void SetDailyBest(ArenaLevel level, string board, long best) {
+            PlayerPrefs.SetString(LocalDailyPref + level, board + "|" + best);
+            PlayerPrefs.Save();
+        }
+
         private static void ClearBests() {
-            foreach (ArenaLevel level in ArenaDifficulty.Ranked) SetBest(level, 0);
+            foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
+                SetBest(level, 0);
+                PlayerPrefs.DeleteKey(LocalDailyPref + level);
+            }
         }
 
         public IEnumerator RefreshLeaderboard() {
@@ -219,6 +237,10 @@ namespace Online {
                 long? server = null;
                 yield return _leaderboard.GetOwn(level, s => server = s);
                 if (server != null) SetBest(level, server.Value);
+                string daily = LeaderboardService.DailyCollection(level);
+                long? today = null;
+                yield return _leaderboard.GetOwn(daily, s => today = s);
+                if (today != null) SetDailyBest(level, daily, today.Value);
             }
         }
 
@@ -242,18 +264,24 @@ namespace Online {
         private IEnumerator PushRecord(PendingRecord run) {
             if (_pending == run) _pending = null;
             SetRecord(RecordStatus.Saving);
-            string sig = null, refused = null;
+            ScoreApi.Signed signed = null;
+            string refused = null;
             yield return _api.FinishRun(run.log.ToJson(run.token, LeaderboardService.Collection(run.level), run.score),
-                (s, error) => { sig = s; refused = error; });
-            if (sig != null) {
-                bool written = false;
-                yield return _leaderboard.SubmitBest(run.level, Save.playerName, run.score, sig, ok => written = ok);
-                if (!written) {
-                    // once more, for a dropped connection (the rules take one write per 20 s)
-                    yield return new WaitForSecondsRealtime(21f);
-                    yield return _leaderboard.SubmitBest(run.level, Save.playerName, run.score, sig, ok => written = ok);
+                (s, error) => { signed = s; refused = error; });
+            if (signed != null) {
+                if (run.allTime) {
+                    bool written = false;
+                    yield return SubmitWithRetry(LeaderboardService.Collection(run.level), run.score, signed.sig, ok => written = ok);
+                    if (!written) refused = "o ranking não gravou a pontuação";
                 }
-                if (!written) refused = "o ranking não gravou a pontuação";
+                // today's board too (the site's Diário); a lower score than today's best there is
+                // simply not taken
+                if (refused == null && !string.IsNullOrEmpty(signed.dailyBoard) && !string.IsNullOrEmpty(signed.dailySig)) {
+                    bool written = false;
+                    yield return SubmitWithRetry(signed.dailyBoard, run.score, signed.dailySig, ok => written = ok);
+                    if (written) SetDailyBest(run.level, signed.dailyBoard, run.score);
+                    else if (!run.allTime) refused = "o ranking do dia não gravou a pontuação";
+                }
             }
             // still the record the banner shows (no newer run ended since)
             bool current = RecordScore == run.score && RecordLevel == run.level;
@@ -268,6 +296,17 @@ namespace Online {
             yield return RefreshLeaderboard();
         }
 
+        private IEnumerator SubmitWithRetry(string board, long score, string sig, Action<bool> done) {
+            bool written = false;
+            yield return _leaderboard.SubmitBest(board, Save.playerName, score, sig, ok => written = ok);
+            if (!written) {
+                // once more, for a dropped connection (the rules take one write per 20 s)
+                yield return new WaitForSecondsRealtime(21f);
+                yield return _leaderboard.SubmitBest(board, Save.playerName, score, sig, ok => written = ok);
+            }
+            done?.Invoke(written);
+        }
+
         private IEnumerator StartRankedRun(ArenaLevel level) {
             RunLog log = _runLog;
             _tokenAsked = true;
@@ -280,6 +319,7 @@ namespace Online {
             yield return _saves.Save(Save, null);
             foreach (ArenaLevel level in ArenaDifficulty.Ranked) {
                 if (BestFor(level) > 0) yield return _leaderboard.Rename(level, Save.playerName, null);
+                if (DailyBestFor(level) > 0) yield return _leaderboard.Rename(LeaderboardService.DailyCollection(level), Save.playerName, null);
             }
             yield return RefreshLeaderboard();
         }
@@ -355,9 +395,11 @@ namespace Online {
                 : assisted ? "corridas com o piloto automático não valem para o ranking"
                 : null;
             long previousBest = BestFor(_runLevel);
-            // beats the board's best, even if it can't go there: the banner says so and why
-            bool record = _arenaRun && score > 0 && score > previousBest;
-            bool newBest = record && unranked == null;
+            // beats the board's best (all-time, or today's), even if it can't go there: the
+            // banner says so and why
+            bool allTime = score > previousBest;
+            bool record = _arenaRun && score > 0 && (allTime || score > DailyBestFor(_runLevel));
+            bool newBest = record && allTime && unranked == null;
             Save.runsPlayed++;
             Save.totalCoins += coins;
             if (!assisted && score > Save.bestScore) Save.bestScore = score;
@@ -369,6 +411,7 @@ namespace Online {
             _pending = null;
             RecordScore = score;
             RecordLevel = _runLevel;
+            RecordOnlyToday = !allTime;
             if (!record) {
                 SetRecord(RecordStatus.None);
             } else if (assisted) {
@@ -378,7 +421,7 @@ namespace Online {
             } else if (_runLog == null || _runToken == null) {
                 SetRecord(RecordStatus.CannotSave, "a partida não conseguiu falar com o servidor no começo");
             } else {
-                _pending = new PendingRecord { level = _runLevel, score = score, previousBest = previousBest, log = _runLog, token = _runToken };
+                _pending = new PendingRecord { level = _runLevel, score = score, previousBest = previousBest, allTime = allTime, log = _runLog, token = _runToken };
                 SetRecord(RecordStatus.CanSave);
             }
             if (newBest && Record == RecordStatus.CannotSave) SetBest(_runLevel, previousBest);

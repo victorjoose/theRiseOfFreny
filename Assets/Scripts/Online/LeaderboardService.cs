@@ -18,6 +18,12 @@ namespace Online {
     public class LeaderboardService {
         public static string Collection(ArenaLevel level) => "leaderboard_" + level.ToString().ToLowerInvariant();
 
+        // today's board, daily_<level>_<yyyymmdd> by Brasília time (UTC-3), what the site's Diário
+        // tab reads. The API says which day a run counts for (ScoreApi.FinishRun); this is the guess
+        // for reading it.
+        public static string DailyCollection(ArenaLevel level) =>
+            "daily_" + level.ToString().ToLowerInvariant() + "_" + DateTime.UtcNow.AddHours(-3).ToString("yyyyMMdd");
+
         private readonly FirestoreClient _db;
         private readonly FirebaseAuthService _auth;
 
@@ -28,17 +34,26 @@ namespace Online {
 
         // sig: what ScoreApi.FinishRun returned for this score
         public IEnumerator SubmitBest(ArenaLevel level, string playerName, long score, string sig, Action<bool> done) {
+            yield return SubmitBest(Collection(level), playerName, score, sig, done);
+        }
+
+        // collection: an all-time or a daily board
+        public IEnumerator SubmitBest(string collection, string playerName, long score, string sig, Action<bool> done) {
             FirestoreFields fields = new FirestoreFields()
                 .Set("name", playerName)
                 .Set("score", score)
                 .Set("sig", sig)
                 .SetServerTime("updatedAt");
-            yield return _db.Patch(Collection(level) + "/" + _auth.UserId, fields, done);
+            yield return _db.Patch(collection + "/" + _auth.UserId, fields, done);
         }
 
         // The player's own score on a board, 0 when they have none. done(null) on a network error.
         public IEnumerator GetOwn(ArenaLevel level, Action<long?> done) {
-            yield return _db.Get(Collection(level) + "/" + _auth.UserId, (ok, body) => {
+            yield return GetOwn(Collection(level), done);
+        }
+
+        public IEnumerator GetOwn(string collection, Action<long?> done) {
+            yield return _db.Get(collection + "/" + _auth.UserId, (ok, body) => {
                 if (!ok) {
                     done?.Invoke(null);
                     return;
@@ -50,8 +65,12 @@ namespace Online {
 
         // Renames the player's entry without touching the score.
         public IEnumerator Rename(ArenaLevel level, string playerName, Action<bool> done) {
+            yield return Rename(Collection(level), playerName, done);
+        }
+
+        public IEnumerator Rename(string collection, string playerName, Action<bool> done) {
             FirestoreFields fields = new FirestoreFields().Set("name", playerName).SetServerTime("updatedAt");
-            yield return _db.Patch(Collection(level) + "/" + _auth.UserId, fields, done);
+            yield return _db.Patch(collection + "/" + _auth.UserId, fields, done);
         }
 
         public IEnumerator GetTop(ArenaLevel level, int limit, Action<List<LeaderboardEntry>> done) {
