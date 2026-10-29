@@ -166,7 +166,7 @@ public static class GuideScreen {
             "de um tiro reto. " +
             "Nas torres, muda de lugar a cada 3 feitiços e some depois de 8. 2 de vida. Na Arena, " +
             "contando os dois tipos, há no máximo 1 feiticeiro até 50 mil pontos, 2 depois disso e " +
-            "3 depois de 100 mil; quando um morre, outro só aparece no lugar dele 15 s depois. " +
+            "3 só depois de 1 milhão; quando um morre, outro só aparece no lugar dele 15 s depois. " +
             "De dia, as bolas " +
             "ganham uma borda escura para aparecer no céu claro.");
         Entry(parent, null, "Feiticeiro Supremo",
@@ -184,7 +184,8 @@ public static class GuideScreen {
             "No automático, a próxima corrida começa 10 s depois (ou na hora, em Jogar agora); com 10 mil " +
             "pontos ou mais, o jogo pergunta antes.");
         Entry(parent, art ? art.rageHelmet : null, "Dificuldade",
-            "Fácil, Médio, Difícil ou Freny: quanto maior, mais inimigos, mais rápidos e mais cedo.");
+            "Fácil, Médio, Difícil ou Freny: quanto maior, mais inimigos, mais rápidos e mais cedo. " +
+            "Com o tempo e os pontos a Arena aperta, mas para de apertar no primeiro Ciclope (50 mil) e só volta em 1 milhão.");
         Entry(parent, Achievements.Icon(Achievement.Cyclops), "Conquistas",
             "10 desafios (pausa > Conquistas). Só valem corridas manuais: depois que o piloto joga, a corrida não " +
             "dá mais conquistas. No fim da corrida, o servidor confere cada conquista nova e o site mostra quantos % " +

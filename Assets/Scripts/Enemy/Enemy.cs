@@ -164,14 +164,24 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // arena difficulty on attack rhythm (1 outside the arena)
     protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp * ScoreCooldown : 1f;
 
-    // José, 2026-10-29: the more points, the shorter every enemy's cooldown, so the run keeps
-    // getting harder: 1x at 0, then down in a straight line to 0.5x at 150 000 points and no lower
-    public const int ScoreCooldownFloorAt = 150000;
+    // José, 2026-10-29: the more points, the shorter every enemy's cooldown: 1x at 0 down to
+    // ScoreCooldownHold at the first Ciclope (50 000), held there until a million (it got too hard
+    // too fast after the first Ciclope), then down to 0.5x at 1 500 000 and no lower
+    public const int ScoreCooldownHoldFrom = 50000;
+    public const int ScoreCooldownHoldUntil = 1000000;
+    public const int ScoreCooldownFloorAt = 1500000;
+    public const float ScoreCooldownHold = 0.85f;
     public const float ScoreCooldownFloor = 0.5f;
     public static float ScoreCooldown {
         get {
             int score = ArenaBounds.Active && UIManager.Instance ? UIManager.Instance.Score : 0;
-            return Mathf.Lerp(1f, ScoreCooldownFloor, (float)score / ScoreCooldownFloorAt);
+            if (score <= ScoreCooldownHoldFrom) {
+                return Mathf.Lerp(1f, ScoreCooldownHold, (float)score / ScoreCooldownHoldFrom);
+            }
+            if (score <= ScoreCooldownHoldUntil) {
+                return ScoreCooldownHold;
+            }
+            return Mathf.Lerp(ScoreCooldownHold, ScoreCooldownFloor, (float)(score - ScoreCooldownHoldUntil) / (ScoreCooldownFloorAt - ScoreCooldownHoldUntil));
         }
     }
 
