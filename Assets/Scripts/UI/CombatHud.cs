@@ -69,6 +69,7 @@ public class CombatHud : MonoBehaviour {
                 input = player.GetComponent<FrenyInput>();
             }
             if (input != null && input.AutoEnabled) {
+                DrawAutoFrame(scale);
                 DrawAutoBadge(head, scale);
             }
             // the weapons loose on the right of the hearts (and of the armor hearts' places)
@@ -76,6 +77,21 @@ public class CombatHud : MonoBehaviour {
             weaponsRight = DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
         }
         DrawScore(scale);
+    }
+
+    // a purple frame around the whole screen while the autopilot is on (José, 2026-10-29), in the
+    // pulse of the A badge
+    private static readonly Color AutoFrameColor = new Color(0.62f, 0.28f, 1f);
+
+    private void DrawAutoFrame(float scale) {
+        float t = Mathf.Max(3f, 8f * scale);
+        float pulse = 0.65f + 0.25f * Mathf.Sin(Time.unscaledTime * 4f);
+        Color c = new Color(AutoFrameColor.r, AutoFrameColor.g, AutoFrameColor.b, pulse);
+        float w = Screen.width, h = Screen.height;
+        Fill(new Rect(0f, 0f, w, t), c);
+        Fill(new Rect(0f, h - t, w, t), c);
+        Fill(new Rect(0f, t, t, h - 2f * t), c);
+        Fill(new Rect(w - t, t, t, h - 2f * t), c);
     }
 
     // a big "A" left of Freny's head while the autopilot is on, gently pulsing (José, 2026-10-29:
