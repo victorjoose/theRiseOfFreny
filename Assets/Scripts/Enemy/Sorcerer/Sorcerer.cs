@@ -5,7 +5,9 @@ using UnityEngine;
 public class Sorcerer : Enemy {
     public GameObject hexballEffectPrefab;
     [SerializeField] private float castRange = 100f;  // the sorcerer always knows where Freny is and keeps casting
-    [SerializeField] private float castCooldown = 1.6f;
+    // one hexball, then 10 s before the next, at any difficulty (José, 2026-10-29: they were
+    // too strong at 1.6 s scaled by the difficulty)
+    private const float CastCooldown = 10f;
     // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second);
     // José, 2026-10-29: only from 50k on (was 15k)
     private const int HomingScore = 50000;
@@ -65,7 +67,7 @@ public class Sorcerer : Enemy {
                 laughed = true; // the Sorcerer Supreme laughs at Freny when the fight starts
                 PlaySound("laugh");
             }
-            nextCastTime = Time.time + castCooldown * Tuning.EnemyCooldown.Value * DifficultyCooldown;
+            nextCastTime = Time.time + CastCooldown;
         }
     }
 

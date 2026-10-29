@@ -140,7 +140,8 @@ public static class GuideScreen {
             "recua com os golpes e o soco tira 2 e derruba. Vale 500 pontos e 6 moedas. Na Arena, " +
             "só depois de 50 mil pontos.");
         Entry(parent, null, "Feiticeiro",
-            "Fica parado e lança bolas que tiram 2 e empurram; abaixar desvia de um tiro reto. " +
+            "Fica parado e lança uma bola a cada 10 segundos; ela tira 2 e empurra, e abaixar desvia " +
+            "de um tiro reto. " +
             "Nas torres, muda de lugar a cada 3 feitiços e some depois de 8. 2 de vida. Na Arena, " +
             "contando os dois tipos, há no máximo 1 feiticeiro até 50 mil pontos, 2 depois disso e " +
             "3 depois de 100 mil. Depois de 50 mil pontos, as bolas seguem o Freny por 2,5 s " +
