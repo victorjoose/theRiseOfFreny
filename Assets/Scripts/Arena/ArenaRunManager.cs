@@ -19,6 +19,9 @@ public class ArenaRunManager : MonoBehaviour {
     private float runStart;
     private float deathTime = -1f;
     private Text banner;
+    private GameObject saveButton;   // "Salvar recorde", while the record can be saved
+    private Canvas bannerCanvas;
+    private bool bannerHasRecord;    // built with the NOVO RECORDE lines (the record is known a frame late)
     private bool asking;   // an automatic run with a big score waits for the player
 
     public float RunSeconds => deathTime < 0f ? Time.time - runStart : deathTime - runStart;
@@ -75,28 +78,43 @@ public class ArenaRunManager : MonoBehaviour {
         if (player.gameOver != null && player.gameOver.activeSelf) {
             player.gameOver.SetActive(false);   // the scene's old "Press SPACE to play again..."
         }
+        bool hasRecord = Record != Online.OnlineServices.RecordStatus.None;
+        if (banner != null && bannerHasRecord != hasRecord) {
+            Destroy(bannerCanvas.gameObject);
+            banner = null;
+            saveButton = null;
+        }
         if (banner == null) {
             Canvas canvas = MenuKit.CreateCanvas("Run Over", 60, null);   // not under the player, who flips
+            bannerCanvas = canvas;
+            bannerHasRecord = hasRecord;
             Image panel = MenuKit.MakeImage("Panel", canvas.transform, MenuKit.PanelColor);
             RectTransform rect = panel.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = new Vector2(0f, AutoRun ? 70f : 40f);
-            rect.sizeDelta = new Vector2(AutoRun ? 760f : 640f, AutoRun ? 190f : 130f);
+            rect.anchoredPosition = new Vector2(0f, AutoRun || hasRecord ? 70f : 40f);
+            rect.sizeDelta = new Vector2(AutoRun || hasRecord ? 820f : 640f, (AutoRun ? 190f : 130f) + (hasRecord ? 100f : 0f));
             Outline edge = panel.gameObject.AddComponent<Outline>();
             edge.effectColor = MenuKit.ButtonColor;
             edge.effectDistance = new Vector2(3f, -3f);
             banner = MenuKit.MakeText(panel.transform, "", MenuKit.TextSize, MenuKit.TextColor, TextAnchor.MiddleCenter);
             banner.raycastTarget = false;
             banner.supportRichText = true;
-            banner.lineSpacing = AutoRun ? 1.3f : 1.6f;
+            banner.lineSpacing = AutoRun || hasRecord ? 1.3f : 1.6f;
             MenuKit.Stretch(banner.rectTransform);
             if (asking) {
                 AddChoices(canvas.transform);
             }
         }
+        if (saveButton == null && Record == Online.OnlineServices.RecordStatus.CanSave) {
+            AddSaveButton(bannerCanvas.transform);
+        }
+        if (saveButton != null) {
+            saveButton.SetActive(Record == Online.OnlineServices.RecordStatus.CanSave);
+        }
         if (AutoRun) {
             int score = UIManager.Instance != null ? UIManager.Instance.Score : 0;
-            banner.text = "<color=#EE8FFC>AUTOPILOTO - PONTUAÇÃO NÃO RANKEADA</color>\n" +
+            banner.text = RecordText() +
+                          "<color=#EE8FFC>AUTOPILOTO - PONTUAÇÃO NÃO RANKEADA</color>\n" +
                           "<size=12>" + score + " pontos · Freny caiu após " + RunSeconds.ToString("0") + "s\n" +
                           "(Autopiloto: habilitado)</size>\n" +
                           "<size=12>Desabilite o autopiloto para ter ranking</size>" +
@@ -106,8 +124,45 @@ public class ArenaRunManager : MonoBehaviour {
         string result = Online.OnlineHUD.Instance != null ? Online.OnlineHUD.Instance.LastResult : null;
         string next = WaitsForKey ? Time.time - deathTime >= minDeathTime ? Key(GameAction.Jump) + ": nova corrida" : ""
             : "Nova corrida em " + Mathf.CeilToInt(SecondsUntilRestart) + "s";
-        banner.text = "<color=#EE8FFC>Freny caiu após " + RunSeconds.ToString("0") + "s</color>\n" +
+        banner.text = RecordText() +
+                      "<color=#EE8FFC>Freny caiu após " + RunSeconds.ToString("0") + "s</color>\n" +
                       (string.IsNullOrEmpty(result) ? "" : "<size=12>" + result + "</size>\n") + next;
+    }
+
+    private static Online.OnlineServices.RecordStatus Record =>
+        Online.OnlineServices.Instance != null ? Online.OnlineServices.Instance.Record : Online.OnlineServices.RecordStatus.None;
+
+    // NOVO RECORDE on top of the banner when the run beat the board's best, and what happens to it:
+    // it can be saved, it is being saved, it was, or why it can't be (José, 2026-10-29: players
+    // must know when a record does not go to the ranking)
+    private static string RecordText() {
+        Online.OnlineServices online = Online.OnlineServices.Instance;
+        if (online == null || online.Record == Online.OnlineServices.RecordStatus.None) {
+            return "";
+        }
+        string status;
+        switch (online.Record) {
+            case Online.OnlineServices.RecordStatus.CanSave: status = "Salve o recorde para ele ir para o ranking"; break;
+            case Online.OnlineServices.RecordStatus.Saving: status = "Salvando o recorde..."; break;
+            case Online.OnlineServices.RecordStatus.Saved: status = "<color=#7CFC8A>Recorde salvo no ranking!</color>"; break;
+            case Online.OnlineServices.RecordStatus.Refused: status = "<color=#FF7A7A>Recusado pelo servidor: " + online.RecordNote + "</color>"; break;
+            default: status = "<color=#FF7A7A>Não vai para o ranking: " + online.RecordNote + "</color>"; break;
+        }
+        return "<size=30><color=#FFD84A>" + (online.RecordOnlyToday ? "RECORDE DO DIA!" : "NOVO RECORDE!") + "</color></size>\n" +
+               "<size=16>" + online.RecordScore + " pontos no " + ArenaDifficulty.Label(online.RecordLevel) + "</size>\n" +
+               "<size=14>" + status + "</size>\n";
+    }
+
+    private void AddSaveButton(Transform canvas) {
+        MenuKit.EnsureEventSystem();
+        RectTransform row = MenuKit.MakeRect("Save Record", canvas);
+        row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
+        row.anchoredPosition = new Vector2(0f, -120f);   // under the record banner
+        row.sizeDelta = new Vector2(420f, 64f);
+        Button save = MenuKit.MakeButton(row, "SALVAR RECORDE", () => Online.OnlineServices.Instance?.SaveRecord(), MenuKit.TextSize + 6);
+        MenuKit.Stretch(save.GetComponent<RectTransform>());
+        save.Select();
+        saveButton = row.gameObject;
     }
 
     // "Jogar de novo" (also on Space) and "Menu", under the banner
@@ -115,7 +170,7 @@ public class ArenaRunManager : MonoBehaviour {
         MenuKit.EnsureEventSystem();
         RectTransform row = MenuKit.MakeRect("Choices", canvas);
         row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
-        row.anchoredPosition = new Vector2(0f, -60f);   // under the 190-high auto panel
+        row.anchoredPosition = new Vector2(0f, bannerHasRecord ? -115f : -60f);   // under the auto panel
         row.sizeDelta = new Vector2(600f, 44f);
         HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 20f;

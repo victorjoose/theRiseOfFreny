@@ -69,6 +69,7 @@ public class CombatHud : MonoBehaviour {
                 input = player.GetComponent<FrenyInput>();
             }
             if (input != null && input.AutoEnabled) {
+                DrawAutoFrame(scale);
                 DrawAutoBadge(head, scale);
             }
             // the weapons loose on the right of the hearts (and of the armor hearts' places)
@@ -78,24 +79,40 @@ public class CombatHud : MonoBehaviour {
         DrawScore(scale);
     }
 
-    // "AUTO" left of Freny's head while the autopilot drives, gently pulsing
+    // a purple frame around the whole screen while the autopilot is on (José, 2026-10-29), in the
+    // pulse of the A badge
+    private static readonly Color AutoFrameColor = new Color(0.62f, 0.28f, 1f);
+
+    private void DrawAutoFrame(float scale) {
+        float t = Mathf.Max(3f, 8f * scale);
+        float pulse = 0.65f + 0.25f * Mathf.Sin(Time.unscaledTime * 4f);
+        Color c = new Color(AutoFrameColor.r, AutoFrameColor.g, AutoFrameColor.b, pulse);
+        float w = Screen.width, h = Screen.height;
+        Fill(new Rect(0f, 0f, w, t), c);
+        Fill(new Rect(0f, h - t, w, t), c);
+        Fill(new Rect(0f, t, t, h - 2f * t), c);
+        Fill(new Rect(w - t, t, t, h - 2f * t), c);
+    }
+
+    // a big "A" left of Freny's head while the autopilot is on, gently pulsing (José, 2026-10-29:
+    // it has to be obvious that the autopilot is playing)
     private void DrawAutoBadge(Rect head, float scale) {
         if (badgeStyle == null) {
-            badgeStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.MiddleCenter };
+            badgeStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         }
-        badgeStyle.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * scale));
-        float w = 54f * scale, h = 26f * scale;
+        badgeStyle.fontSize = Mathf.Max(14, Mathf.RoundToInt(40f * scale));
+        float w = 56f * scale, h = 56f * scale;
         // the portrait sits close to the left edge: when there is no room beside it, the badge
         // overlaps its corner instead of being cut by the screen edge
         float x = Mathf.Max(4f, head.xMin - w - 4f * scale);
         Rect badge = new Rect(x, head.center.y - h / 2f, w, h);
         float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 4f);
         Fill(badge, new Color(MenuKit.TitleColor.r, MenuKit.TitleColor.g, MenuKit.TitleColor.b, pulse));
-        float edge = Mathf.Max(1f, 2f * scale);
+        float edge = Mathf.Max(1f, 3f * scale);
         Fill(new Rect(badge.x + edge, badge.y + edge, badge.width - 2f * edge, badge.height - 2f * edge), MeterBack);
         Color old = badgeStyle.normal.textColor;
         badgeStyle.normal.textColor = MenuKit.TitleColor;
-        GUI.Label(badge, "AUTO", badgeStyle);
+        GUI.Label(badge, "A", badgeStyle);
         badgeStyle.normal.textColor = old;
     }
 

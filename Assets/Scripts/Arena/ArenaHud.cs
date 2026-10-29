@@ -52,6 +52,11 @@ public class ArenaHud : MonoBehaviour {
         if (player == null || input == null) {
             return;
         }
+        // out of the way of the end-of-run NOVO RECORDE box
+        if (run && run.RunOver && Online.OnlineServices.Instance != null &&
+            Online.OnlineServices.Instance.Record != Online.OnlineServices.RecordStatus.None) {
+            return;
+        }
 
         if (boxStyle == null) {
             boxStyle = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, wordWrap = true };

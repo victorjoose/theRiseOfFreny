@@ -28,6 +28,7 @@ namespace Online {
             _online = GetComponent<OnlineServices>();
             _online.RunReported += OnRunReported;
             _online.RankingRefused += OnRankingRefused;
+            _online.RecordChanged += OnRecordChanged;
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             Canvas canvas = MenuKit.CreateCanvas("Online Hint", 50, transform);
@@ -44,6 +45,7 @@ namespace Online {
             if (_online != null) {
                 _online.RunReported -= OnRunReported;
                 _online.RankingRefused -= OnRankingRefused;
+                _online.RecordChanged -= OnRecordChanged;
             }
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
@@ -73,19 +75,28 @@ namespace Online {
         }
 
         private void OnRunReported(long score, bool newBest, string unranked) {
+            if (_online.Record != OnlineServices.RecordStatus.None) {
+                // the banner's NOVO RECORDE box takes it from here; the board opens once it is saved
+                Sfx.Play("new_record");
+                LastResult = null;
+                return;
+            }
             if (unranked != null) {
                 // automatic runs restart on their own; the board stays closed
                 LastResult = score + " pontos · não vale para o ranking";
                 return;
             }
             ArenaLevel level = ArenaDifficulty.Current;
-            LastResult = newBest ? "Novo recorde no " + ArenaDifficulty.Label(level) + ": " + score + "!"
-                : score + " pontos (recorde no " + ArenaDifficulty.Label(level) + ": " + _online.BestFor(level) + ")";
-            if (newBest) Sfx.Play("new_record");
+            LastResult = score + " pontos (recorde no " + ArenaDifficulty.Label(level) + ": " + _online.BestFor(level) + ")";
             _openAt = Time.unscaledTime + AutoOpenDelay;
         }
 
+        private void OnRecordChanged() {
+            if (_online.Record == OnlineServices.RecordStatus.Saved && InArena) _openAt = Time.unscaledTime + AutoOpenDelay;
+        }
+
         private void OnRankingRefused(long score, string reason) {
+            if (_online.Record != OnlineServices.RecordStatus.None) return;   // the NOVO RECORDE box says it
             LastResult = score + " pontos · o servidor não aceitou no ranking (" + reason + ")";
         }
     }

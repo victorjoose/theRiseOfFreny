@@ -42,8 +42,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // the all-time boards, and the daily ones (daily_<level>_<yyyymmdd>, Brasília day) the site's
+    // Diário tab reads; the API's signature names the board, so a score only lands on the day the
+    // API gave it
     function isBoard(board) {
-      return board in ['leaderboard_hard', 'leaderboard_freny', 'leaderboard_medium', 'leaderboard_easy'];
+      return board in ['leaderboard_hard', 'leaderboard_freny', 'leaderboard_medium', 'leaderboard_easy']
+          || board.matches('daily_(hard|freny|medium|easy)_20[0-9]{6}');
     }
 
     function isOwner(userId) {
