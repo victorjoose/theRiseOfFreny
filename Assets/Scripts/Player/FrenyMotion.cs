@@ -50,7 +50,7 @@ public class FrenyMotion : MonoBehaviour {
     private const float ArcAhead = 0.42f, ArcRadius = 0.5f, ArcLift = 0.1f;
     private const float ArcFrom = 80f, ArcTo = -80f;
     private const float GreatSwordScale = 1.8f;  // the great sword's cut and hitbox, "bem maior"
-    private const float FinisherScale = 1.2f;    // the combo's third hit: a bigger cut and reach
+    private const float FinisherScale = 1.35f;   // the combo's third hit: a bigger cut and reach
 
     // the great sword in hand: bought at the shop, or dropped for a few swings (Player.GreatSwordActive)
     private bool GreatSword => player && player.GreatSwordActive;

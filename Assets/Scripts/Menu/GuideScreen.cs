@@ -54,7 +54,7 @@ public static class GuideScreen {
     private static void Weapons(Transform parent, MenuArt art) {
         Entry(parent, art ? art.sword : null, "Espada",
             "Combo de 3 golpes: aperte de novo logo depois de cada um (até 0,4 s). Cada golpe tira " +
-            "1 de dano e empurra o inimigo; o 3º empurra 3x mais, com corte e alcance 20% maiores. " +
+            "1 de dano e empurra o inimigo; o 3º empurra 3x mais, com corte e alcance 35% maiores. " +
             "Os golpes 1 e 2 recarregam em 0,25 s, o 3º em 0,65 s. Funciona no ar e agachado.");
         Entry(parent, art ? art.greatSword : null, "Espadão",
             "Corte e alcance 1,8x maiores (mesmo dano): pega mais inimigos de uma vez. " +
