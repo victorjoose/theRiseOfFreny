@@ -102,12 +102,16 @@ public static class GuideScreen {
     }
 
     private static void Drops(Transform parent, MenuArt art) {
+        Entry(parent, art ? art.coin : null, "Drops conforme a necessidade",
+            "Os drops seguem o que falta ao Freny: com vida cheia não cai poção, com granadas cheias " +
+            "não cai granada, sem escopeta ela pode cair. Quanto mais faltar, mais cai (até o dobro). " +
+            "O mesmo item já no chão deixa outro bem mais raro, e com muitos itens no chão caem menos.");
         Entry(parent, art ? art.coin : null, "Inimigos (Arena)",
-            "Além da moeda: poção 15%, balas 12%, cartuchos 10%, granada 6%, espadão 4%, " +
-            "armadura 4%, diamante 4%. Na campanha só deixam moedas.");
+            "Além da moeda, com metade faltando: poção 15%, balas 12%, cartuchos 10%, granada 6%, " +
+            "escopeta 3% (sem escopeta), espadão 4%, armadura 4%, diamante 4%. Na campanha só deixam moedas.");
         Entry(parent, art ? art.grenade : null, "Baú (Arena)",
-            "Surge a cada 30 s e some em 20 s; quebra com golpe ou tiro. Dá 2 granadas (35%), " +
-            "escopeta com 6 cartuchos (35%) ou 10-25 moedas (30%, às vezes com diamante).");
+            "Surge a cada 30 s e some em 20 s; quebra com golpe ou tiro. Dá 2 granadas, a escopeta com 6 " +
+            "cartuchos ou 10-25 moedas (às vezes com diamante); granadas e escopeta conforme a necessidade.");
         Entry(parent, art ? art.diamond : null, "Vasos, caixas e barris",
             "Quebram com golpe, tiro ou granada. Na Arena surge um vaso novo a cada 12 s (até 3), e os " +
             "do cenário voltam 90 s depois de quebrados. Pode ter diamante 12%, poção 18%, balas 10%, " +

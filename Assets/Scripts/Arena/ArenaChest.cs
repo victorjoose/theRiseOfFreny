@@ -60,12 +60,17 @@ public class ArenaChest : MonoBehaviour, IDamageable {
         Fx.Burst(center, new Color(1f, 0.85f, 0.2f), 24, 3.5f, 0.1f, 0.8f);    // gold
         Sfx.Play("chest_break", center);
 
-        float total = coinsWeight + grenadesWeight + shotgunWeight;
+        // the weights follow what Freny is short of: no grenades when his pouch is full, the
+        // shotgun more often while he has none (ItemPickup.Need, 1 when half short)
+        Player player = FindAnyObjectByType<Player>();
+        float grenades = grenadesWeight * NeedFactor(ItemPickup.Kind.Grenades, player);
+        float shotgun = shotgunWeight * NeedFactor(player != null && player.ShotgunOwned ? ItemPickup.Kind.Shells : ItemPickup.Kind.Shotgun, player);
+        float total = coinsWeight + grenades + shotgun;
         float roll = Random.Range(0f, total);
         Vector3 from = transform.position + Vector3.up * 0.3f;
-        if (roll < grenadesWeight) {
+        if (roll < grenades) {
             ItemPickup.Spawn(ItemPickup.Kind.Grenades, grenadesInside, from, new Vector2(Random.Range(-0.8f, 0.8f), 5.5f));
-        } else if (roll < grenadesWeight + shotgunWeight) {
+        } else if (roll < grenades + shotgun) {
             ItemPickup.Spawn(ItemPickup.Kind.Shotgun, shotgunShells, from, new Vector2(Random.Range(-0.8f, 0.8f), 5.5f));
         } else {
             ScatterCoins();
@@ -76,7 +81,12 @@ public class ArenaChest : MonoBehaviour, IDamageable {
         Destroy(gameObject);
     }
 
-    // the coins fly out in a small fan and land back on this platform (Coin.Toss)
+    // 0 when he can't use it, 1 when half short, 1.5 when out of it
+    private static float NeedFactor(ItemPickup.Kind kind, Player player) {
+        return 0.75f * ItemPickup.Need(kind, player);
+    }
+
+        // the coins fly out in a small fan and land back on this platform (Coin.Toss)
     private void ScatterCoins() {
         if (coinPrefab == null || coinCount <= 0) {
             return;

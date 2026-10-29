@@ -170,6 +170,10 @@ public class Player : MonoBehaviour, IDamageable {
     public bool WantsArmor => !isDead && Armor < ArmorMax;
     // a dropped great sword is no use with the bought one, or with a fresh one still in hand
     public bool WantsGreatSword => !isDead && !FrenyProgress.HasGreatSword && GreatSwordSwings < GreatSwordDropSwings;
+    // how full each supply is (0 empty .. 1 full): the drops lean on what he's short of (ItemPickup.Need)
+    public float BulletsFill => revolverReserveMax > 0 ? RevolverReserve / (float)revolverReserveMax : 1f;
+    public float ShellsFill => shellsMax > 0 ? ShotgunShells / (float)shellsMax : 1f;
+    public float GrenadesFill => grenadesMax > 0 ? Grenades / (float)grenadesMax : 1f;
 
     // ---- drops and buffs: the dropped great sword, armor and Rage
     // the great sword (bought at the shop, or dropped for a few swings): FrenyMotion makes the slash
