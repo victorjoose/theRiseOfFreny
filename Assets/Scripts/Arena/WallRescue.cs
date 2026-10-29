@@ -8,6 +8,7 @@ using UnityEngine.Tilemaps;
 // when a body's centre is on a wall tile it is moved to the nearest free spot (José, 2026-10-29).
 public static class WallRescue {
     private const int Reach = 8;   // cells searched around it
+    private const string Decoration = "EXTRA";
     private static readonly List<Tilemap> walls = new List<Tilemap>();
     private static int scene = -1;
 
@@ -24,7 +25,8 @@ public static class WallRescue {
             int ground = LayerMask.NameToLayer("Ground");
             foreach (TilemapCollider2D collider in FindCompat.All<TilemapCollider2D>()) {
                 if (collider.enabled && !collider.isTrigger && !collider.usedByEffector && collider.gameObject.layer == ground
-                    && collider.GetComponent<PlatformEffector2D>() == null && collider.GetComponent<Tilemap>() is Tilemap map) {
+                    && collider.GetComponent<PlatformEffector2D>() == null && !collider.name.Contains(Decoration)
+                    && collider.GetComponent<Tilemap>() is Tilemap map) {
                     walls.Add(map);
                 }
             }
@@ -32,12 +34,12 @@ public static class WallRescue {
         return walls;
     }
 
-    // inside the wall's mass: its cell and the four around it are all tiles. A lone tile is not a
-    // wall: the decoration on the Ground layer (EXTRA Ground_Tilemap: tufts on the floor, ledge
-    // ends) has tiles where Freny walks, and he was lifted off them every 0.1 s
+    // inside a wall: its cell is a tile and so is the one above or below it (walls and the floor are
+    // at least two cells thick; a one-cell platform is left to the physics). The decoration layer
+    // (EXTRA Ground_Tilemap: tufts on the floor, ledge ends) is not a wall: Freny walks through its
+    // tiles, and he was lifted off them every 0.1 s
     public static bool Solid(Vector2 point) {
-        return Tiled(point) && Tiled(point + Vector2.left) && Tiled(point + Vector2.right)
-            && Tiled(point + Vector2.up) && Tiled(point + Vector2.down);
+        return Tiled(point) && (Tiled(point + Vector2.up) || Tiled(point + Vector2.down));
     }
 
     private static bool Tiled(Vector2 point) {

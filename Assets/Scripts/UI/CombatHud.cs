@@ -77,7 +77,7 @@ public class CombatHud : MonoBehaviour {
             float size = 84f * scale;   // the sword and gun sprites are small inside their frames
             float barsBottom = head.yMax + 6f * scale + BarsHeight * scale;
             DrawWeapons(head.xMin, barsBottom - size * 0.15f, size, scale);
-            weaponsRight = -1f;
+            weaponsRight = rowRight;   // the score keeps clear of the hearts (bought ones and armor too)
         }
         DrawScore(scale);
     }

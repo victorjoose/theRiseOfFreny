@@ -305,9 +305,13 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         // 1c'. it rests: jump at its eye and swing up there (double damage, José: "porrada no olho")
-        if (target is Cyclops resting && sameFloor && Mathf.Abs(dx) <= meleeRange + EyeJumpReach) {
+        if (target is Cyclops resting && sameFloor && Mathf.Abs(resting.EyePoint.x - me.x) <= meleeRange + EyeJumpReach) {
             float eyeY = resting.EyePoint.y;
             float bladeY = player.BodyCenter.y;
+            // the eye is on its front face: its centre is about a metre farther in, behind the body
+            float toEye = resting.EyePoint.x - me.x;
+            Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+            bool falling = rb != null && rb.Vel().y <= 0.5f;
             if (player.IsGrounded && eyeY - bladeY > EyeTolerance && player.AttackReady && Time.time >= nextJumpTime) {
                 frame.jumpPressed = true;
                 frame.jumpHeld = true;
@@ -320,12 +324,13 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 frame.jumpHeld = bladeY < eyeY;
                 if (!facingTarget) {
                     Turn(ref frame, towardTarget);
-                } else if (Mathf.Abs(bladeY - eyeY) <= EyeTolerance && Mathf.Abs(dx) <= meleeRange + 0.3f
+                } else if ((bladeY >= eyeY - EyeTolerance || falling) && Mathf.Abs(toEye) <= meleeRange + 0.5f
                            && (player.AttackReady || player.ComboContinues)) {
+                    // at the eye's height, or at the top of the jump if it falls short
                     frame.meleePressed = true;
                     action = "Espada no olho do Ciclope";
                 } else {
-                    frame.move = Mathf.Abs(dx) > meleeRange * 0.7f ? towardTarget : 0f;
+                    frame.move = Mathf.Abs(toEye) > meleeRange * 0.7f ? Mathf.Sign(toEye) : 0f;
                     action = "No ar, mirando o olho";
                 }
                 return frame;
