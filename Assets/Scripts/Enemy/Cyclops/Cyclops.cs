@@ -60,6 +60,7 @@ public class Cyclops : Enemy {
     protected override Color DeathColor => new Color(0.5f, 0.35f, 0.85f);
     protected override string SoundName => "golem";
     protected override float SoundPitch => 0.6f;
+    protected override float KnockbackLift => 0.6f;
     public override bool ShowsHealthBar => false;
 
     public static Cyclops Current { get; private set; }
@@ -69,7 +70,7 @@ public class Cyclops : Enemy {
         speed = 1;
         coins = 30;
         scoreToAdd = 5000;
-        knockback = 14f;
+        knockback = 24f;   // José, 2026-10-29: Freny flies "beeeem mais longe" (was 14)
         attackDistance = 0.6f;
         attackWindup = 0.5f;
         attackCooldown = 3.5f;   // a breather after each punch, or it was too strong
