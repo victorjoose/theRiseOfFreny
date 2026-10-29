@@ -87,6 +87,8 @@ public class Player : MonoBehaviour, IDamageable {
 
     private bool isGrounded;
     private bool wasGrounded;
+    private bool landed;                // standing still on the ground since the last fall ended
+    private const float LandedSpeed = 1.5f; // falling slower than this on the ground = he has landed
     private bool isJumping;
     private bool stunned;
     private bool isDead;
@@ -169,6 +171,10 @@ public class Player : MonoBehaviour, IDamageable {
     public bool WantsArmor => !isDead && Armor < ArmorMax;
     // a dropped great sword is no use with the bought one, or with a fresh one still in hand
     public bool WantsGreatSword => !isDead && !FrenyProgress.HasGreatSword && GreatSwordSwings < GreatSwordDropSwings;
+    // how full each supply is (0 empty .. 1 full): the drops lean on what he's short of (ItemPickup.Need)
+    public float BulletsFill => revolverReserveMax > 0 ? RevolverReserve / (float)revolverReserveMax : 1f;
+    public float ShellsFill => shellsMax > 0 ? ShotgunShells / (float)shellsMax : 1f;
+    public float GrenadesFill => grenadesMax > 0 ? Grenades / (float)grenadesMax : 1f;
 
     // ---- drops and buffs: the dropped great sword, armor and Rage
     // the great sword (bought at the shop, or dropped for a few swings): FrenyMotion makes the slash
@@ -217,7 +223,7 @@ public class Player : MonoBehaviour, IDamageable {
     // and the autopilot asks this on every decision)
     public bool HasPotion => _gameManager != null && _gameManager.HasPotion;
 
-    private Vector3 Feet => feetPos ? feetPos.position : transform.position;
+    public Vector3 Feet => feetPos ? feetPos.position : transform.position;
 
     private static PhysicsMaterial2D frictionless;
     private static PhysicsMaterial2D Frictionless =>
@@ -263,6 +269,9 @@ public class Player : MonoBehaviour, IDamageable {
         Enemy.Killed += OnEnemyKilled;
 
         Health = MaxHealth;
+        if (UIManager.Instance) {
+            UIManager.Instance.UpdateLives(Health, false); // the bought hearts too (the scene has 4)
+        }
         // the run's loadout: a loaded revolver with spare bullets; the shop's shotgun and grenades
         // add theirs (and again when bought mid-run, see GrantUpgradeLoadout)
         RevolverBullets = revolverCapacity;
@@ -369,6 +378,10 @@ public class Player : MonoBehaviour, IDamageable {
         _speed = _baseSpeed * FrenyProgress.SpeedMultiplier;
         attackCooldown = _baseAttackCooldown * FrenyProgress.AttackCooldownMultiplier;
 
+        // the bought hearts stay in the row for good, empty when lost
+        if (UIManager.Instance) {
+            UIManager.Instance.EnsureBars(MaxHealth);
+        }
         // a bought heart arrives full
         if (Health > 0 && MaxHealth > oldMax) {
             Health += MaxHealth - oldMax;
@@ -389,15 +402,28 @@ public class Player : MonoBehaviour, IDamageable {
             if (!wasGrounded && !justTookOff) {
                 Fx.Dust(Feet, 5); // landed
                 Sfx.Play("freny_land", Feet);
-                FallDamage(fallPeakY - transform.position.y);
             }
-            fallPeakY = transform.position.y;
+            // the fall only ends once he has really stopped on the ground: the wide feet circle
+            // grazes the ledges he falls past for several frames, and each graze used to restart
+            // the fall there, so a long drop through the arena never hurt (José, 2026-10-29)
+            bool stopped = rg2d == null || rg2d.Vel().y > -LandedSpeed;
+            if (stopped) {
+                if (!landed && !justTookOff) {
+                    FallDamage(fallPeakY - transform.position.y);
+                }
+                landed = true;
+                fallPeakY = transform.position.y;
+            } else {
+                landed = false;
+                fallPeakY = Mathf.Max(fallPeakY, transform.position.y);
+            }
             if (!justTookOff) {
                 isJumping = false;
             }
             airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
             lastGroundedTime = Time.time;
         } else {
+            landed = false;
             fallPeakY = Mathf.Max(fallPeakY, transform.position.y);
         }
         wasGrounded = isGrounded;

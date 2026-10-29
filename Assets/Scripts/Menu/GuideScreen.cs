@@ -102,12 +102,16 @@ public static class GuideScreen {
     }
 
     private static void Drops(Transform parent, MenuArt art) {
+        Entry(parent, art ? art.coin : null, "Drops conforme a necessidade",
+            "Os drops seguem o que falta ao Freny: com vida cheia não cai poção, com granadas cheias " +
+            "não cai granada, sem escopeta ela pode cair. Quanto mais faltar, mais cai (até o dobro). " +
+            "O mesmo item já no chão deixa outro bem mais raro, e com muitos itens no chão caem menos.");
         Entry(parent, art ? art.coin : null, "Inimigos (Arena)",
-            "Além da moeda: poção 15%, balas 12%, cartuchos 10%, granada 6%, espadão 4%, " +
-            "armadura 4%, diamante 4%. Na campanha só deixam moedas.");
+            "Além da moeda, com metade faltando: poção 15%, balas 12%, cartuchos 10%, granada 6%, " +
+            "escopeta 3% (sem escopeta), espadão 4%, armadura 4%, diamante 4%. Na campanha só deixam moedas.");
         Entry(parent, art ? art.grenade : null, "Baú (Arena)",
-            "Surge a cada 30 s e some em 20 s; quebra com golpe ou tiro. Dá 2 granadas (35%), " +
-            "escopeta com 6 cartuchos (35%) ou 10-25 moedas (30%, às vezes com diamante).");
+            "Surge a cada 30 s e some em 20 s; quebra com golpe ou tiro. Dá 2 granadas, a escopeta com 6 " +
+            "cartuchos ou 10-25 moedas (às vezes com diamante); granadas e escopeta conforme a necessidade.");
         Entry(parent, art ? art.diamond : null, "Vasos, caixas e barris",
             "Quebram com golpe, tiro ou granada. Na Arena surge um vaso novo a cada 12 s (até 3), e os " +
             "do cenário voltam 90 s depois de quebrados. Pode ter diamante 12%, poção 18%, balas 10%, " +
@@ -137,10 +141,20 @@ public static class GuideScreen {
             "2 de vida.");
         Entry(parent, null, "Golem Vermelho",
             "Pedra vermelha e olhos acesos. Um tanque: 6 de vida (aguenta uma granada), quase não " +
-            "recua com os golpes e o soco tira 2 e derruba. Vale 500 pontos e 6 moedas. Na Arena, " +
-            "só depois de 50 mil pontos.");
+            "recua com os golpes e o soco tira 2 e derruba. De longe, joga uma mina que gruda no chão, " +
+            "pisca e explode como uma granada (tire o Freny de perto, ou acerte a mina antes). " +
+            "Vale 500 pontos e 6 moedas. Na Arena, só depois de 50 mil pontos.");
+        Entry(parent, null, "Escudeiro",
+            "Anda atrás de um escudo de espinhos virado para o Freny: golpe e tiro de frente batem " +
+            "no escudo. Acerte pelas costas, pule por cima, bata quando ele ataca ou use granada. " +
+            "3 golpes seguidos no escudo deixam ele tonto por um momento. 4 de vida, 300 pontos.");
+        Entry(parent, null, "Ciclope",
+            "O chefe gigante da Arena: chega a cada 25 mil pontos e, enquanto ele vive, ninguém " +
+            "mais aparece. 40 de vida, com a barra no topo da tela. O soco tira 2 e joga o Freny " +
+            "longe; a pancada no chão solta uma onda pelo piso (pule!); o vômito deixa uma poça que " +
+            "queima. Vale 5 000 pontos, 30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",
-            "Fica parado e lança uma bola a cada 10 segundos; ela tira 2 e empurra, e abaixar desvia " +
+            "Fica parado e lança uma bola a cada 5 segundos (o Supremo a cada 3,5); ela tira 2 e empurra, e abaixar desvia " +
             "de um tiro reto. " +
             "Nas torres, muda de lugar a cada 3 feitiços e some depois de 8. 2 de vida. Na Arena, " +
             "contando os dois tipos, há no máximo 1 feiticeiro até 50 mil pontos, 2 depois disso e " +

@@ -162,7 +162,18 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private float pushScale = 1f;            // set for one sword hit by Damage(amount, push)
     private const float PushDrag = 40f;
     // arena difficulty on attack rhythm (1 outside the arena)
-    protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp : 1f;
+    protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp * ScoreCooldown : 1f;
+
+    // José, 2026-10-29: the more points, the shorter every enemy's cooldown, so the run keeps
+    // getting harder: 1x at 0, then down in a straight line to 0.5x at 150 000 points and no lower
+    public const int ScoreCooldownFloorAt = 150000;
+    public const float ScoreCooldownFloor = 0.5f;
+    public static float ScoreCooldown {
+        get {
+            int score = ArenaBounds.Active && UIManager.Instance ? UIManager.Instance.Score : 0;
+            return Mathf.Lerp(1f, ScoreCooldownFloor, (float)score / ScoreCooldownFloorAt);
+        }
+    }
 
     // colour of the particles when this enemy is hit or dies
     protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
@@ -1017,13 +1028,36 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // any enemy that died, whoever killed it (the arena holds a dead sorcerer's place for a while)
     public static event System.Action<Enemy> Died;
 
-    // a harder hit from Freny (the sword during Rage): the extra points first, then the usual hit
-    public void Damage(int amount) {
+    // when it was last hit (FrameAnimator shows the hit frames for a moment after)
+    public float LastHitTime { get; private set; } = -10f;
+    // the small bar over its head (EnemyHealthBar); a boss draws its own
+    public virtual bool ShowsHealthBar => true;
+
+    // true when the hit from Freny at that point bounces off (the Escudeiro's shield)
+    protected virtual bool Blocks(Vector3 from) {
+        return false;
+    }
+
+    private bool BlockedHit() {
+        return !isDead && player_t != null && Blocks(player != null ? player.Feet : player_t.position);
+    }
+
+    // a blast catches it whole: no shield in the way
+    public void BlastDamage(int amount) {
         if (isDead) {
             return;
         }
         Health -= Mathf.Max(0, amount - 1);
-        Damage();
+        TakeDamage();
+    }
+
+    // a harder hit from Freny (the sword during Rage): the extra points first, then the usual hit
+    public void Damage(int amount) {
+        if (isDead || BlockedHit()) {
+            return;
+        }
+        Health -= Mathf.Max(0, amount - 1);
+        TakeDamage();
     }
 
     // a sword hit: push scales how far it is shoved back (the combo's third hit pushes harder)
@@ -1035,6 +1069,13 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // one point of damage from Freny's sword, a bullet or a grenade
     public virtual void Damage() {
+        if (isDead || BlockedHit()) {
+            return;
+        }
+        TakeDamage();
+    }
+
+    private void TakeDamage() {
         if (isDead) {
             return;
         }
@@ -1078,6 +1119,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // flinch, fight back, and bleed a few particles
     protected void TakeHit(bool byPlayer) {
+        LastHitTime = Time.time;
         if (byPlayer) {
             isHit = true;
         }

@@ -11,4 +11,46 @@ public class Golem : Enemy {
     protected override float HitPush => armored ? 1f : 3f; // heavy: Freny's hits barely move it
     protected override Color DeathColor => armored ? new Color(0.8f, 0.25f, 0.2f) : new Color(0.6f, 0.55f, 0.5f);
     protected override string SoundName => "golem";
+
+    // the red Golem also lobs a mine (GolemMine) at Freny when he keeps his distance
+    private const float ThrowCooldown = 6f;
+    private const float FirstThrowDelay = 3f;
+    private const float ThrowMinDistance = 3f;
+    private const float ThrowMaxDistance = 10f;
+    private const float ThrowAngle = 55f;
+    private const float ThrowMaxSpeed = 12f;
+    private float nextThrow;
+
+    public override void Init() {
+        base.Init();
+        nextThrow = Time.time + FirstThrowDelay;
+    }
+
+    public override void Update() {
+        base.Update();
+        if (armored) {
+            TryThrowMine();
+        }
+    }
+
+    private void TryThrowMine() {
+        if (isDead || player == null || player.Health <= 0 || IsAttacking || Time.time < nextThrow) {
+            return;
+        }
+        Vector3 from = Center + Vector3.up * (HalfHeight * 0.6f);
+        Vector2 to = player.transform.position;
+        float dx = to.x - from.x, dy = to.y - from.y;
+        if (Mathf.Abs(dx) < ThrowMinDistance || Mathf.Abs(dx) > ThrowMaxDistance || Mathf.Abs(dy) > 5f) {
+            return;
+        }
+        nextThrow = Time.time + ThrowCooldown * ScoreCooldown;
+        // the speed that lands it on Freny on the fixed angle (as Player.GrenadeChargeFor)
+        float rad = ThrowAngle * Mathf.Deg2Rad;
+        float g = Mathf.Abs(Physics2D.gravity.y) * GolemMine.Gravity;
+        float x = Mathf.Abs(dx);
+        float denom = 2f * Mathf.Cos(rad) * Mathf.Cos(rad) * (x * Mathf.Tan(rad) - dy);
+        float speed = denom > 0.01f ? Mathf.Min(ThrowMaxSpeed, Mathf.Sqrt(g * x * x / denom)) : ThrowMaxSpeed;
+        Vector2 velocity = new Vector2(Mathf.Sign(dx) * Mathf.Cos(rad), Mathf.Sin(rad)) * speed;
+        GolemMine.Throw(this, from, velocity);
+    }
 }

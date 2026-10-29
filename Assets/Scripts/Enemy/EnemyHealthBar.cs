@@ -22,7 +22,7 @@ public class EnemyHealthBar : MonoBehaviour {
     private SpriteRenderer fillRenderer;
 
     public static void Attach(Enemy enemy) {
-        if (enemy.Health <= 1 || enemy.GetComponent<EnemyHealthBar>() != null) {
+        if (enemy.Health <= 1 || !enemy.ShowsHealthBar || enemy.GetComponent<EnemyHealthBar>() != null) {
             return;
         }
         EnemyHealthBar bar = enemy.gameObject.AddComponent<EnemyHealthBar>();

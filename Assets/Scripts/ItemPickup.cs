@@ -11,14 +11,23 @@ public class ItemPickup : MonoBehaviour {
 
     public enum Kind { Potion, Bullets, Shells, Grenades, Shotgun, GreatSword, Armor, Diamond }
 
-    // enemy drops, rolled once per death on top of its coin (lower since the arena got busier)
+    // enemy drops, rolled once per death on top of its coin. These are the chances when Freny is
+    // half short of that item; each one is scaled by what he needs right now (Need: none at full
+    // health or a full reserve, double when empty) and by what's already lying around (Crowding)
     private const float PotionChance = 0.15f;
-    private const float BulletsChance = 0.12f;  // only when his reserve isn't full
+    private const float BulletsChance = 0.12f;
     private const float ShellsChance = 0.10f;   // only when he has the shotgun
+    private const float ShotgunChance = 0.03f;  // only when he doesn't
     private const float GrenadeChance = 0.06f;
     private const float GreatSwordChance = 0.04f; // only when he can use one
-    private const float ArmorChance = 0.04f;      // only when his armor is not full
+    private const float ArmorChance = 0.04f;
     private const float DiamondChance = 0.04f;
+    private const float MaxDropChance = 0.55f;    // all chances together, however short he is
+    private const float SameKindFactor = 0.3f;    // per item of that kind already on the floor
+    private const int CalmItems = 3;              // items on the floor before drops start to thin out
+    private const int BusyItems = 10;             // ... down to BusyFactor of the chance at this many
+    private const float BusyFactor = 0.2f;
+    private const int ShotgunShellsInDrop = 6;
     public const int DiamondValue = 25;           // coins
     private const float DiamondFrameTime = 0.08f;
     private const int GrenadesPerDrop = 1;
@@ -118,50 +127,88 @@ public class ItemPickup : MonoBehaviour {
 
     // what a dying enemy leaves besides its coin (most of the time nothing)
     public static void RollEnemyDrop(Vector3 position) {
-        Player player = FindPlayer();
-        float roll = Random.value;
         Vector2 toss = new Vector2(Random.Range(-1.2f, 1.2f), Random.Range(4f, 5.5f));
-        if ((roll -= PotionChance) < 0f) {
-            Spawn(Kind.Potion, 1, position, toss);
-        } else if ((roll -= BulletsChance) < 0f) {
-            if (player == null || player.WantsBullets) {
-                Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
-            }
-        } else if ((roll -= GrenadeChance) < 0f) {
-            Spawn(Kind.Grenades, GrenadesPerDrop, position, toss);
-        } else if ((roll -= ShellsChance) < 0f) {
-            if (player != null && player.ShotgunOwned) {
-                Spawn(Kind.Shells, ShellsPerDrop, position, toss);
-            }
-        } else if ((roll -= GreatSwordChance) < 0f) {
-            if (player != null && player.WantsGreatSword) {
-                Spawn(Kind.GreatSword, 1, position, toss);
-            }
-        } else if ((roll -= ArmorChance) < 0f) {
-            if (player != null && player.WantsArmor) {
-                Spawn(Kind.Armor, 1, position, toss);
-            }
-        } else if ((roll -= DiamondChance) < 0f) {
-            Spawn(Kind.Diamond, 1, position, toss);
-        }
+        RollDrop(position, toss, 1f,
+            (Kind.Potion, PotionChance), (Kind.Bullets, BulletsChance), (Kind.Grenades, GrenadeChance),
+            (Kind.Shells, ShellsChance), (Kind.Shotgun, ShotgunChance), (Kind.GreatSword, GreatSwordChance),
+            (Kind.Armor, ArmorChance), (Kind.Diamond, DiamondChance));
     }
 
     // a broken vase: often nothing, sometimes a small reward
     public static void RollVaseDrop(Vector3 position) {
-        Player player = FindPlayer();
-        float roll = Random.value;
         Vector2 toss = new Vector2(Random.Range(-0.8f, 0.8f), Random.Range(4.5f, 5.5f));
-        if ((roll -= 0.12f) < 0f) {
-            Spawn(Kind.Diamond, 1, position, toss);
-        } else if ((roll -= 0.18f) < 0f) {
-            Spawn(Kind.Potion, 1, position, toss);
-        } else if ((roll -= 0.10f) < 0f) {
-            Spawn(Kind.Bullets, BulletsPerDrop, position, toss);
-        } else if ((roll -= 0.08f) < 0f) {
-            Spawn(Kind.Grenades, GrenadesPerDrop, position, toss);
-        } else if ((roll -= 0.03f) < 0f && player != null && player.WantsArmor) {
-            Spawn(Kind.Armor, 1, position, toss);
+        RollDrop(position, toss, 1f,
+            (Kind.Diamond, 0.12f), (Kind.Potion, 0.18f), (Kind.Bullets, 0.10f), (Kind.Grenades, 0.08f), (Kind.Armor, 0.03f));
+    }
+
+    // one roll over the weighted kinds: each chance times what Freny needs of it and how many of
+    // it are already on the floor, all of it thinned out when the floor is full of drops
+    private static void RollDrop(Vector3 position, Vector2 toss, float scale, params (Kind kind, float chance)[] table) {
+        Player player = FindPlayer();
+        float[] chances = new float[table.Length];
+        float total = 0f;
+        for (int i = 0; i < table.Length; i++) {
+            chances[i] = table[i].chance * Need(table[i].kind, player) * Crowding(table[i].kind);
+            total += chances[i];
         }
+        float squeeze = (total > MaxDropChance ? MaxDropChance / total : 1f) * Clutter() * scale;
+        float roll = Random.value;
+        for (int i = 0; i < table.Length; i++) {
+            if ((roll -= chances[i] * squeeze) < 0f) {
+                Spawn(table[i].kind, AmountFor(table[i].kind), position, toss);
+                return;
+            }
+        }
+    }
+
+    private static int AmountFor(Kind kind) {
+        switch (kind) {
+            case Kind.Bullets: return BulletsPerDrop;
+            case Kind.Shells: return ShellsPerDrop;
+            case Kind.Grenades: return GrenadesPerDrop;
+            case Kind.Shotgun: return ShotgunShellsInDrop;
+            default: return 1;
+        }
+    }
+
+    // how much Freny needs it, 0 (no use) .. 2 (out of it), 1 when half short
+    public static float Need(Kind kind, Player player) {
+        if (player == null) {
+            return 1f;
+        }
+        switch (kind) {
+            case Kind.Potion:
+                if (!player.WantsPotion) return 0f;
+                // the last heart counts as fully out of health
+                return player.Health <= 1 ? 2f : 2f * (player.MaxHealth - player.Health) / Mathf.Max(1, player.MaxHealth);
+            case Kind.Bullets: return 2f * (1f - player.BulletsFill);
+            case Kind.Shells: return player.ShotgunOwned ? 2f * (1f - player.ShellsFill) : 0f;
+            case Kind.Shotgun: return player.ShotgunOwned ? 0f : 2f;
+            case Kind.Grenades: return 2f * (1f - player.GrenadesFill);
+            case Kind.Armor: return 2f * (Player.ArmorMax - player.Armor) / (float)Player.ArmorMax;
+            case Kind.GreatSword: return player.WantsGreatSword ? 1f : 0f;
+            default: return 1f;  // diamonds are always welcome
+        }
+    }
+
+    // the same item already waiting on the floor makes another one much less likely
+    private static float Crowding(Kind kind) {
+        int lying = 0;
+        foreach (ItemPickup item in Active) {
+            if (item != null && item.kind == kind) {
+                lying++;
+            }
+        }
+        return Mathf.Pow(SameKindFactor, lying);
+    }
+
+    // in a frantic fight the floor fills with drops: past a few items, fewer new ones
+    private static float Clutter() {
+        int count = Active.Count;
+        if (count <= CalmItems) {
+            return 1f;
+        }
+        return Mathf.Lerp(1f, BusyFactor, (count - CalmItems) / (float)(BusyItems - CalmItems));
     }
 
     private static Player cachedPlayer;
