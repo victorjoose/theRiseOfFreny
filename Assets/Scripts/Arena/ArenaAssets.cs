@@ -22,6 +22,9 @@ public class ArenaAssets : MonoBehaviour {
     // the diamond's sparkle and the vase breaking, frame by frame (Items/Diamond 60x60, Items/Vase 100x100)
     public Sprite[] diamondFrames;
     public Sprite[] vaseFrames;
+    // a whole vase, before it breaks (Environment/Tileset 45..47, the ones painted on the stages):
+    // the breaking frames above start already cracked
+    public Sprite[] vaseTiles;
 
     private void Awake() {
         Instance = this;

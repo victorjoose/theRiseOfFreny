@@ -179,7 +179,7 @@ public class ItemPickup : MonoBehaviour {
             case Kind.Shotgun: return WorldSize * 1.3f;
             case Kind.GreatSword: return WorldSize * 1.4f;
             case Kind.Diamond: return WorldSize * 0.8f;
-            case Kind.Potion: return WorldSize * 0.85f;
+            case Kind.Potion: return WorldSize * 0.7f;
             default: return WorldSize;
         }
     }

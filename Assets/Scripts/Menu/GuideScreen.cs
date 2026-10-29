@@ -135,10 +135,13 @@ public static class GuideScreen {
             "2 de vida.");
         Entry(parent, null, "Golem Vermelho",
             "Pedra vermelha e olhos acesos. Um tanque: 6 de vida (aguenta uma granada), quase não " +
-            "recua com os golpes e o soco tira 2 e derruba. Vale 500 pontos e 6 moedas.");
+            "recua com os golpes e o soco tira 2 e derruba. Vale 500 pontos e 6 moedas. Na Arena, " +
+            "só depois de 50 mil pontos.");
         Entry(parent, null, "Feiticeiro",
             "Fica parado e lança bolas que tiram 2 e empurram; abaixar desvia de um tiro reto. " +
-            "Nas torres, some depois de 8 feitiços. 2 de vida.");
+            "Nas torres, muda de lugar a cada 3 feitiços e some depois de 8. 2 de vida. Na Arena, " +
+            "contando os dois tipos, há no máximo 1 feiticeiro até 50 mil pontos, 2 depois disso e " +
+            "3 depois de 100 mil.");
         Entry(parent, null, "Feiticeiro Supremo",
             "Olho e manto vermelhos. Mira onde o Freny vai estar, não onde ele está: mude de " +
             "direção. 3 de vida; é o último a aparecer na Arena.");
