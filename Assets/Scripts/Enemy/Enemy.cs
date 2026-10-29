@@ -159,6 +159,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // how hard Freny's hits push it back (units per second at the start of the push; heavy ones less)
     protected virtual float HitPush => 6f;
     private float pushVelocity;              // > 0 right, < 0 left; fades out over a moment
+    private float pushScale = 1f;            // set for one sword hit by Damage(amount, push)
     private const float PushDrag = 40f;
     // arena difficulty on attack rhythm (1 outside the arena)
     protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp : 1f;
@@ -1023,6 +1024,13 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Damage();
     }
 
+    // a sword hit: push scales how far it is shoved back (the combo's third hit pushes harder)
+    public void Damage(int amount, float push) {
+        pushScale = push;
+        Damage(amount);
+        pushScale = 1f;
+    }
+
     // one point of damage from Freny's sword, a bullet or a grenade
     public virtual void Damage() {
         if (isDead) {
@@ -1048,7 +1056,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (dir == 0f) {
             dir = FacingRight ? -1f : 1f;
         }
-        pushVelocity = dir * HitPush;
+        pushVelocity = dir * HitPush * pushScale;
     }
 
     // moves it along the push; true while it is still being pushed (Update skips Movement)

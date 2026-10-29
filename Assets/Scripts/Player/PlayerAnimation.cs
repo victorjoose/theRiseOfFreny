@@ -40,14 +40,15 @@ public class PlayerAnimation : MonoBehaviour {
     // swing lost its trigger, so the sword did nothing after he was hurt. The state plays directly.
     private static readonly int MeleeState = Animator.StringToHash("Base Layer.Melee Attack");
 
-    public void Melee() {
+    // step: the hit of the 3-hit combo (1, 2 or 3), each drawn its own way
+    public void Melee(int step = 1) {
         if (_anim.HasState(0, MeleeState)) {
             _anim.ResetTrigger("Melee");
             _anim.Play(MeleeState, 0, 0f);
         } else {
             Fire("Melee");
         }
-        _motion.Slash();
+        _motion.Slash(step);
     }
 
     public void Ranged() {

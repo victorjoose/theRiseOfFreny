@@ -3,14 +3,16 @@ using UnityEngine;
 
 // Hitbox used by Freny's sword (Sword_Hit_Box) and by the enemies' Hit_Box objects; the attack
 // animation turns the collider on and off. Every target can be hit once per swing, so one swing
-// can hit two enemies standing together (before, the first hit blocked the sword for 1 s).
+// can hit two enemies standing together, and each hit of Freny's 3-hit combo lands on the same enemy.
 public class MeleeAttack : MonoBehaviour
 {
     // Freny's sword landed a hit (FrenyMotion's hit-stop and sparks), at the contact point
     public static event System.Action<Vector2> FrenyHit;
 
-    [SerializeField] private float rehitDelay = 0.5f; // shorter than any attack cooldown
-    private readonly Dictionary<IDamageable, float> lastHit = new Dictionary<IDamageable, float>();
+    // how hard each combo hit pushes an enemy back (x its HitPush): small, small, big
+    private static readonly float[] ComboPush = { 0.7f, 0.7f, 2.2f };
+
+    private readonly Dictionary<IDamageable, int> lastHit = new Dictionary<IDamageable, int>(); // swing that hit it
     private bool ownerIsEnemy;
     private Player owner;
 
@@ -23,6 +25,18 @@ public class MeleeAttack : MonoBehaviour
     }
 
     private void OnTriggerEnter2D(Collider2D other) {
+        TryHit(other);
+    }
+
+    // the Melee Attack clip keeps the hitbox on longer than the gap between combo hits, so an enemy
+    // still inside it never "enters" again: Freny's sword also hits what stays in it (once per swing)
+    private void OnTriggerStay2D(Collider2D other) {
+        if (owner) {
+            TryHit(other);
+        }
+    }
+
+    private void TryHit(Collider2D other) {
         // enemies deal their damage from Enemy.AttackRoutine (wind-up + reach check), so their
         // hitboxes must not hurt anyone: before, a Licker's tongue could hit the Golem next to it
         if (ownerIsEnemy) {
@@ -39,16 +53,18 @@ public class MeleeAttack : MonoBehaviour
             return;
         }
 
-        if (lastHit.TryGetValue(hit, out float time) && Time.time - time < rehitDelay) {
+        int swing = owner ? owner.SwingCount : 0;
+        if (lastHit.TryGetValue(hit, out int hitBy) && hitBy == swing) {
             return;
         }
         if (lastHit.Count > 32) {
             lastHit.Clear(); // forget enemies that died long ago
         }
-        lastHit[hit] = Time.time;
+        lastHit[hit] = swing;
         int damage = owner ? owner.MeleeDamage : 1;
-        if (damage > 1 && hit is Enemy enemy) {
-            enemy.Damage(damage);
+        int step = owner ? Mathf.Clamp(owner.ComboStep, 1, 3) : 1;
+        if (hit is Enemy enemy) {
+            enemy.Damage(damage, ComboPush[step - 1]);
         } else {
             hit.Damage();
         }
@@ -56,6 +72,7 @@ public class MeleeAttack : MonoBehaviour
             owner.OnMeleeHit();
         }
         FrenyHit?.Invoke(other.ClosestPoint(transform.position));
-        Sfx.Play("sword_hit", other.transform.position);
+        // the finisher lands heavier: lower and louder
+        Sfx.Play("sword_hit", other.transform.position, step == 3 ? 1.3f : 1f, step == 3 ? 0.8f : 1f);
     }
 }

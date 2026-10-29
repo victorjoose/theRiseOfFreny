@@ -50,6 +50,7 @@ public class FrenyMotion : MonoBehaviour {
     private const float ArcAhead = 0.42f, ArcRadius = 0.5f, ArcLift = 0.1f;
     private const float ArcFrom = 80f, ArcTo = -80f;
     private const float GreatSwordScale = 1.8f;  // the great sword's cut and hitbox, "bem maior"
+    private const float FinisherScale = 1.2f;    // the combo's third hit: a bigger cut and reach
 
     // the great sword in hand: bought at the shop, or dropped for a few swings (Player.GreatSwordActive)
     private bool GreatSword => player && player.GreatSwordActive;
@@ -65,6 +66,7 @@ public class FrenyMotion : MonoBehaviour {
     private float slashStart = -10f;
     private float shotStart = -10f;
     private bool arcPending;
+    private int slashStep = 1;             // the combo hit being drawn (1, 2 or 3)
     private float frozenUntil;
     private float nextGhost;
     private bool dead;
@@ -181,9 +183,15 @@ public class FrenyMotion : MonoBehaviour {
 
     // ==== events from PlayerAnimation ========================================================
 
-    public void Slash() {
+    // the 3-hit combo: 1 cuts down, 2 cuts back up, 3 is a wider, brighter cut with a step forward
+    public void Slash(int step = 1) {
         slashStart = Time.time;
         arcPending = true;
+        slashStep = step;
+        if (step == 3) {
+            lunge.v += 3.5f;
+            squash.v -= 2f;
+        }
     }
 
     public void Shot() {
@@ -215,7 +223,7 @@ public class FrenyMotion : MonoBehaviour {
         if (dead || Time.time - slashStart > 0.6f) {
             return;
         }
-        frozenUntil = Time.time + hitStop;
+        frozenUntil = Time.time + (slashStep == 3 ? hitStop * 1.8f : hitStop);
         if (anim) {
             anim.speed = 0f;
         }
@@ -301,8 +309,10 @@ public class FrenyMotion : MonoBehaviour {
         }
         if (arcPending && sinceSlash >= windup) {
             arcPending = false;
-            float scale = GreatSword ? GreatSwordScale : 1f;
-            SlashArc.Spawn(transform, body, hand + new Vector2(ArcAhead * scale, ArcLift), ArcRadius * scale, ArcFrom, ArcTo, GreatSword);
+            float scale = (GreatSword ? GreatSwordScale : 1f) * (slashStep == 3 ? FinisherScale : 1f);
+            bool upward = slashStep == 2;
+            SlashArc.Spawn(transform, body, hand + new Vector2(ArcAhead * scale, ArcLift), ArcRadius * scale,
+                upward ? ArcTo : ArcFrom, upward ? ArcFrom : ArcTo, GreatSword, slashStep == 3);
         }
 
         // ---- springs (frozen during the hit-stop)
@@ -335,7 +345,7 @@ public class FrenyMotion : MonoBehaviour {
         // shoulder to below the hip. The Melee Attack clip still keys the old box (and switches it
         // on), so its shape is set here, after the Animator, every frame; the great sword reaches 1.8x.
         if (swordBox) {
-            float reach = swordReach * (GreatSword ? GreatSwordScale : 1f);
+            float reach = swordReach * (GreatSword ? GreatSwordScale : 1f) * (slashStep == 3 ? FinisherScale : 1f);
             swordBox.localPosition = hand;
             swordBox.localRotation = Quaternion.identity;
             swordBox.localScale = Vector3.one;
@@ -450,7 +460,7 @@ public class FrenyMotion : MonoBehaviour {
         private float from, to, radius, squashY;
         private Color tint;
 
-        public static void Spawn(Transform owner, SpriteRenderer body, Vector2 center, float radius, float from, float to, bool greatSword) {
+        public static void Spawn(Transform owner, SpriteRenderer body, Vector2 center, float radius, float from, float to, bool greatSword, bool finisher) {
             GameObject go = new GameObject("SlashArc");
             go.transform.SetParent(owner, false);
             go.transform.localPosition = new Vector3(center.x, center.y, -0.01f);
@@ -460,6 +470,9 @@ public class FrenyMotion : MonoBehaviour {
             arc.to = to;
             arc.squashY = 1.1f;
             arc.tint = greatSword ? new Color(0.65f, 0.85f, 1f) : new Color(1f, 0.97f, 0.88f);
+            if (finisher) {
+                arc.tint = Color.Lerp(arc.tint, new Color(1f, 0.8f, 0.4f), 0.5f); // a warmer flash
+            }
             arc.Build(body);
         }
 

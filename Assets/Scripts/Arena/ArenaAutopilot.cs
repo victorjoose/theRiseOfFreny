@@ -43,6 +43,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private readonly Dictionary<Enemy, float> unreachableUntil = new Dictionary<Enemy, float>();
     private float nextScanTime;
     private float nextDecisionTime;
+    private bool comboPress;                       // the last decision pressed the next combo hit
+    private const float ComboRethink = 0.15f;      // decision gap while a sword combo is going
     private float nextJumpTime;
     private PlayerInputFrame plan;
     private bool planIsFresh;
@@ -129,6 +131,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
             planIsFresh = true;
             nextDecisionTime = Time.time + FrenyProgress.AutopilotReactionTime * Tuning.AutoReaction.Value;
+            if (comboPress || player.ComboContinues) {
+                // a combo is a rhythm, not a new decision: look again soon so the next hit isn't late
+                nextDecisionTime = Mathf.Min(nextDecisionTime, Time.time + ComboRethink);
+                comboPress = false;
+            }
         }
 
         if (phase != Phase.None) {
@@ -252,7 +259,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float dy = target.Feet.y - myFeet;
         float towardTarget = Mathf.Sign(dx);
         bool facingTarget = (dx > 0) == player.FacingRight;
-        bool sameFloor = dy <= verticalTolerance && dy >= -0.7f;
+        // mid-combo a target a little above (a Bat knocked up by the hit) is still worth the next hit
+        bool sameFloor = dy <= (player.ComboContinues ? Mathf.Max(verticalTolerance, 1f) : verticalTolerance) && dy >= -0.7f;
         // never beyond what the sword really reaches (a saved 3.0 had him swinging at the air)
         float meleeRange = Mathf.Min(Tuning.AutoMeleeRange.Value, MaxMeleeReach) * (player.GreatSwordActive ? 1.4f : 1f);
         float nearestEnemy = NearestEnemyDistance(me);
@@ -276,6 +284,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                     frame.meleePressed = true;
                     action = "Golpe de espada";
                 }
+                return frame;
+            }
+
+            // mid-combo: press again now, the swing buffer fires hit 2 or 3 as soon as it is ready
+            if (player.ComboContinues && facingTarget) {
+                frame.meleePressed = true;
+                action = "Combo de espada";
+                comboPress = true;
                 return frame;
             }
 
