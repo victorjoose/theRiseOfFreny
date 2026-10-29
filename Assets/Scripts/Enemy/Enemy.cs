@@ -182,9 +182,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // golem_death, golem_step... (see Sfx); null for none
     protected virtual string SoundName => null;
 
+    // lower for a bigger body (the Ciclope uses the Golem's sounds, deeper)
+    protected virtual float SoundPitch => 1f;
+
     protected void PlaySound(string what) {
         if (SoundName != null) {
-            Sfx.Play(SoundName + "_" + what, Center);
+            Sfx.Play(SoundName + "_" + what, Center, 1f, SoundPitch);
         }
     }
 
