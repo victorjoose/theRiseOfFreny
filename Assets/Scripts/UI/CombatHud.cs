@@ -31,7 +31,9 @@ public class CombatHud : MonoBehaviour {
     private static readonly Color MeterBack = new Color(0.04f, 0.02f, 0.08f, 1f);
 
     private Player player;
+    private FrenyInput input;
     private GUIStyle labelStyle;
+    private GUIStyle badgeStyle;
     private Image portrait;          // the uGUI helmet next to the hearts ("Head" sprite)
     private Sprite portraitDefault;
     private readonly List<Image> armorHearts = new List<Image>();
@@ -63,11 +65,38 @@ public class CombatHud : MonoBehaviour {
             heartsMiddle = rowMiddle;
             // the energy (Corrida) and Rage bars right under the portrait and the hearts
             DrawBars(head.xMin, head.yMax + 6f * scale, heartsRight - head.xMin, scale);
+            if (input == null) {
+                input = player.GetComponent<FrenyInput>();
+            }
+            if (input != null && input.AutoEnabled) {
+                DrawAutoBadge(head, scale);
+            }
             // the weapons loose on the right of the hearts (and of the armor hearts' places)
             float size = 84f * scale;   // the sword and gun sprites are small inside their frames
             weaponsRight = DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
         }
         DrawScore(scale);
+    }
+
+    // "AUTO" left of Freny's head while the autopilot drives, gently pulsing
+    private void DrawAutoBadge(Rect head, float scale) {
+        if (badgeStyle == null) {
+            badgeStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.MiddleCenter };
+        }
+        badgeStyle.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * scale));
+        float w = 54f * scale, h = 26f * scale;
+        // the portrait sits close to the left edge: when there is no room beside it, the badge
+        // overlaps its corner instead of being cut by the screen edge
+        float x = Mathf.Max(4f, head.xMin - w - 4f * scale);
+        Rect badge = new Rect(x, head.center.y - h / 2f, w, h);
+        float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 4f);
+        Fill(badge, new Color(MenuKit.TitleColor.r, MenuKit.TitleColor.g, MenuKit.TitleColor.b, pulse));
+        float edge = Mathf.Max(1f, 2f * scale);
+        Fill(new Rect(badge.x + edge, badge.y + edge, badge.width - 2f * edge, badge.height - 2f * edge), MeterBack);
+        Color old = badgeStyle.normal.textColor;
+        badgeStyle.normal.textColor = MenuKit.TitleColor;
+        GUI.Label(badge, "AUTO", badgeStyle);
+        badgeStyle.normal.textColor = old;
     }
 
     // the portrait and hearts of the uGUI HUD, on screen in GUI coordinates (y down); a fixed

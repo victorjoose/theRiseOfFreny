@@ -233,7 +233,7 @@ public class ItemPickup : MonoBehaviour {
 
     // URP's unlit sprite shader ignores the 2D lights (Sprites/Default draws the icons as pale blocks
     // under the 2D renderer); it is in Always Included Shaders, and without it they stay lit
-    private static Material UnlitMaterial {
+    public static Material UnlitMaterial {
         get {
             if (unlitMaterial == null) {
                 Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");

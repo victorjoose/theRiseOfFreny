@@ -76,6 +76,23 @@ public static class SaveSystem {
 
     private static float unsavedPlaySeconds;
 
+    // each slot's savedAtTicks when it last matched the cloud, or when the game started: every
+    // scene load saves (and so stamps the slot with "now"), so the live stamp can't tell the
+    // cloud sync whether this copy or the cloud's is really the newer one
+    private static readonly long[] syncedTicks = new long[SlotCount];
+
+    public static long SyncedTicks(int slot) {
+        return slot >= 0 && slot < SlotCount ? syncedTicks[slot] : 0L;
+    }
+
+    // the slot as it is now is the cloud's copy too (just uploaded or just downloaded)
+    public static void MarkSynced(int slot) {
+        if (slot >= 0 && slot < SlotCount) {
+            SaveData data = Load(slot);
+            syncedTicks[slot] = data != null && data.HasProgress ? data.savedAtTicks : 0L;
+        }
+    }
+
     public static int ActiveSlot {
         get => Mathf.Clamp(PlayerPrefs.GetInt(ActiveSlotKey, 0), 0, SlotCount - 1);
         private set => PlayerPrefs.SetInt(ActiveSlotKey, value);
@@ -83,6 +100,9 @@ public static class SaveSystem {
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Init() {
+        for (int i = 0; i < SlotCount; i++) {
+            MarkSynced(i);
+        }
         // progress from before the slots existed becomes slot 1
         bool anySlot = false;
         for (int i = 0; i < SlotCount; i++) {
