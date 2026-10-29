@@ -711,9 +711,10 @@ public class Player : MonoBehaviour, IDamageable {
         Sfx.Play(shotgun ? "shotgun_shot" : "pistol_shot", muzzle);
         if (shotgun) {
             ShotgunShells--;
-            FireBullet(muzzle, Quaternion.Euler(0f, 0f, 10f) * forward);
-            FireBullet(muzzle, forward);
-            FireBullet(muzzle, Quaternion.Euler(0f, 0f, -10f) * forward);
+            int shot = Achievements.NextShot();   // the three pellets' kills add up for "Doze é Demais"
+            FireBullet(muzzle, Quaternion.Euler(0f, 0f, 10f) * forward, 1f, shot);
+            FireBullet(muzzle, forward, 1f, shot);
+            FireBullet(muzzle, Quaternion.Euler(0f, 0f, -10f) * forward, 1f, shot);
         } else {
             RevolverBullets--;
             FireBullet(muzzle, forward, RevolverPush);
@@ -725,12 +726,13 @@ public class Player : MonoBehaviour, IDamageable {
 
     private const float RevolverPush = 0f; // the revolver only hurts: no shove
 
-    private void FireBullet(Vector3 from, Vector3 direction, float push = 1f) {
+    private void FireBullet(Vector3 from, Vector3 direction, float push = 1f, int shotgunShot = 0) {
         GameObject bullet = Instantiate(revolverBulletPrefab, from, Quaternion.identity);
         RangedAttack shot = bullet.GetComponent<RangedAttack>();
         if (shot) {
             shot.SetDirection(direction);
             shot.SetPush(push);
+            shot.ShotgunShot = shotgunShot;
         }
     }
 

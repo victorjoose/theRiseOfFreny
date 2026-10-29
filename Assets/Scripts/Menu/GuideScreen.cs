@@ -184,6 +184,10 @@ public static class GuideScreen {
             "pontos ou mais, o jogo pergunta antes.");
         Entry(parent, art ? art.rageHelmet : null, "Dificuldade",
             "Fácil, Médio, Difícil ou Freny: quanto maior, mais inimigos, mais rápidos e mais cedo.");
+        Entry(parent, Achievements.Icon(Achievement.Cyclops), "Conquistas",
+            "10 desafios (pausa > Conquistas). Só valem corridas manuais: depois que o piloto joga, a corrida não " +
+            "dá mais conquistas. No fim da corrida, o servidor confere cada conquista nova e o site mostra quantos % " +
+            "dos jogadores têm cada uma.");
         Entry(parent, art ? art.run : null, "XP e piloto automático",
             "Matar dá XP. Cada nível vale 1 ponto, que compra melhorias do piloto no Armeiro: " +
             "reação, esquiva com dash, poção sozinho e melhor alvo.");

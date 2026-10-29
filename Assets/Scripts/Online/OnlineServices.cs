@@ -58,6 +58,7 @@ namespace Online {
         private ScoreApi _api;
         private readonly Dictionary<ArenaLevel, List<LeaderboardEntry>> _boards = new Dictionary<ArenaLevel, List<LeaderboardEntry>>();
         private CloudSaveService _saves;
+        private AchievementService _achievements;
 
         // Run tracking for the current scene.
         private Player _player;
@@ -89,15 +90,21 @@ namespace Online {
             Save = LoadLocal();
             SceneManager.sceneLoaded += OnSceneLoaded;
             UIManager.KillScored += OnKillScored;
+            Achievements.Happened += OnAchievementMoment;
         }
 
         private void OnDestroy() {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             UIManager.KillScored -= OnKillScored;
+            Achievements.Happened -= OnAchievementMoment;
         }
 
         private void OnKillScored(Enemy enemy, float combo) {
             if (_runLog != null && !_reported) _runLog.Add(enemy, combo);
+        }
+
+        private void OnAchievementMoment(string kind, int count) {
+            if (_runLog != null && !_reported) _runLog.AddMoment(kind, count);
         }
 
         private void Start() {
@@ -111,6 +118,7 @@ namespace Online {
             _leaderboard = new LeaderboardService(_db, Auth);
             _api = new ScoreApi(config.apiUrl, Auth);
             _saves = new CloudSaveService(_db, Auth);
+            _achievements = new AchievementService(_db, _api, Auth);
             StartCoroutine(Connect());
         }
 
@@ -126,6 +134,7 @@ namespace Online {
                 yield break;
             }
             yield return SyncSave();
+            yield return _achievements.Load();
             State = Status.Online;
             yield return RefreshLeaderboard();
         }
@@ -425,6 +434,11 @@ namespace Online {
                 SetRecord(RecordStatus.CanSave);
             }
             if (newBest && Record == RecordStatus.CannotSave) SetBest(_runLevel, previousBest);
+
+            // the Conquistas of a manual run go to the API, which checks them against the run's log
+            if (_arenaRun && !assisted && State == Status.Online && _runLog != null && _runToken != null && Achievements.NeedsClaim) {
+                StartCoroutine(_achievements.Claim(_runLog, _runToken, LeaderboardService.Collection(_runLevel), score));
+            }
 
             RunReported?.Invoke(score, newBest && Record == RecordStatus.CanSave, unranked);
             if (State == Status.Online) StartCoroutine(PushRun());

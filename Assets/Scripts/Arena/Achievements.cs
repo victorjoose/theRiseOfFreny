@@ -1,0 +1,171 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum Achievement { Million, Cyclops, Supreme, Grenade5, Oops, Shotgun3, Backstab, Eye, Combo5, Survivor }
+
+// The Conquistas (José, 2026-10-29): ten feats of the Arena, kept in PlayerPrefs (freny.ach.<key>)
+// for the whole game, not per save slot. Like the ranking, only a manual run counts: once the
+// autopilot has driven in a run, nothing more is earned in it (AchievementTracker.Counts).
+// An achievement earned in a run with a ticket from the ranking API is sent to it at the end of the
+// run (OnlineServices); the API checks the run's log backs it up and signs it, and it goes to
+// Firestore's achievements/{uid}, which the site counts to show how many players have each one.
+// Keys, names and the conditions are the same in freny-online's api/_lib/achievements.js and the
+// site's conquistas.json: change them together.
+public static class Achievements {
+
+    public class Info {
+        public Achievement id;
+        public string key;    // the icon's name (Resources/Achievements/<key>), the PlayerPrefs and Firestore field
+        public string name;
+        public string how;
+    }
+
+    public const long MillionScore = 1000000;
+    public const int GrenadeKills = 5;
+    public const int ShotgunKills = 3;
+    public const int ComboStep = 39;         // the kill at 4.9x shows 5.0x after it
+    public const float SurviveSeconds = 600f;
+
+    public static readonly Info[] All = {
+        new Info { id = Achievement.Million, key = "million", name = "Freny Milionário",
+            how = "Faça 1 milhão de pontos numa corrida." },
+        new Info { id = Achievement.Cyclops, key = "cyclops", name = "Quanto Maior o Gigante",
+            how = "Derrote o Ciclope." },
+        new Info { id = Achievement.Supreme, key = "supreme", name = "Feitiço Contra o Feiticeiro",
+            how = "Derrote o Feiticeiro Supremo." },
+        new Info { id = Achievement.Grenade5, key = "grenade5", name = "Cinco Coelhos, Uma Granada",
+            how = "Derrote 5 inimigos com uma granada só." },
+        new Info { id = Achievement.Oops, key = "oops", name = "Ops!",
+            how = "Caia com a sua própria granada." },
+        new Info { id = Achievement.Shotgun3, key = "shotgun3", name = "Doze é Demais",
+            how = "Derrote 3 inimigos com um tiro só da escopeta." },
+        new Info { id = Achievement.Backstab, key = "backstab", name = "Escudo pra Quê?",
+            how = "Derrote um Escudeiro acertando onde o escudo não cobre." },
+        new Info { id = Achievement.Eye, key = "eye", name = "Na Menina dos Olhos",
+            how = "Dê o golpe final no Ciclope acertando o olho dele." },
+        new Info { id = Achievement.Combo5, key = "combo5", name = "Quinta Marcha",
+            how = "Chegue ao combo 5.0x." },
+        new Info { id = Achievement.Survivor, key = "survivor", name = "Duro de Matar",
+            how = "Fique vivo 10 minutos numa corrida." },
+    };
+
+    public const string KeyPrefix = "freny.ach.";
+    private const string ConfirmedSuffix = ".online";
+    // the player finished a manual run the API accepted: the site counts players by it
+    private const string PlayedKey = KeyPrefix + "played" + ConfirmedSuffix;
+
+    public static event Action<Achievement> Unlocked;
+    // a moment the API has to see in the run's log to accept an achievement (the grenade's or the
+    // shotgun's kills, the hit on the Escudeiro's back or the Ciclope's eye, the own grenade)
+    public static event Action<string, int> Happened;
+
+    // earned in the current run, so the end of the run knows there is something to send
+    public static readonly List<Achievement> EarnedThisRun = new List<Achievement>();
+
+    public static Info Of(Achievement a) => All[(int)a];
+
+    public static bool Has(Achievement a) => PlayerPrefs.GetInt(KeyPrefix + Of(a).key, 0) == 1;
+
+    // the API signed it and it is in Firestore
+    public static bool Confirmed(Achievement a) => PlayerPrefs.GetInt(KeyPrefix + Of(a).key + ConfirmedSuffix, 0) == 1;
+
+    public static bool PlayedConfirmed => PlayerPrefs.GetInt(PlayedKey, 0) == 1;
+
+    public static int Count {
+        get {
+            int n = 0;
+            foreach (Info info in All) {
+                if (Has(info.id)) n++;
+            }
+            return n;
+        }
+    }
+
+    public static Sprite Icon(Achievement a) => Resources.Load<Sprite>("Achievements/" + Of(a).key);
+
+    // something for the API at the end of this run
+    public static bool NeedsClaim => EarnedThisRun.Count > 0 || !PlayedConfirmed;
+
+    public static void Earn(Achievement a, string moment = null, int count = 0) {
+        if (!AchievementTracker.Counts) {
+            return;
+        }
+        if (moment != null) {
+            Happened?.Invoke(moment, count);
+        }
+        if (Has(a)) {
+            return;
+        }
+        Grant(a);
+    }
+
+    private static void Grant(Achievement a) {
+        PlayerPrefs.SetInt(KeyPrefix + Of(a).key, 1);
+        PlayerPrefs.Save();
+        if (!EarnedThisRun.Contains(a)) EarnedThisRun.Add(a);
+        Unlocked?.Invoke(a);
+    }
+
+    // the API's answer, or the player's own achievements/{uid} read back after a login
+    public static void MarkConfirmed(string key) {
+        if (key == "played") {
+            PlayerPrefs.SetInt(PlayedKey, 1);
+            return;
+        }
+        foreach (Info info in All) {
+            if (info.key == key) {
+                PlayerPrefs.SetInt(KeyPrefix + key, 1);
+                PlayerPrefs.SetInt(KeyPrefix + key + ConfirmedSuffix, 1);
+            }
+        }
+    }
+
+    // ---- the moments the weapons report ----
+
+    // Grenade.Explode: the enemies one blast killed
+    public static void GrenadeBlast(int kills) {
+        if (kills >= GrenadeKills) {
+            Earn(Achievement.Grenade5, "grenade", kills);
+        }
+    }
+
+    // Freny fell to his own grenade
+    public static void OwnGrenade() {
+        Earn(Achievement.Oops, "oops", 1);
+    }
+
+    private static int lastShot;
+    private static int countedShot;
+    private static int shotKills;
+
+    // Player.Shoot: one number for the three pellets of a shotgun shot
+    public static int NextShot() => ++lastShot;
+
+    // RangedAttack: a pellet of that shot killed an enemy
+    public static void ShotKill(int shot) {
+        if (shot != countedShot) {
+            countedShot = shot;
+            shotKills = 0;
+        }
+        shotKills++;
+        if (shotKills >= ShotgunKills) {
+            Earn(Achievement.Shotgun3, "shotgun", shotKills);
+        }
+    }
+
+#if UNITY_EDITOR
+    // tests in the editor: earn one at once, whatever the run
+    public static void DebugEarn(Achievement a) {
+        Grant(a);
+    }
+
+    public static void DebugClear() {
+        foreach (Info info in All) {
+            PlayerPrefs.DeleteKey(KeyPrefix + info.key);
+            PlayerPrefs.DeleteKey(KeyPrefix + info.key + ConfirmedSuffix);
+        }
+        PlayerPrefs.DeleteKey(PlayedKey);
+    }
+#endif
+}

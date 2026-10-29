@@ -47,6 +47,7 @@ public class Cyclops : Enemy {
     protected override float HitScale(Vector3 from, bool shot) {
         if (HitPoint.HasValue && Vector2.Distance(HitPoint.Value, Eye) <= EyeRadius) {
             Fx.Burst(Eye, new Color(0.6f, 0.4f, 1f), 14, 3f, 0.08f, 0.35f);
+            LastHitMark = EyeHit;
             return 2f;
         }
         return 1f;

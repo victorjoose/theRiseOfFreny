@@ -16,7 +16,15 @@ namespace Online {
             public int combo;
         }
 
+        private struct Moment {
+            public float time;
+            public string kind;
+            public int count;
+        }
+
         private readonly List<Kill> _kills = new List<Kill>();
+        // what the Conquistas need the API to see besides the kills (Achievements.Happened)
+        private readonly List<Moment> _moments = new List<Moment>();
         private readonly float _start;
 
         public RunLog(float start) {
@@ -33,8 +41,12 @@ namespace Online {
             });
         }
 
+        public void AddMoment(string kind, int count) {
+            _moments.Add(new Moment { time = GameTime, kind = kind, count = count });
+        }
+
         // "Bug_Enemy(Clone)" -> "Bug_Enemy": the server knows each enemy by its prefab
-        private static string PrefabName(string name) {
+        public static string PrefabName(string name) {
             int cut = name.IndexOf('(');
             return (cut >= 0 ? name.Substring(0, cut) : name).Trim();
         }
@@ -49,6 +61,12 @@ namespace Online {
                 if (i > 0) json.Append(',');
                 json.Append('[').Append(_kills[i].time.ToString("0.###", CultureInfo.InvariantCulture))
                     .Append(",\"").Append(_kills[i].enemy).Append("\",").Append(_kills[i].combo).Append(']');
+            }
+            json.Append("],\"events\":[");
+            for (int i = 0; i < _moments.Count; i++) {
+                if (i > 0) json.Append(',');
+                json.Append('[').Append(_moments[i].time.ToString("0.###", CultureInfo.InvariantCulture))
+                    .Append(",\"").Append(_moments[i].kind).Append("\",").Append(_moments[i].count).Append(']');
             }
             return json.Append("]}").ToString();
         }
@@ -100,6 +118,28 @@ namespace Online {
             });
         }
 
+        // the Conquistas a run's log backs up, each with the signature firestore.rules asks for in
+        // achievements/{uid} ("played" too, for any accepted manual run). done(null, reason) when refused
+        public IEnumerator ClaimAchievements(string json, Action<Earned[], string> done) {
+            yield return Post("/api/achievements/claim", json, (code, body) => {
+                Reply reply = null;
+                try {
+                    reply = string.IsNullOrEmpty(body) ? null : JsonUtility.FromJson<Reply>(body);
+                } catch (ArgumentException) {
+                }
+                if (code == 200 && reply?.earned != null) {
+                    done?.Invoke(reply.earned, null);
+                } else {
+                    done?.Invoke(null, !string.IsNullOrEmpty(reply?.error) ? reply.error : "servidor fora do ar (" + code + ")");
+                }
+            });
+        }
+
+        [Serializable] public class Earned {
+            public string id;
+            public string sig;
+        }
+
         // a dropped connection or a server error is tried again a few times (a phone on a weak
         // signal would otherwise lose the record); a refusal (4xx) is final
         private const int Attempts = 3;
@@ -137,6 +177,7 @@ namespace Online {
             public string dailyBoard;
             public string dailySig;
             public string error;
+            public Earned[] earned;
         }
     }
 }

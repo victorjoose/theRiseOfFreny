@@ -1104,6 +1104,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         return 1f;
     }
 
+    // what was special about the last hit from Freny, for the Conquistas: BackHit (round the
+    // Escudeiro's shield) or EyeHit (the Ciclope's eye); null for any other hit and for blasts
+    public const string BackHit = "back";
+    public const string EyeHit = "eye";
+    public string LastHitMark { get; protected set; }
+
     // hits scaled below a point add up here until they make one
     private float wear;
     // where the current hit from Freny landed, when the weapon knows (the Ciclope's eye)
@@ -1123,6 +1129,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     }
 
     private void ScaledHit(int amount, bool shot) {
+        LastHitMark = null;
         float scale = player_t != null ? HitScale(player != null ? player.Feet : player_t.position, shot) : 1f;
         wear += Mathf.Max(1, amount) * scale;
         int whole = Mathf.FloorToInt(wear + 0.001f);
@@ -1139,6 +1146,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (isDead) {
             return;
         }
+        LastHitMark = null;
         TakeDamage(Mathf.Max(1, amount));
     }
 

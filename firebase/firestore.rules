@@ -42,6 +42,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // The Conquistas: one field per achievement the ranking API signed for this player
+    // (api/achievements/claim checks the run's log backs it up), plus "played" for players who
+    // finished a manual run the API accepted. Anyone can read and count them (the site shows the
+    // share of players with each one); fields only get added, each with its signature.
+    match /achievements/{userId} {
+      allow read: if true;
+      allow create, update: if isOwner(userId) && validAchievements(userId);
+      allow delete: if false;
+    }
+
     // the all-time boards, and the daily ones (daily_<level>_<yyyymmdd>, Brasília day) the site's
     // Diário tab reads; the API's signature names the board, so a score only lands on the day the
     // API gave it
@@ -68,6 +78,24 @@ service cloud.firestore {
     function validSig(board, userId) {
       let d = request.resource.data;
       return d.sig == hashing.sha256('__SCORE_KEY__|' + userId + '|' + board + '|' + string(d.score)).toHexString().lower();
+    }
+
+    function validAchievements(userId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['played', 'million', 'cyclops', 'supreme', 'grenade5', 'oops', 'shotgun3',
+                               'backstab', 'eye', 'combo5', 'survivor', 'updatedAt'])
+          && d.updatedAt == request.time
+          && (resource == null || d.keys().hasAll(resource.data.keys()))
+          && achSig(d, userId, 'played') && achSig(d, userId, 'million') && achSig(d, userId, 'cyclops')
+          && achSig(d, userId, 'supreme') && achSig(d, userId, 'grenade5') && achSig(d, userId, 'oops')
+          && achSig(d, userId, 'shotgun3') && achSig(d, userId, 'backstab') && achSig(d, userId, 'eye')
+          && achSig(d, userId, 'combo5') && achSig(d, userId, 'survivor');
+    }
+
+    // missing, or sha256("<key>|<uid>|ach|<id>") from the ranking API
+    function achSig(d, userId, id) {
+      return !(id in d)
+          || d[id] == hashing.sha256('__SCORE_KEY__|' + userId + '|ach|' + id).toHexString().lower();
     }
 
     function validSave() {

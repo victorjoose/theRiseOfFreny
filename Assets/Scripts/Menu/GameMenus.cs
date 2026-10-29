@@ -301,6 +301,7 @@ public class GameMenus : MonoBehaviour {
         }
         page.Button("Ajuda", () => pauseStack.Push(HelpScreen.Help(pauseStack)));
         page.Button("Guia", () => pauseStack.Push(GuideScreen.Guide(pauseStack)));
+        page.Button("Conquistas", () => pauseStack.Push(AchievementsScreen.Page(pauseStack)));
         page.Button("Configurações", () => pauseStack.Push(SettingsScreens.Settings(pauseStack)));
 
         // the arena keeps its progress (coins, XP, upgrades) as it goes: nothing to save by hand

@@ -68,6 +68,11 @@ public class Grenade : MonoBehaviour {
             }
             enemy.BlastDamage(EnemyDamage);   // round the Escudeiro's shield too
         }
+        int kills = 0;
+        foreach (Enemy enemy in hit) {
+            if (enemy.IsDead) kills++;
+        }
+        Achievements.GrenadeBlast(kills);
         // Freny caught in his own blast: hurt and thrown away from it
         if (freny != null && !freny.IsDead && freny.TryDamage(SelfDamage)) {
             float side = Mathf.Sign(freny.transform.position.x - at.x);
@@ -75,6 +80,9 @@ public class Grenade : MonoBehaviour {
                 side = freny.FacingRight ? -1f : 1f;
             }
             freny.Knockback(new Vector2(side * SelfKnockback, SelfKnockback * 0.6f));
+            if (freny.IsDead) {
+                Achievements.OwnGrenade();
+            }
         }
         // chests, vases and the stages' props break too
         foreach (Collider2D col in caught) {
