@@ -100,6 +100,7 @@ public static class SaveSystem {
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Init() {
+        ProgressReset.RunIfNeeded();
         for (int i = 0; i < SlotCount; i++) {
             MarkSynced(i);
         }
