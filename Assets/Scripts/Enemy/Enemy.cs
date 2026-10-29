@@ -498,9 +498,16 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     }
 
     // in the arena the screen is the world: nobody walks out of view (no-op in the campaign)
+    private float nextWallCheck;
+
     protected void ClampToArena() {
         if (!ArenaBounds.Active) {
             return;
+        }
+        // shoved into a wall's tiles (by a knockback or another enemy): out to the nearest free spot
+        if (col != null && Time.time >= nextWallCheck) {
+            nextWallCheck = Time.time + 0.2f;
+            WallRescue.Free(transform, col.bounds.center, col.bounds.size.y, GetComponent<Rigidbody2D>());
         }
         Vector3 pos = transform.position;
         float clamped = ArenaBounds.ClampX(pos.x, 0.5f);

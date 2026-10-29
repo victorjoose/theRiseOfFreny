@@ -142,7 +142,8 @@ public static class GuideScreen {
         Entry(parent, null, "Golem Vermelho",
             "Pedra vermelha e olhos acesos. Um tanque: 6 de vida (aguenta uma granada), quase não " +
             "recua com os golpes, e o soco tira 2 e derruba: ele carrega o soco e avança num dash junto. De longe, joga uma mina que gruda no chão, " +
-            "pisca e explode como uma granada (tire o Freny de perto, ou acerte a mina antes). " +
+            "pisca e explode como uma granada 2 s depois de jogada (1,5 s quando a Arena fica difícil); encostar nela não detona. " +
+            "Tire o Freny de perto, ou acerte a mina antes. " +
             "Vale 500 pontos e 6 moedas. Na Arena, só depois de 50 mil pontos.");
         Entry(parent, null, "Escudeiro",
             "Anda atrás de um escudo de espinhos virado para o Freny. No escudo o dano é pequeno (12 espadadas " +
