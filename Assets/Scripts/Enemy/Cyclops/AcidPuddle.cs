@@ -29,14 +29,17 @@ public class AcidPuddle : MonoBehaviour {
     public static void Create(Vector3 floorPoint, float width, float seconds) {
         GameObject go = new GameObject("Acid Puddle");
         go.transform.position = floorPoint + Vector3.up * 0.06f;
-        go.transform.localScale = new Vector3(width, 0.14f, 1f);
+        Sprite[] art = Frames();
+        // the drawn puddle is ArtWidth wide; a flat strip when the art is missing
+        go.transform.localScale = art != null ? new Vector3(width / ArtWidth, 1f, 1f) : new Vector3(width, 0.14f, 1f);
         AcidPuddle puddle = go.AddComponent<AcidPuddle>();
         puddle.width = width;
         puddle.life = seconds;
         puddle.until = Time.time + seconds;
         puddle.renderer2d = go.AddComponent<SpriteRenderer>();
-        puddle.renderer2d.sprite = Pixel();
-        puddle.renderer2d.color = Colour;
+        puddle.renderer2d.sprite = art != null ? art[0] : Pixel();
+        puddle.renderer2d.color = art != null ? Color.white : Colour;
+        puddle.frames = art;
         puddle.renderer2d.sortingOrder = 44;
         if (ItemPickup.UnlitMaterial != null) {
             puddle.renderer2d.sharedMaterial = ItemPickup.UnlitMaterial;
@@ -50,9 +53,12 @@ public class AcidPuddle : MonoBehaviour {
             Destroy(gameObject);
             return;
         }
-        Color c = Colour;
+        Color c = frames != null ? Color.white : Colour;
         c.a *= Mathf.Clamp01(left / Mathf.Min(1f, life));
         renderer2d.color = c;
+        if (frames != null) {
+            renderer2d.sprite = frames[(int)(Time.time * FrameRate) % frames.Length];   // it seethes
+        }
         if (Time.time >= nextBubble) {
             nextBubble = Time.time + 0.15f;
             Fx.Burst(transform.position + Vector3.right * Random.Range(-width / 2f, width / 2f), Colour, 2, 1f, 0.05f, 0.4f);
@@ -67,6 +73,26 @@ public class AcidPuddle : MonoBehaviour {
                 freny.TryDamage(Damage);
             }
         }
+    }
+
+    // Cyclops/Vomit Puddle_0.._2: pixel art, 96x20 at 32 px a unit (Tools/ArtGen/vomit_puddle.py)
+    private const float ArtWidth = 3f;
+    private const float FrameRate = 6f;
+    private static Sprite[] artFrames;
+    private Sprite[] frames;
+
+    private static Sprite[] Frames() {
+        if (artFrames == null) {
+            Sprite[] loaded = new Sprite[3];
+            for (int i = 0; i < loaded.Length; i++) {
+                loaded[i] = Resources.Load<Sprite>("Cyclops/Vomit Puddle_" + i);
+                if (loaded[i] == null) {
+                    return null;
+                }
+            }
+            artFrames = loaded;
+        }
+        return artFrames;
     }
 
     private static Sprite Pixel() {

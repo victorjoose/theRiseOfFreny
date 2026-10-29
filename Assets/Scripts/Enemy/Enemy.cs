@@ -607,7 +607,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
         if (InAttackReach(LungeDistance)) {
             // close enough: wind up, then hit; the cooldown starts after the hit, so the rhythm is steady
-            if (Time.time >= nextAttackTime) {
+            if (Time.time >= nextAttackTime && CanStartAttack) {
                 attackRoutine = StartCoroutine(AttackRoutine());
             }
             return;
@@ -676,6 +676,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         bool sameHeight = theirs.max.y > mine.min.y && theirs.min.y < mine.max.y;
         return sameHeight && gapX <= attackDistance + extra;
     }
+
+    // false while it must not start a punch (the Ciclope resting after a blow)
+    protected virtual bool CanStartAttack => true;
 
     // a dash forward at the end of the wind-up (the red Golem): it starts its punch from this much
     // farther away and closes the gap as it swings
@@ -1091,6 +1094,21 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // hits scaled below a point add up here until they make one
     private float wear;
+    // where the current hit from Freny landed, when the weapon knows (the Ciclope's eye)
+    protected Vector3? HitPoint { get; private set; }
+
+    // a sword hit or a shot that knows where it landed
+    public void Damage(int amount, float push, Vector3 at) {
+        HitPoint = at;
+        Damage(amount, push);
+        HitPoint = null;
+    }
+
+    public void ShotDamage(float push, Vector3 at) {
+        HitPoint = at;
+        ShotDamage(push);
+        HitPoint = null;
+    }
 
     private void ScaledHit(int amount, bool shot) {
         float scale = player_t != null ? HitScale(player != null ? player.Feet : player_t.position, shot) : 1f;

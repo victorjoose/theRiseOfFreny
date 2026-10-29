@@ -15,14 +15,40 @@ public class Cyclops : Enemy {
     private const float SmashReach = 9f;
     private const float VomitReach = 6f;
     private const string Sheets = "Cyclops/Cyclops ";
+    // the red Golem's mine, thrown much harder: fast and flat, hard to dodge
+    private const float BombCooldown = 8f;
+    private const float BombMinDistance = 3.5f;
+    private const float BombMaxDistance = 14f;
+    private const float BombAngle = 28f;
+    private const float BombGravity = 4.5f;
+    private const float BombMaxSpeed = 26f;
+    private const float BombSize = 4f;   // 4 times the red Golem's mine (José, 2026-10-29)
+    private float nextBomb;
 
     private FrameAnimator frames;
     private bool special;          // smashing or vomiting: stands still
     private float nextSmash;
     private float nextVomit;
     private int maxHealth;
-    private const float AfterBlowRest = 2f;   // seconds of calm after any of its blows
+    private const float AfterBlowRest = 3f;   // seconds of calm after any of its blows
     private float quietUntil;
+    private bool punching;
+    protected override bool CanStartAttack => Time.time >= quietUntil;
+
+    // the eye (in the Idle frame, 0.88 forward and 0.73 up from the sprite's middle): hits there
+    // take double (José, 2026-10-29)
+    private static readonly Vector2 EyeOffset = new Vector2(0.88f, 0.73f);
+    private const float EyeRadius = 0.45f;
+
+    private Vector3 Eye => sprite.bounds.center + new Vector3((FacingRight ? 1f : -1f) * EyeOffset.x, EyeOffset.y, 0f);
+
+    protected override float HitScale(Vector3 from, bool shot) {
+        if (HitPoint.HasValue && Vector2.Distance(HitPoint.Value, Eye) <= EyeRadius) {
+            Fx.Burst(Eye, new Color(0.6f, 0.4f, 1f), 14, 3f, 0.08f, 0.35f);
+            return 2f;
+        }
+        return 1f;
+    }
 
     // it laughs at Freny when it arrives and when it hurts him (José: "risadas do ciclope"):
     // the Sorcerer Supreme's laugh, much deeper
@@ -53,17 +79,20 @@ public class Cyclops : Enemy {
 
     // resting after a blow: the moment to go in with the sword (the autopilot waits for it)
     public bool Exposed => !isDead && !special && !IsAttacking && Time.time < quietUntil;
+    public float RestLeft => Exposed ? quietUntil - Time.time : 0f;
 
-    protected override int HitDamage => 2;
+    protected override int HitDamage => 1;   // the punch: 1 heart, but it throws Freny far (the smash and the bomb take 2)
     protected override float HitPush => 0f;   // nothing moves it
-    protected override bool Climbs => false;  // stays on the floor it was called to
+    // it jumps up and down the platforms after Freny like the walkers (José, 2026-10-29)
     protected override Color DeathColor => new Color(0.5f, 0.35f, 0.85f);
     protected override string SoundName => "golem";
     protected override float SoundPitch => 0.6f;
     protected override float KnockbackLift => 0.6f;
     public override bool ShowsHealthBar => false;
 
-    public static Cyclops Current { get; private set; }
+    // from 150k points two come at once (José, 2026-10-29), each with its own bar
+    public static readonly System.Collections.Generic.List<Cyclops> Alive = new System.Collections.Generic.List<Cyclops>();
+    public static Cyclops Current => Alive.Count > 0 ? Alive[0] : null;
 
     public override void Init() {
         health = Life;
@@ -73,7 +102,8 @@ public class Cyclops : Enemy {
         knockback = 24f;   // José, 2026-10-29: Freny flies "beeeem mais longe" (was 14)
         attackDistance = 0.6f;
         attackWindup = 0.5f;
-        attackCooldown = 3.5f;   // a breather after each punch, or it was too strong
+        attackCooldown = 3.5f;
+        maxJumpHeight = 2.6f;   // heavy: only the low platforms   // a breather after each punch, or it was too strong
         radius = 16f;
         sightHeight = 4f;
         base.Init();
@@ -91,17 +121,18 @@ public class Cyclops : Enemy {
         frames.Add("vomit", Sheets + "Vomit", 10f, false);
         nextSmash = Time.time + 4f;
         nextVomit = Time.time + 7f;
-        Current = this;
-        ShowBar();
+        nextBomb = Time.time + 5f;
+        if (!Alive.Contains(this)) {
+            Alive.Add(this);
+        }
+        ShowBar(Alive.IndexOf(this));
         nextLaugh = Time.time + 1.2f;   // a laugh as it comes out of the portal
         laughOnArrival = true;
     }
 
     protected override void OnDisable() {
         base.OnDisable();
-        if (Current == this) {
-            Current = null;
-        }
+        Alive.Remove(this);
         if (bar != null) {
             Destroy(bar);
         }
@@ -117,18 +148,21 @@ public class Cyclops : Enemy {
             return;
         }
         UpdateLaugh();
-        bool wasAttacking = IsAttacking;
         base.Update();
-        if (wasAttacking && !IsAttacking) {
-            quietUntil = Time.time + AfterBlowRest;   // after a punch, no smash or vomit right away
+        // the punch ends inside its coroutine, so it is caught here, a frame later
+        if (punching && !IsAttacking) {
+            quietUntil = Time.time + AfterBlowRest;   // after a punch, nothing right away
         }
+        punching = IsAttacking;
         if (isDead || IsAttacking || player == null || player.Health <= 0 || Time.time < quietUntil) {
             return;
         }
         Vector3 feet = Feet;
         float dx = Mathf.Abs(player.Feet.x - feet.x);
         float dy = player.Feet.y - feet.y;
-        if (Time.time >= nextSmash && dx < SmashReach && Mathf.Abs(dy) < 2.5f) {
+        if (Time.time >= nextBomb && dx >= BombMinDistance && dx <= BombMaxDistance && Mathf.Abs(dy) < 6f) {
+            ThrowBomb();
+        } else if (Time.time >= nextSmash && dx < SmashReach && Mathf.Abs(dy) < 2.5f) {
             StartCoroutine(Smash());
         } else if (Time.time >= nextVomit && dx < VomitReach && Mathf.Abs(dy) < 2f) {
             StartCoroutine(Vomit());
@@ -140,6 +174,15 @@ public class Cyclops : Enemy {
     }
 
     private float Facing => FacingRight ? 1f : -1f;
+
+    private void ThrowBomb() {
+        FacePlayer();
+        nextBomb = Time.time + BombCooldown * ScoreCooldown;
+        quietUntil = Time.time + 0.8f;
+        frames.Play("attack", 0.4f);
+        Vector3 from = Center + Vector3.up * (HalfHeight * 0.7f) + Vector3.right * (Facing * HalfWidth);
+        GolemMine.ThrowAt(this, from, player.transform.position, BombAngle, BombGravity, BombMaxSpeed, BombSize);
+    }
 
     private IEnumerator Smash() {
         special = true;
@@ -182,10 +225,11 @@ public class Cyclops : Enemy {
     // the game's boss bar (Prefabs/HUD/Resources/BossHealth, taken from stage 1-9): the Boss
     // Health frame with two sliders, the life and a darker trail that follows it down
     private GameObject bar;
+    private const float BarSpacing = 95f;   // canvas units between two bars (each is 132 x 0.75 tall)
     private Slider life;
     private Slider trail;
 
-    private void ShowBar() {
+    private void ShowBar(int slot) {
         GameObject prefab = Resources.Load<GameObject>("BossHealth");
         Canvas canvas = null;
         if (UIManager.Instance != null && UIManager.Instance.healthBars != null && UIManager.Instance.healthBars.Length > 0 && UIManager.Instance.healthBars[0] != null) {
@@ -196,6 +240,11 @@ public class Cyclops : Enemy {
         }
         bar = Instantiate(prefab, canvas.rootCanvas.transform, false);
         bar.name = "BossHealth";
+        // a second Ciclope's bar goes under the first one
+        RectTransform rect = bar.GetComponent<RectTransform>();
+        if (rect != null && slot > 0) {
+            rect.anchoredPosition += Vector2.down * (BarSpacing * slot);
+        }
         foreach (Slider slider in bar.GetComponentsInChildren<Slider>(true)) {
             if (slider.name == "HealthBar") {
                 life = slider;

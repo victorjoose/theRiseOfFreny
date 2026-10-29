@@ -102,6 +102,8 @@ public class ArenaDirector : MonoBehaviour {
 
     // ---- the Escudeiro and the Ciclope (EnemyTemplates) ----
 
+    public const int TwoBossesAt = 150000;   // two Ciclopes at once from here (José, 2026-10-29)
+    private const float TwinGap = 4f;
     public const int BossEvery = 50000;   // José, 2026-10-29: at 50k (was 25k), then every 50k
     private GameObject cyclopsTemplate;
     private int nextBossScore = BossEvery;
@@ -138,6 +140,35 @@ public class ArenaDirector : MonoBehaviour {
     }
 
     // on the floor, as far from Freny as it goes, through a bigger portal
+    // while the Ciclope is out, nobody else comes but BossHelpers plain sorcerers that help it
+    // from the towers (José, 2026-10-29)
+    private const int BossHelpers = 2;
+    private const float BossHelperGap = 4f;
+    private float nextHelperTime;
+
+    private void UpdateBossHelpers() {
+        if (Cyclops.Current == null || Time.time < nextHelperTime) {
+            return;
+        }
+        int helpers = pendingSorcerers;
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy is Sorcerer sorcerer && !sorcerer.IsDead && !sorcerer.IsSupreme) {
+                helpers++;
+            }
+        }
+        if (helpers >= BossHelpers) {
+            return;
+        }
+        foreach (Entry entry in enemies) {
+            Sorcerer plain = entry.prefab != null ? entry.prefab.GetComponent<Sorcerer>() : null;
+            if (plain != null && !plain.IsSupreme) {
+                StartCoroutine(SpawnWithPortal(entry));
+                nextHelperTime = Time.time + BossHelperGap;
+                return;
+            }
+        }
+    }
+
     private IEnumerator SpawnBoss() {
         ArenaMap map = Map;
         if (map == null || map.Floor == null) {
@@ -154,14 +185,20 @@ public class ArenaDirector : MonoBehaviour {
         Fx.Portal(floorPoint + Vector3.up * 1.2f, portalSeconds * 2f, new Color(0.75f, 0.2f, 0.85f));
         Sfx.Play("portal", floorPoint, 1f, 0.6f);
         yield return new WaitForSeconds(portalSeconds * 2f);
-        GameObject spawned = Instantiate(cyclopsTemplate, floorPoint, Quaternion.identity);
-        Enemy boss = spawned.GetComponent<Enemy>();
-        if (boss != null) {
-            Transform[] ends = PatrolFor(floor);
-            boss.pointA = ends[0];
-            boss.pointB = ends[1];
-            boss.currentTarget = ends[0].position;
-            boss.PlaceFeetAt(floorPoint);
+        // from TwoBossesAt points two come, one on each side of the middle
+        int count = Score >= TwoBossesAt ? 2 : 1;
+        for (int i = 0; i < count; i++) {
+            Vector3 at = count == 1 ? floorPoint
+                : new Vector3(Mathf.Clamp(x + (i == 0 ? -TwinGap : TwinGap), left, right), floor.y, 0f);
+            GameObject spawned = Instantiate(cyclopsTemplate, at, Quaternion.identity);
+            Enemy boss = spawned.GetComponent<Enemy>();
+            if (boss != null) {
+                Transform[] ends = PatrolFor(floor);
+                boss.pointA = ends[0];
+                boss.pointB = ends[1];
+                boss.currentTarget = ends[0].position;
+                boss.PlaceFeetAt(at);
+            }
         }
         bossPending = false;
     }
@@ -188,6 +225,7 @@ public class ArenaDirector : MonoBehaviour {
         }
 
         UpdateBoss();
+        UpdateBossHelpers();
         int present = AliveEnemies() + pendingSpawns;
         if (Time.time >= nextSpawnTime && present < MaxAlive && !BossAround) {
             Entry pick = Pick();

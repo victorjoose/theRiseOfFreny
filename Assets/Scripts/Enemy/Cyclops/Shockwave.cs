@@ -3,12 +3,12 @@ using UnityEngine;
 // The Ciclope's smash: a wave of dust that runs along the floor. It hurts Freny (2 hearts and a
 // big knockback) when it passes under his feet while he is on or near the floor: jump over it.
 public class Shockwave : MonoBehaviour {
-    private const float Speed = 9f;
+    public const float Speed = 9f;
     private const float Range = 10f;
     private const float Reach = 0.55f;    // half its width
     private const float Height = 0.8f;    // feet higher than this above the floor are safe
     private const int Damage = 2;
-    private const float Knockback = 12f;
+    private const float Knockback = 24f;   // as big as the punch's (José, 2026-10-29)
 
     private float dir;
     private float travelled;

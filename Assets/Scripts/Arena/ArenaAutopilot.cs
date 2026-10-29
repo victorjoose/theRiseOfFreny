@@ -138,11 +138,18 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
         }
 
+        // reflexes, every frame and not only at decisions: the Ciclope's wave crosses his jump
+        // window (about 0.35 s) faster than he re-thinks
+        if (WaveReflex(out PlayerInputFrame jump)) {
+            return jump;
+        }
+
         if (phase != Phase.None) {
             return ManeuverFrame();
         }
 
         PlayerInputFrame frame = plan;
+        KeepOutOfAcid(ref frame);
         if (!planIsFresh) {
             // buttons are pressed once per decision, like a person tapping; movement and held jump continue
             frame.jumpPressed = false;
@@ -274,8 +281,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float nearestEnemy = NearestEnemyDistance(me);
 
         // 1c. the Ciclope: keep out of its reach and shoot, go in with the sword only while it
-        // rests after a blow
-        if (target is Cyclops boss && !boss.Exposed && sameFloor) {
+        // rests after a blow and there is time for a few hits and the way out
+        if (target is Cyclops boss && boss.RestLeft < CyclopsEngageTime && sameFloor) {
             if (Mathf.Abs(dx) < CyclopsSafeDistance) {
                 frame.move = -towardTarget;
                 frame.runHeld = player.RunReady;
@@ -440,9 +447,59 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     // ---- hazards ----
 
     private const float CyclopsSafeDistance = 3.2f;   // its punch and the start of the smash
+    private const float CyclopsEngageTime = 0.9f;     // its rest must last this long to go in
     private const float ShieldJumpDistance = 2.4f;    // close enough to jump over the Escudeiro
     private const float MineKeepOut = 0.8f;           // beyond the blast radius
     private const float WaveJumpAt = 3.2f;            // a shockwave this close: jump now
+
+    private const float WaveReactTime = 0.3f;   // jump when the wave will reach him this soon
+
+    private bool WaveReflex(out PlayerInputFrame frame) {
+        frame = default;
+        if (!player.IsGrounded) {
+            return false;
+        }
+        Vector2 me = transform.position;
+        float myFeet = FeetY;
+        foreach (Shockwave wave in Shockwave.Active) {
+            if (wave == null) {
+                continue;
+            }
+            float toMe = me.x - wave.transform.position.x;
+            bool coming = Mathf.Sign(toMe) == Mathf.Sign(wave.Direction);
+            if (coming && Mathf.Abs(toMe) <= Shockwave.Speed * WaveReactTime + 0.6f && Mathf.Abs(myFeet - wave.FloorY) < 0.6f) {
+                frame.jumpPressed = true;
+                frame.jumpHeld = true;
+                nextJumpTime = Time.time + jumpCooldown;
+                action = "Pulando a onda do Ciclope";
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // never walk into the acid (he used to step out, then run back in after the Ciclope)
+    private void KeepOutOfAcid(ref PlayerInputFrame frame) {
+        if (frame.move == 0f || !player.IsGrounded) {
+            return;
+        }
+        float me = transform.position.x;
+        float myFeet = FeetY;
+        foreach (AcidPuddle puddle in AcidPuddle.Active) {
+            if (puddle == null) {
+                continue;
+            }
+            Vector2 at = puddle.transform.position;
+            float half = puddle.Width / 2f;
+            bool inside = Mathf.Abs(me - at.x) < half;
+            bool ahead = Mathf.Sign(at.x - me) == Mathf.Sign(frame.move) && Mathf.Abs(me - at.x) < half + 0.8f;
+            if (!inside && ahead && Mathf.Abs(myFeet - at.y) < 0.6f) {
+                frame.move = 0f;
+                frame.runHeld = false;
+                return;
+            }
+        }
+    }
 
     private bool AvoidHazards(ref PlayerInputFrame frame, Vector2 me, float myFeet) {
         // a mine near him: run out of its blast (it goes off 0.9 s after it lands, or on touch)
@@ -452,7 +509,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
             Vector2 at = mine.transform.position;
             float dx = me.x - at.x;
-            if (Mathf.Abs(dx) < Grenade.BlastRadius + MineKeepOut && Mathf.Abs(myFeet - at.y) < Grenade.BlastRadius) {
+            if (Mathf.Abs(dx) < mine.Blast + MineKeepOut && Mathf.Abs(myFeet - at.y) < mine.Blast) {
                 float away = Mathf.Abs(dx) < 0.05f ? (player.FacingRight ? -1f : 1f) : Mathf.Sign(dx);
                 frame.move = away;
                 frame.runHeld = player.RunReady;

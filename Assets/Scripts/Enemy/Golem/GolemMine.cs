@@ -19,12 +19,15 @@ public class GolemMine : MonoBehaviour, IDamageable {
     private float explodeAt;
     private bool landed;
     private bool exploded;
+    private float blast = Grenade.BlastRadius;
+    private const float BigBlast = 1.5f;
 
     public int Health { get; set; } = 1;
 
     // the mines flying or lying around (the autopilot keeps away from them)
     public static readonly List<GolemMine> Active = new List<GolemMine>();
     public bool Landed => landed;
+    public float Blast => blast;
 
     private void OnEnable() {
         Active.Add(this);
@@ -34,15 +37,29 @@ public class GolemMine : MonoBehaviour, IDamageable {
         Active.Remove(this);
     }
 
-    public static void Throw(Enemy thrower, Vector3 from, Vector2 velocity) {
+    // thrown at a point on a fixed angle, with the speed that lands it there (as
+    // Player.GrenadeChargeFor); a heavier mine (gravityScale) flies faster and flatter
+    public static void ThrowAt(Enemy thrower, Vector3 from, Vector2 to, float angleDegrees, float gravityScale, float maxSpeed, float size = 1f) {
+        float dx = to.x - from.x, dy = to.y - from.y;
+        float rad = angleDegrees * Mathf.Deg2Rad;
+        float g = Mathf.Abs(Physics2D.gravity.y) * gravityScale;
+        float x = Mathf.Abs(dx);
+        float denom = 2f * Mathf.Cos(rad) * Mathf.Cos(rad) * (x * Mathf.Tan(rad) - dy);
+        float speed = denom > 0.01f ? Mathf.Min(maxSpeed, Mathf.Sqrt(g * x * x / denom)) : maxSpeed;
+        Vector2 velocity = new Vector2(Mathf.Sign(dx) * Mathf.Cos(rad), Mathf.Sin(rad)) * speed;
+        Throw(thrower, from, velocity, gravityScale, size);
+    }
+
+    // size: the Ciclope's bomb is 4 times the red Golem's mine, and its blast reaches BigBlast farther
+    public static void Throw(Enemy thrower, Vector3 from, Vector2 velocity, float gravityScale = Gravity, float size = 1f) {
         LoadFrames();
         GameObject mine = new GameObject("Golem Mine");
         mine.transform.position = from;
-        mine.transform.localScale = Vector3.one * 0.8f;
+        mine.transform.localScale = Vector3.one * (0.8f * size);
         SpriteRenderer renderer = mine.AddComponent<SpriteRenderer>();
         renderer.sortingOrder = 50;
         Rigidbody2D body = mine.AddComponent<Rigidbody2D>();
-        body.gravityScale = Gravity;
+        body.gravityScale = gravityScale;
         body.SetVel(velocity);
         CircleCollider2D trigger = mine.AddComponent<CircleCollider2D>();
         trigger.isTrigger = true;
@@ -52,6 +69,7 @@ public class GolemMine : MonoBehaviour, IDamageable {
         m.sprite = renderer;
         m.body = body;
         m.explodeAt = Time.time + MaxFlight;
+        m.blast = Grenade.BlastRadius * (size > 1f ? BigBlast : 1f);
         Sfx.Play("grenade_throw", from);
     }
 
@@ -106,12 +124,12 @@ public class GolemMine : MonoBehaviour, IDamageable {
 
         Vector3 at = transform.position;
         Fx.Burst(at, new Color(1f, 0.95f, 0.9f), 24, 3f, 0.4f, 0.15f);
-        Fx.Burst(at, BlastColor, 90, Grenade.BlastRadius * 3.5f, 0.22f, 0.45f);
-        Fx.Burst(at, new Color(1f, 0.3f, 0.6f), 50, Grenade.BlastRadius * 2.2f, 0.18f, 0.6f);
+        Fx.Burst(at, BlastColor, 90, blast * 3.5f, 0.22f, 0.45f);
+        Fx.Burst(at, new Color(1f, 0.3f, 0.6f), 50, blast * 2.2f, 0.18f, 0.6f);
         Sfx.Play("grenade_explode", at);
-        Fx.Burst(at, new Color(0.3f, 0.3f, 0.3f, 0.8f), 36, Grenade.BlastRadius * 1.2f, 0.32f, 1.2f);
+        Fx.Burst(at, new Color(0.3f, 0.3f, 0.3f, 0.8f), 36, blast * 1.2f, 0.32f, 1.2f);
 
-        Collider2D[] caught = Physics2D.OverlapCircleAll(at, Grenade.BlastRadius);
+        Collider2D[] caught = Physics2D.OverlapCircleAll(at, blast);
         HashSet<Enemy> hit = new HashSet<Enemy>();
         Player freny = null;
         foreach (Collider2D col in caught) {
