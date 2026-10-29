@@ -9,7 +9,7 @@ using UnityEngine.UI;
 // - the vomit: a puddle in front of it that burns for a few seconds.
 // Built at runtime from the Golem prefab (EnemyTemplates) and drawn by FrameAnimator.
 public class Cyclops : Enemy {
-    public const int Life = 40;
+    public const int Life = 100;   // José, 2026-10-29
     private const float SmashCooldown = 7f;
     private const float VomitCooldown = 9f;
     private const float SmashReach = 9f;
@@ -21,12 +21,46 @@ public class Cyclops : Enemy {
     private float nextSmash;
     private float nextVomit;
     private int maxHealth;
+    private const float AfterBlowRest = 2f;   // seconds of calm after any of its blows
+    private float quietUntil;
+
+    // it laughs at Freny when it arrives and when it hurts him (José: "risadas do ciclope"):
+    // the Sorcerer Supreme's laugh, much deeper
+    private const float LaughGap = 6f;
+    private float nextLaugh;
+    private bool laughOnArrival;
+    private int lastFrenyHealth = -1;
+
+    private void Laugh() {
+        Sfx.Play("supreme_laugh", Center, 1f, 0.55f);
+        nextLaugh = Time.time + LaughGap;
+    }
+
+    private void UpdateLaugh() {
+        if (player == null) {
+            return;
+        }
+        if (laughOnArrival && Time.time >= nextLaugh) {
+            laughOnArrival = false;
+            Laugh();
+        }
+        bool hurt = lastFrenyHealth >= 0 && player.Health < lastFrenyHealth;
+        lastFrenyHealth = player.Health;
+        if (hurt && Time.time >= nextLaugh && Vector2.Distance(player.transform.position, transform.position) < 14f) {
+            Laugh();
+        }
+    }
+
+    // resting after a blow: the moment to go in with the sword (the autopilot waits for it)
+    public bool Exposed => !isDead && !special && !IsAttacking && Time.time < quietUntil;
 
     protected override int HitDamage => 2;
     protected override float HitPush => 0f;   // nothing moves it
     protected override bool Climbs => false;  // stays on the floor it was called to
     protected override Color DeathColor => new Color(0.5f, 0.35f, 0.85f);
     protected override string SoundName => "golem";
+    protected override float SoundPitch => 0.6f;
+    protected override float KnockbackLift => 0.6f;
     public override bool ShowsHealthBar => false;
 
     public static Cyclops Current { get; private set; }
@@ -36,10 +70,10 @@ public class Cyclops : Enemy {
         speed = 1;
         coins = 30;
         scoreToAdd = 5000;
-        knockback = 14f;
+        knockback = 24f;   // José, 2026-10-29: Freny flies "beeeem mais longe" (was 14)
         attackDistance = 0.6f;
         attackWindup = 0.5f;
-        attackCooldown = 2.2f;
+        attackCooldown = 3.5f;   // a breather after each punch, or it was too strong
         radius = 16f;
         sightHeight = 4f;
         base.Init();
@@ -59,6 +93,8 @@ public class Cyclops : Enemy {
         nextVomit = Time.time + 7f;
         Current = this;
         ShowBar();
+        nextLaugh = Time.time + 1.2f;   // a laugh as it comes out of the portal
+        laughOnArrival = true;
     }
 
     protected override void OnDisable() {
@@ -80,8 +116,13 @@ public class Cyclops : Enemy {
             ClampToArena();
             return;
         }
+        UpdateLaugh();
+        bool wasAttacking = IsAttacking;
         base.Update();
-        if (isDead || IsAttacking || player == null || player.Health <= 0) {
+        if (wasAttacking && !IsAttacking) {
+            quietUntil = Time.time + AfterBlowRest;   // after a punch, no smash or vomit right away
+        }
+        if (isDead || IsAttacking || player == null || player.Health <= 0 || Time.time < quietUntil) {
             return;
         }
         Vector3 feet = Feet;
@@ -116,6 +157,7 @@ public class Cyclops : Enemy {
         }
         yield return new WaitForSeconds(length * 0.45f);
         nextSmash = Time.time + SmashCooldown * ScoreCooldown;
+        quietUntil = Time.time + AfterBlowRest;
         special = false;
     }
 
@@ -124,6 +166,7 @@ public class Cyclops : Enemy {
         FacePlayer();
         float length = frames.Length("vomit");
         frames.Play("vomit", length);
+        Sfx.Play("potion", Center, 1f, 0.5f);   // a deep, slow gurgle
         yield return new WaitForSeconds(length * 0.5f);
         if (!isDead) {
             Vector3 at = Feet + Vector3.right * (Facing * (HalfWidth + 1.6f));
@@ -131,6 +174,7 @@ public class Cyclops : Enemy {
         }
         yield return new WaitForSeconds(length * 0.5f);
         nextVomit = Time.time + VomitCooldown * ScoreCooldown;
+        quietUntil = Time.time + AfterBlowRest;
         special = false;
     }
 

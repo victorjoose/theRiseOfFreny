@@ -16,6 +16,19 @@ public class Shockwave : MonoBehaviour {
     private float nextDust;
     private static Player freny;
 
+    // the waves running now (the autopilot jumps over them)
+    public static readonly System.Collections.Generic.List<Shockwave> Active = new System.Collections.Generic.List<Shockwave>();
+    public float Direction => dir;
+    public float FloorY => floorY;
+
+    private void OnEnable() {
+        Active.Add(this);
+    }
+
+    private void OnDisable() {
+        Active.Remove(this);
+    }
+
     public static void Launch(Vector3 feet, float dir) {
         Shockwave wave = new GameObject("Shockwave").AddComponent<Shockwave>();
         wave.transform.position = feet;

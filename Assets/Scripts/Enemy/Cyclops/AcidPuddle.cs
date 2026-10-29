@@ -1,10 +1,10 @@
 using UnityEngine;
 
-// What the Ciclope throws up: a flat violet puddle on the floor that burns Freny's feet
+// What the Ciclope throws up: a flat green puddle on the floor that burns Freny's feet
 // (1 heart, then his usual blink) until it dries up.
 public class AcidPuddle : MonoBehaviour {
     private const int Damage = 1;
-    private static readonly Color Colour = new Color(0.55f, 0.25f, 0.85f, 0.85f);
+    private static readonly Color Colour = new Color(0.45f, 0.85f, 0.2f, 0.85f);   // green (José, 2026-10-29)
     private static Sprite pixel;
     private static Player freny;
 
@@ -13,6 +13,18 @@ public class AcidPuddle : MonoBehaviour {
     private float life;
     private SpriteRenderer renderer2d;
     private float nextBubble;
+
+    // the puddles on the floor now (the autopilot steps out of them)
+    public static readonly System.Collections.Generic.List<AcidPuddle> Active = new System.Collections.Generic.List<AcidPuddle>();
+    public float Width => width;
+
+    private void OnEnable() {
+        Active.Add(this);
+    }
+
+    private void OnDisable() {
+        Active.Remove(this);
+    }
 
     public static void Create(Vector3 floorPoint, float width, float seconds) {
         GameObject go = new GameObject("Acid Puddle");

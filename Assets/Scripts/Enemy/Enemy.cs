@@ -182,9 +182,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // golem_death, golem_step... (see Sfx); null for none
     protected virtual string SoundName => null;
 
+    // lower for a bigger body (the Ciclope uses the Golem's sounds, deeper)
+    protected virtual float SoundPitch => 1f;
+
     protected void PlaySound(string what) {
         if (SoundName != null) {
-            Sfx.Play(SoundName + "_" + what, Center);
+            Sfx.Play(SoundName + "_" + what, Center, 1f, SoundPitch);
         }
     }
 
@@ -943,6 +946,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // damages Freny and shoves him away from the enemy: a little for most, hard for heavy hitters
     // (those knock him down for a moment)
+    // how much of the knockback goes upwards (the Ciclope throws Freny high as well as far)
+    protected virtual float KnockbackLift => 0.5f;
+
     protected void HitPlayer() {
         if (!player.TryDamage(HitDamage)) {
             return;
@@ -952,7 +958,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             dir = FacingRight ? 1f : -1f;
         }
         if (knockback > LightKnockback) {
-            player.Knockback(new Vector2(dir * knockback, knockback * 0.5f));
+            player.Knockback(new Vector2(dir * knockback, knockback * KnockbackLift));
         } else {
             player.Knockback(new Vector2(dir * LightKnockback, LightKnockback * 0.4f), false);
         }

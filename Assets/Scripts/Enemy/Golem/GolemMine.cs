@@ -22,6 +22,18 @@ public class GolemMine : MonoBehaviour, IDamageable {
 
     public int Health { get; set; } = 1;
 
+    // the mines flying or lying around (the autopilot keeps away from them)
+    public static readonly List<GolemMine> Active = new List<GolemMine>();
+    public bool Landed => landed;
+
+    private void OnEnable() {
+        Active.Add(this);
+    }
+
+    private void OnDisable() {
+        Active.Remove(this);
+    }
+
     public static void Throw(Enemy thrower, Vector3 from, Vector2 velocity) {
         LoadFrames();
         GameObject mine = new GameObject("Golem Mine");
