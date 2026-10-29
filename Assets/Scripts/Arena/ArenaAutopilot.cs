@@ -143,6 +143,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (WaveReflex(out PlayerInputFrame jump)) {
             return jump;
         }
+        // and the swing at the Ciclope's eye at the top of a jump (in the air his feet are off its
+        // floor, so the decision's "same floor" test never let it through)
+        if (EyeReflex(out PlayerInputFrame swing)) {
+            return swing;
+        }
 
         if (phase != Phase.None) {
             return ManeuverFrame();
@@ -440,7 +445,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         // 6. loot: a coin within arm's reach is grabbed even mid-fight; farther loot only when nobody is close
-        if (GoToPickup(ref frame, me, myFeet, myPlatform, nearestEnemy > dangerRange ? pickupRange : grabRange)) {
+        // (with a Ciclope out only what is within arm's reach: he lost its rests to crates far away)
+        float lootRange = Cyclops.Current != null ? grabRange : nearestEnemy > dangerRange ? pickupRange : grabRange;
+        if (GoToPickup(ref frame, me, myFeet, myPlatform, lootRange)) {
             return frame;
         }
 
@@ -504,6 +511,38 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private const float WaveReactTime = 0.3f;   // jump when the wave will reach him this soon
 
     private const float HexReactTime = 0.25f;   // a hexball this close in time: jump it now
+
+    private bool EyeReflex(out PlayerInputFrame frame) {
+        frame = default;
+        if (player.IsGrounded || !(currentTarget is Cyclops boss) || boss.IsDead || boss.RestLeft <= 0f) {
+            return false;
+        }
+        Vector2 me = transform.position;
+        Vector3 eye = boss.EyePoint;
+        float toEye = eye.x - me.x;
+        float meleeRange = Mathf.Min(Tuning.AutoMeleeRange.Value, MaxMeleeReach) * (player.GreatSwordActive ? 1.4f : 1f);
+        if (Mathf.Abs(toEye) > meleeRange + EyeJumpReach) {
+            return false;
+        }
+        float bladeY = player.BodyCenter.y;
+        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+        bool falling = rb != null && rb.Vel().y <= 0.5f;
+        frame.jumpHeld = bladeY < eye.y;
+        frame.move = Mathf.Abs(toEye) > meleeRange * 0.7f ? Mathf.Sign(toEye) : 0f;
+        bool facing = (toEye > 0f) == player.FacingRight;
+        if (!facing) {
+            frame.move = Mathf.Sign(toEye);
+            action = "No ar, virando para o olho";
+            return true;
+        }
+        if ((bladeY >= eye.y - EyeTolerance || falling) && Mathf.Abs(toEye) <= meleeRange + 0.5f && player.AttackReady) {
+            frame.meleePressed = true;
+            action = "Espada no olho do Ciclope";
+        } else {
+            action = "No ar, mirando o olho";
+        }
+        return true;
+    }
 
     private bool WaveReflex(out PlayerInputFrame frame) {
         frame = default;

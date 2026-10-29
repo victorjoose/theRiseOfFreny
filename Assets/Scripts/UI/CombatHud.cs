@@ -207,7 +207,8 @@ public class CombatHud : MonoBehaviour {
             switchedAt = Time.time;
         }
         if (Time.time - switchedAt < 1.2f) {
-            ShadowLabel(new Rect(r.x, r.y - 30f * scale, 160f * scale, 28f * scale), shotgun ? "Escopeta" : "Pistola");
+            // under the icon: above it are the Corrida and Fúria bars now
+            ShadowLabel(new Rect(r.x, r.yMax + 2f * scale, 160f * scale, 28f * scale), shotgun ? "Escopeta" : "Pistola");
         }
     }
 
@@ -319,6 +320,13 @@ public class CombatHud : MonoBehaviour {
         // and never over the coin counter on its right
         float coins = CoinsLeft();
         if (coins > 0f) {
+            // squeezed between the hearts and the coins (a long hearts row): a smaller score
+            float room = coins - 30f * scale - Mathf.Max(0f, weaponsRight + 40f * scale);
+            if (width > room && room > 0f) {
+                scoreSize = Mathf.Max(8, Mathf.FloorToInt(scoreSize * room / width));
+                scoreStyle.fontSize = scoreSize;
+                width = scoreStyle.CalcSize(new GUIContent(score)).x;
+            }
             x = Mathf.Min(x, coins - width - 30f * scale);
         }
         // on the line of the hearts and coins (the uGUI row moves with the screen's shape)

@@ -34,12 +34,22 @@ public static class WallRescue {
         return walls;
     }
 
-    // inside a wall: its cell is a tile and so is the one above or below it (walls and the floor are
-    // at least two cells thick; a one-cell platform is left to the physics). The decoration layer
-    // (EXTRA Ground_Tilemap: tufts on the floor, ledge ends) is not a wall: Freny walks through its
-    // tiles, and he was lifted off them every 0.1 s
+    // inside a wall: on a tile, and boxed in by the wall's edges close by, left and right (inside a
+    // column) or above and below (inside the floor). A ledge against a column is open on one side,
+    // so standing on it is not inside. The decoration layer (EXTRA Ground_Tilemap: tufts on the
+    // floor, ledge ends) is not a wall at all: Freny walks through its tiles
+    private const float Enclosed = 2.5f;
+
     public static bool Solid(Vector2 point) {
-        return Tiled(point) && (Tiled(point + Vector2.up) || Tiled(point + Vector2.down));
+        if (!Tiled(point)) {
+            return false;
+        }
+        int ground = LayerMask.GetMask("Ground");
+        bool sides = Physics2D.Raycast(point, Vector2.left, Enclosed, ground).collider != null
+            && Physics2D.Raycast(point, Vector2.right, Enclosed, ground).collider != null;
+        bool upDown = Physics2D.Raycast(point, Vector2.up, Enclosed, ground).collider != null
+            && Physics2D.Raycast(point, Vector2.down, Enclosed, ground).collider != null;
+        return sides || upDown;
     }
 
     private static bool Tiled(Vector2 point) {
@@ -54,7 +64,9 @@ public static class WallRescue {
     // inside a wall: moved (centre to centre) to the closest spot with room for its height, preferring
     // the sides and up over down; true when it was moved
     public static bool Free(Transform body, Vector2 centre, float height, Rigidbody2D rb = null) {
-        if (!ArenaBounds.Active || !Solid(centre)) {
+        // the middle and a bit above it: a small enemy with its middle in the floor's top row (a Bug
+        // walking) is only sunk a little, not inside the wall
+        if (!ArenaBounds.Active || !Solid(centre) || !Solid(centre + Vector2.up * Mathf.Min(0.4f, height * 0.3f))) {
             return false;
         }
         Vector2 best = centre;
