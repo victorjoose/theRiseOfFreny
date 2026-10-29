@@ -65,6 +65,7 @@ public class UIManager : MonoBehaviour {
     public void UpdateLives(int health, bool losingHealth) {
         // one bar per life: bars below the current health stay on, the rest go off
         // (losingHealth is kept so existing callers still compile)
+        EnsureBars(health);
         for (int i = 0; i < healthBars.Length; i++) {
             if (healthBars[i]) {
                 healthBars[i].enabled = i < health;
@@ -72,7 +73,26 @@ public class UIManager : MonoBehaviour {
         }
     }
 
-    public void HandleComboManager(Enemy enemy) {
+    // the scenes have 4 hearts; the Armeiro's Vida máxima adds more in the same row and spacing
+    public void EnsureBars(int count) {
+        if (healthBars == null || healthBars.Length < 2 || healthBars.Length >= count
+            || healthBars[0] == null || healthBars[healthBars.Length - 1] == null) {
+            return;
+        }
+        RectTransform first = healthBars[0].rectTransform;
+        Image last = healthBars[healthBars.Length - 1];
+        Vector2 spacing = (last.rectTransform.anchoredPosition - first.anchoredPosition) / (healthBars.Length - 1);
+        List<Image> bars = new List<Image>(healthBars);
+        while (bars.Count < count) {
+            Image heart = Instantiate(last, last.rectTransform.parent);
+            heart.name = "Health_Bar_" + (bars.Count + 1);
+            heart.rectTransform.anchoredPosition = last.rectTransform.anchoredPosition + spacing * (bars.Count - healthBars.Length + 1);
+            bars.Add(heart);
+        }
+        healthBars = bars.ToArray();
+    }
+
+        public void HandleComboManager(Enemy enemy) {
         if (!comboManager) {
             comboManager = FindAnyObjectByType<ComboManager>();
         }

@@ -340,8 +340,15 @@ public class CombatHud : MonoBehaviour {
                 armorHearts.Add(heart);
             }
         }
+        // after the last life heart, also the ones the Vida máxima upgrade added later
+        RectTransform lastLife = bars != null && bars.Length > 0 && bars[bars.Length - 1] != null ? bars[bars.Length - 1].rectTransform : null;
+        Vector2 step = bars != null && bars.Length >= 2 && bars[0] != null && lastLife != null
+            ? (lastLife.anchoredPosition - bars[0].rectTransform.anchoredPosition) / (bars.Length - 1) : Vector2.zero;
         for (int i = 0; i < armorHearts.Count; i++) {
             if (armorHearts[i]) {
+                if (lastLife != null) {
+                    armorHearts[i].rectTransform.anchoredPosition = lastLife.anchoredPosition + step * (i + 1);
+                }
                 armorHearts[i].enabled = i < player.Armor && !player.IsDead;
             }
         }

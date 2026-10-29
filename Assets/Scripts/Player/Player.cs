@@ -268,6 +268,9 @@ public class Player : MonoBehaviour, IDamageable {
         Enemy.Killed += OnEnemyKilled;
 
         Health = MaxHealth;
+        if (UIManager.Instance) {
+            UIManager.Instance.UpdateLives(Health, false); // the bought hearts too (the scene has 4)
+        }
         // the run's loadout: a loaded revolver with spare bullets; the shop's shotgun and grenades
         // add theirs (and again when bought mid-run, see GrantUpgradeLoadout)
         RevolverBullets = revolverCapacity;
