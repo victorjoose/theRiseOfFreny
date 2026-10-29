@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The Ciclope, the Arena's boss (ArenaDirector calls one every BossEvery points). Slow and huge,
+// The Ciclope, the Arena's boss (ArenaDirector: the first at 50k, then one every 100k). Slow and huge,
 // with the game's boss bar (BossHealth prefab) at the top of the screen instead of the small one. Three attacks:
 // - the punch up close: 2 hearts and a big knockback (José: "o knockback do ciclope deve ser grande");
 // - the smash: it pounds the floor and a shockwave runs both ways along it (jump over it);
@@ -278,6 +278,12 @@ public class Cyclops : Enemy {
     // Health frame with two sliders, the life and a darker trail that follows it down
     private GameObject bar;
     private const float BarSpacing = 95f;   // canvas units between two bars (each is 132 x 0.75 tall)
+    private const float BarBottom = 12f;
+    private const float TouchBarScale = 0.6f;
+    private const float TouchBarBottom = 40f;   // canvas units: clear of the version label
+    private const float TouchBarStep = 62f;     // a bar is 132 x 0.75 x 0.6 tall
+    // set by the ArenaDirector right after it brings two in at once (Init and the bar come a frame later)
+    [System.NonSerialized] public bool Paired;
     private Slider life;
     private Slider trail;
 
@@ -292,10 +298,24 @@ public class Cyclops : Enemy {
         }
         bar = Instantiate(prefab, canvas.rootCanvas.transform, false);
         bar.name = "BossHealth";
-        // a second Ciclope's bar goes under the first one
         RectTransform rect = bar.GetComponent<RectTransform>();
-        if (rect != null && slot > 0) {
-            rect.anchoredPosition += Vector2.down * (BarSpacing * slot);
+        if (rect != null && Paired) {
+            // two at once: their bars go down at the bottom, one on the left and one on the right of
+            // the version label, so the top stays clear (José, 2026-10-29)
+            float side = slot % 2 == 0 ? 0.25f : 0.75f;
+            rect.pivot = new Vector2(0.5f, 0f);
+            if (TouchControls.Active) {
+                // on a phone the corners are the d-pad and the buttons: smaller, one over the other
+                // in the middle, just above the version label
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
+                rect.localScale *= TouchBarScale;
+                rect.anchoredPosition = new Vector2(0f, TouchBarBottom + TouchBarStep * (slot % 2));
+            } else {
+                rect.anchorMin = rect.anchorMax = new Vector2(side, 0f);
+                rect.anchoredPosition = new Vector2(0f, BarBottom);
+            }
+        } else if (rect != null && slot > 0) {
+            rect.anchoredPosition += Vector2.down * (BarSpacing * slot);   // one more while another is out
         }
         foreach (Slider slider in bar.GetComponentsInChildren<Slider>(true)) {
             if (slider.name == "HealthBar") {

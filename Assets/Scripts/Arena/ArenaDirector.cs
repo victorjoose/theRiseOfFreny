@@ -102,11 +102,15 @@ public class ArenaDirector : MonoBehaviour {
 
     // ---- the Escudeiro and the Ciclope (EnemyTemplates) ----
 
-    public const int TwoBossesAt = 150000;   // two Ciclopes at once from here (José, 2026-10-29)
+    // José, 2026-10-29: the first Ciclope at 50k, then one every 100k (150k, 250k...); two at once
+    // only from a million. Each one brings more enemies with it (BossHelpers, BossCompany)
+    public const int FirstBossAt = 50000;
+    public const int BossEvery = 100000;
+    public const int TwoBossesAt = 1000000;
     private const float TwinGap = 4f;
-    public const int BossEvery = 50000;   // José, 2026-10-29: at 50k (was 25k), then every 50k
     private GameObject cyclopsTemplate;
-    private int nextBossScore = BossEvery;
+    private int nextBossScore = FirstBossAt;
+    private int bossesCalled;   // Ciclope fights so far this run (1 = the 50k one)
     private bool bossPending;
 
     private void AddRuntimeEnemies() {
@@ -136,13 +140,17 @@ public class ArenaDirector : MonoBehaviour {
             return;
         }
         nextBossScore += BossEvery;
+        bossesCalled++;
         StartCoroutine(SpawnBoss());
     }
 
     // on the floor, as far from Freny as it goes, through a bigger portal
     // while the Ciclope is out, nobody else comes but BossHelpers plain sorcerers that help it
     // from the towers (José, 2026-10-29)
-    private const int BossHelpers = 2;
+    // 2 plain sorcerers with the first Ciclope, one more with each next one, up to 5; from the
+    // second Ciclope (150k) the usual enemies keep coming too, 2 more at once with each fight
+    private int BossHelpers => Mathf.Min(5, 1 + bossesCalled);
+    private int BossCompany => Mathf.Max(0, 2 * (bossesCalled - 1));
     private const float BossHelperGap = 4f;
     private float nextHelperTime;
 
@@ -192,6 +200,9 @@ public class ArenaDirector : MonoBehaviour {
                 : new Vector3(Mathf.Clamp(x + (i == 0 ? -TwinGap : TwinGap), left, right), floor.y, 0f);
             GameObject spawned = Instantiate(cyclopsTemplate, at, Quaternion.identity);
             Enemy boss = spawned.GetComponent<Enemy>();
+            if (boss is Cyclops cyclops) {
+                cyclops.Paired = count == 2;
+            }
             if (boss != null) {
                 Transform[] ends = PatrolFor(floor);
                 boss.pointA = ends[0];
@@ -226,8 +237,10 @@ public class ArenaDirector : MonoBehaviour {
 
         UpdateBoss();
         UpdateBossHelpers();
+        UpdateBossFodder();
         int present = AliveEnemies() + pendingSpawns;
-        if (Time.time >= nextSpawnTime && present < MaxAlive && !BossAround) {
+        bool spawnNow = BossAround ? Company() < BossCompany && !bossPending : present < MaxAlive;
+        if (Time.time >= nextSpawnTime && spawnNow) {
             Entry pick = Pick();
             if (pick != null && pick.prefab != null) {
                 StartCoroutine(SpawnWithPortal(pick));
@@ -255,6 +268,55 @@ public class ArenaDirector : MonoBehaviour {
         CurrentOvertime = 0f;
     }
 
+    // the usual enemies out during a Ciclope fight (not the Ciclopes, not the sorcerers)
+    // (the one bat and one bug that keep after Freny don't count: BossFodder)
+    private int Company() {
+        int count = pendingSpawns;
+        int bats = 0, bugs = 0;
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy && !enemy.IsDead && !(enemy is Cyclops) && !(enemy is Sorcerer)) {
+                count++;
+                bats += enemy is Bat ? 1 : 0;
+                bugs += enemy is Bug ? 1 : 0;
+            }
+        }
+        return count - Mathf.Min(1, bats) - Mathf.Min(1, bugs);
+    }
+
+    // José, 2026-10-29: in a Ciclope fight Freny has little to kill and his combo would die, so one
+    // bat and one bug are always coming after him; a new one comes when one dies
+    private const float FodderGap = 1.5f;
+    private float nextBat, nextBug;
+
+    private void UpdateBossFodder() {
+        if (Cyclops.Current == null) {
+            return;
+        }
+        int bats = 0, bugs = 0;
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy && !enemy.IsDead) {
+                bats += enemy is Bat ? 1 : 0;
+                bugs += enemy is Bug ? 1 : 0;
+            }
+        }
+        if (bats == 0 && Time.time >= nextBat && SpawnKind<Bat>()) {
+            nextBat = Time.time + portalSeconds + FodderGap;   // its portal is still opening
+        }
+        if (bugs == 0 && Time.time >= nextBug && SpawnKind<Bug>()) {
+            nextBug = Time.time + portalSeconds + FodderGap;
+        }
+    }
+
+    private bool SpawnKind<T>() where T : Enemy {
+        foreach (Entry entry in enemies) {
+            if (entry.prefab != null && entry.prefab.GetComponent<T>() != null) {
+                StartCoroutine(SpawnWithPortal(entry));
+                return true;
+            }
+        }
+        return false;
+    }
+
     private int AliveEnemies() {
         int alive = 0;
         foreach (Enemy enemy in Enemy.Active) {
@@ -266,6 +328,8 @@ public class ArenaDirector : MonoBehaviour {
     }
 
     private static int Score => UIManager.Instance ? UIManager.Instance.Score : 0;
+
+    public const int SupremeAt = 100000;
 
     // sorcerers (plain and Supreme) at once, by score (José, 2026-10-29)
     public static int SorcererLimit(int score) {
@@ -294,6 +358,9 @@ public class ArenaDirector : MonoBehaviour {
     private bool Unlocked(Entry entry) {
         if (entry.unlockScore > 0 && Score < entry.unlockScore) {
             return false;
+        }
+        if (Score < SupremeAt && entry.prefab != null && entry.prefab.GetComponent<Sorcerer>() is Sorcerer sorcerer && sorcerer.IsSupreme) {
+            return false;   // José, 2026-10-29: the Feiticeiro Supremo only from 100k
         }
         return entry.unlockAt <= 0f || Difficulty >= entry.unlockAt + ArenaDifficulty.UnlockShift;
     }
