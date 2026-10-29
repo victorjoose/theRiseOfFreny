@@ -1,14 +1,13 @@
 using UnityEngine;
 
 // The human side, on the old Input Manager: keyboard, mouse and gamepad through InputBindings
-// (remappable in Settings > Controls). Walking reads the Horizontal axis (keys, stick, d-pad).
+// (remappable in Settings > Controls). Walking reads the Horizontal axis (keys, stick, d-pad),
+// filtered by StickFilter.
 public class KeyboardInputSource : IPlayerInputSource {
 
     public const float MaxChargeSeconds = 1.2f; // hold the grenade button this long for a full-power throw (Worms style)
-    // the Horizontal axis also reads a gamepad stick; a stick resting slightly off centre must not
-    // count as walking (it kept taking control away from the autopilot)
-    public const float Deadzone = 0.3f;
     private float grenadeHoldStart = -1f;
+    private readonly StickFilter stick = new StickFilter();
 
     public float RawMove { get; private set; }
 
@@ -16,6 +15,7 @@ public class KeyboardInputSource : IPlayerInputSource {
         if (InputBindings.GameplayBlocked) {
             grenadeHoldStart = -1f;
             RawMove = 0f;
+            stick.Reset();
             return new PlayerInputFrame();
         }
 
@@ -38,10 +38,10 @@ public class KeyboardInputSource : IPlayerInputSource {
         if (Mathf.Abs(TouchControls.Vertical) > Mathf.Abs(vertical)) {
             vertical = TouchControls.Vertical;
         }
-        float move = Mathf.Abs(RawMove) < Deadzone ? 0f : Mathf.Sign(RawMove);
+        stick.Update(RawMove, vertical);
 
         return new PlayerInputFrame {
-            move = move,
+            move = stick.Move,
             jumpPressed = InputBindings.GetDown(GameAction.Jump),
             jumpHeld = InputBindings.Get(GameAction.Jump),
             meleePressed = InputBindings.GetDown(GameAction.Melee),
@@ -49,8 +49,8 @@ public class KeyboardInputSource : IPlayerInputSource {
             // Shift is the sprint on the ground and the dash in the air (Dash only fires in the air)
             dashPressed = InputBindings.GetDown(GameAction.Dash) || InputBindings.GetDown(GameAction.Run),
             runHeld = InputBindings.Get(GameAction.Run),
-            crouchHeld = vertical < -0.5f,
-            aimUpHeld = vertical > 0.5f,
+            crouchHeld = stick.Down,
+            aimUpHeld = stick.Up,
             selectPistol = InputBindings.GetDown(GameAction.Pistol),
             selectShotgun = InputBindings.GetDown(GameAction.Shotgun),
             potionPressed = InputBindings.GetDown(GameAction.Potion),
