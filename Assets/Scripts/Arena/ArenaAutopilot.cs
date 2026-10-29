@@ -279,6 +279,13 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 return frame;
             }
 
+            // mid-combo: press again now, the swing buffer fires hit 2 or 3 as soon as it is ready
+            if (player.ComboContinues && facingTarget) {
+                frame.meleePressed = true;
+                action = "Combo de espada";
+                return frame;
+            }
+
             // the sword is recharging: the gun has its own cooldown, so shoot meanwhile
             if (player.IsGrounded && Shoot(ref frame, dx, facingTarget, towardTarget)) {
                 return frame;

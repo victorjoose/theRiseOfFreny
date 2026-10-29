@@ -25,6 +25,18 @@ public class MeleeAttack : MonoBehaviour
     }
 
     private void OnTriggerEnter2D(Collider2D other) {
+        TryHit(other);
+    }
+
+    // the Melee Attack clip keeps the hitbox on longer than the gap between combo hits, so an enemy
+    // still inside it never "enters" again: Freny's sword also hits what stays in it (once per swing)
+    private void OnTriggerStay2D(Collider2D other) {
+        if (owner) {
+            TryHit(other);
+        }
+    }
+
+    private void TryHit(Collider2D other) {
         // enemies deal their damage from Enemy.AttackRoutine (wind-up + reach check), so their
         // hitboxes must not hurt anyone: before, a Licker's tongue could hit the Golem next to it
         if (ownerIsEnemy) {

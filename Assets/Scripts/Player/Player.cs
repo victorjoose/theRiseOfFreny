@@ -179,6 +179,8 @@ public class Player : MonoBehaviour, IDamageable {
     // same enemy once per swing (MeleeAttack) and FrenyMotion can draw each hit its own way
     public int ComboStep { get; private set; }
     public int SwingCount { get; private set; }
+    // a press now would chain the next combo hit (the autopilot uses it to keep the combo going)
+    public bool ComboContinues => ComboStep > 0 && ComboStep < 3 && Time.time - attackReadyAt <= ComboWindow;
     // armor hearts (the Berserker helmet): each one takes a hit before the life hearts
     public int Armor { get; private set; }
     // kills, sword hits and hits taken fill the Rage meter, calm drains it; full, it gives
@@ -615,8 +617,7 @@ public class Player : MonoBehaviour, IDamageable {
             return;
         }
         meleePressedTime = -10f;
-        bool chained = ComboStep > 0 && ComboStep < 3 && Time.time - attackReadyAt <= ComboWindow;
-        ComboStep = chained ? ComboStep + 1 : 1;
+        ComboStep = ComboContinues ? ComboStep + 1 : 1;
         SwingCount++;
         _playerAnim.Melee(ComboStep);
         Sfx.Play("sword_combo" + ComboStep, transform.position);
