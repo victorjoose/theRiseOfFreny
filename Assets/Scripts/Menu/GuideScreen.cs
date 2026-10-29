@@ -148,7 +148,7 @@ public static class GuideScreen {
             "Anda atrás de um escudo de espinhos virado para o Freny. No escudo o dano é pequeno (12 espadadas " +
             "ou 36 tiros); nas costas, 2 espadadas ou 6 tiros matam. Ele demora para virar, então passe por trás " +
             "dele (pulando por cima ou na hora do ataque também vale); quanto mais difícil, mais rápido ele vira. " +
-            "6 de vida, 300 pontos."); espada e granada tiram o normal. Um pouco mais rápido que o Golem. 300 pontos.");
+            "6 de vida, 300 pontos.");
         Entry(parent, null, "Ciclope",
             "O chefe gigante da Arena: chega a cada 25 mil pontos e, enquanto ele vive, ninguém " +
             "mais aparece. 40 de vida, com a barra no topo da tela. O soco tira 2 e joga o Freny " +
