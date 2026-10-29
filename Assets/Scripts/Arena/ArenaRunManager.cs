@@ -23,6 +23,8 @@ public class ArenaRunManager : MonoBehaviour {
 
     public float RunSeconds => deathTime < 0f ? Time.time - runStart : deathTime - runStart;
     public bool RunOver => deathTime >= 0f;
+    // the autopilot was driving when Freny fell
+    private bool AutoRun => input != null && input.AutoEnabled;
     public bool WaitsForKey => input == null || !input.AutoEnabled || asking;
     public float SecondsUntilRestart => RunOver ? Mathf.Max(0f, deathTime + restartDelay - Time.time) : 0f;
 
@@ -77,23 +79,31 @@ public class ArenaRunManager : MonoBehaviour {
             Image panel = MenuKit.MakeImage("Panel", canvas.transform, MenuKit.PanelColor);
             RectTransform rect = panel.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = new Vector2(0f, 40f);
-            rect.sizeDelta = new Vector2(640f, 130f);
+            rect.anchoredPosition = new Vector2(0f, AutoRun ? 70f : 40f);
+            rect.sizeDelta = new Vector2(640f, AutoRun ? 190f : 130f);
             Outline edge = panel.gameObject.AddComponent<Outline>();
             edge.effectColor = MenuKit.ButtonColor;
             edge.effectDistance = new Vector2(3f, -3f);
             banner = MenuKit.MakeText(panel.transform, "", MenuKit.TextSize, MenuKit.TextColor, TextAnchor.MiddleCenter);
             banner.raycastTarget = false;
             banner.supportRichText = true;
-            banner.lineSpacing = 1.6f;
+            banner.lineSpacing = AutoRun ? 1.3f : 1.6f;
             MenuKit.Stretch(banner.rectTransform);
             if (asking) {
                 AddChoices(canvas.transform);
             }
         }
+        if (AutoRun) {
+            int score = UIManager.Instance != null ? UIManager.Instance.Score : 0;
+            banner.text = "<color=#EE8FFC>AUTOPILOTO - PONTUAÇÃO NÃO RANKEADA</color>\n" +
+                          "<size=12>" + score + " pontos · Freny caiu após " + RunSeconds.ToString("0") + "s\n" +
+                          "(Autopiloto: habilitado)</size>\n" +
+                          "Desabilite o autopiloto para ter ranking" +
+                          (asking ? "" : "\n<size=12>Nova corrida em " + Mathf.CeilToInt(SecondsUntilRestart) + "s</size>");
+            return;
+        }
         string result = Online.OnlineHUD.Instance != null ? Online.OnlineHUD.Instance.LastResult : null;
-        string next = asking ? "Jogar de novo?"
-            : WaitsForKey ? Time.time - deathTime >= minDeathTime ? Key(GameAction.Jump) + ": nova corrida" : ""
+        string next = WaitsForKey ? Time.time - deathTime >= minDeathTime ? Key(GameAction.Jump) + ": nova corrida" : ""
             : "Nova corrida em " + Mathf.CeilToInt(SecondsUntilRestart) + "s";
         banner.text = "<color=#EE8FFC>Freny caiu após " + RunSeconds.ToString("0") + "s</color>\n" +
                       (string.IsNullOrEmpty(result) ? "" : "<size=12>" + result + "</size>\n") + next;
@@ -104,7 +114,7 @@ public class ArenaRunManager : MonoBehaviour {
         MenuKit.EnsureEventSystem();
         RectTransform row = MenuKit.MakeRect("Choices", canvas);
         row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
-        row.anchoredPosition = new Vector2(0f, -60f);
+        row.anchoredPosition = new Vector2(0f, -60f);   // under the 190-high auto panel
         row.sizeDelta = new Vector2(460f, 44f);
         HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 20f;
@@ -112,7 +122,7 @@ public class ArenaRunManager : MonoBehaviour {
         layout.childForceExpandHeight = true;
         layout.childControlWidth = true;
         layout.childControlHeight = true;
-        Button again = MenuKit.MakeButton(row, "Jogar de novo (" + Key(GameAction.Jump) + ")", PlayAgain);
+        Button again = MenuKit.MakeButton(row, "Jogar de novo", PlayAgain);
         if (GameMenus.HasMainMenu) {
             MenuKit.MakeButton(row, "Menu", GameMenus.LoadMainMenu);
         }
