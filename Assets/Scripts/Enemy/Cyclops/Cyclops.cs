@@ -148,6 +148,7 @@ public class Cyclops : Enemy {
         }
         UpdateLaugh();
         base.Update();
+        KeepApart();
         // the punch ends inside its coroutine, so it is caught here, a frame later
         if (punching && !IsAttacking) {
             quietUntil = Time.time + AfterBlowRest;   // after a punch, nothing right away
@@ -181,6 +182,27 @@ public class Cyclops : Enemy {
                 return false;
             }
             return true;
+        }
+    }
+
+    // two Ciclopes chasing Freny ended up on top of each other, looking like one: the second
+    // keeps this far from the first
+    private const float TwinSpacing = 2.6f;
+    private const float TwinPush = 3f;   // units per second
+
+    private void KeepApart() {
+        foreach (Cyclops other in Alive) {
+            if (other == this || other.isDead) {
+                continue;
+            }
+            float dx = transform.position.x - other.transform.position.x;
+            if (Mathf.Abs(dx) >= TwinSpacing || Mathf.Abs(Feet.y - other.Feet.y) > 1f) {
+                continue;
+            }
+            float away = dx == 0f ? (Alive.IndexOf(this) % 2 == 0 ? -1f : 1f) : Mathf.Sign(dx);
+            if (!Blocked(away) && GroundAhead(away)) {
+                transform.position += Vector3.right * (away * TwinPush * Time.deltaTime);
+            }
         }
     }
 

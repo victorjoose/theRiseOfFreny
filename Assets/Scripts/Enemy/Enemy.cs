@@ -680,6 +680,16 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // false while it must not start a punch (the Ciclope resting after a blow)
     protected virtual bool CanStartAttack => true;
 
+    // the horizontal gap between its collider and its target's (0 when they overlap)
+    protected float TargetGap() {
+        if (col == null || (rival == null && playerCol == null)) {
+            return Mathf.Max(0f, distance - 1f);
+        }
+        Bounds mine = col.bounds;
+        Bounds theirs = rival != null ? rival.BodyBounds : playerCol.bounds;
+        return Mathf.Max(0f, Mathf.Max(theirs.min.x - mine.max.x, mine.min.x - theirs.max.x));
+    }
+
     // a dash forward at the end of the wind-up (the red Golem): it starts its punch from this much
     // farther away and closes the gap as it swings
     protected virtual float LungeDistance => 0f;
@@ -692,10 +702,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Fx.Dust(Feet, 6);
         while (Time.time < end && !isDead) {
             // stops at Freny (in reach), at a wall, spikes or the platform's edge
-            if (InAttackReach(-attackDistance * 0.5f) || Blocked(dir) || !GroundAhead(dir)) {
+            float gap = TargetGap() - attackDistance * 0.5f;
+            if (gap <= 0f || Blocked(dir) || !GroundAhead(dir)) {
                 yield break;
             }
-            transform.position += Vector3.right * (dir * speed * Time.deltaTime);
+            // never past Freny, even on a long frame (it went through him at 15 fps)
+            transform.position += Vector3.right * (dir * Mathf.Min(speed * Time.deltaTime, gap));
             yield return null;
         }
     }

@@ -454,6 +454,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private const float WaveReactTime = 0.3f;   // jump when the wave will reach him this soon
 
+    private const float HexReactTime = 0.25f;   // a hexball this close in time: jump it now
+
     private bool WaveReflex(out PlayerInputFrame frame) {
         frame = default;
         if (!player.IsGrounded) {
@@ -461,6 +463,35 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
         Vector2 me = transform.position;
         float myFeet = FeetY;
+        // the sorcerers' hexballs (the Ciclope's helpers took 2/3 of his life): a jump away at the
+        // last moment, since the decisions come too far apart to catch them
+        Vector2 body = me + Vector2.up * 0.5f;
+        foreach (HexballEffect ball in HexballEffect.Active) {
+            if (!ball) {
+                continue;
+            }
+            Vector2 pos = ball.transform.position;
+            Vector2 dir = ((Vector2)ball.Direction).normalized;
+            Vector2 toMe = body - pos;
+            float along = Vector2.Dot(toMe, dir);
+            float miss = Mathf.Abs(toMe.x * dir.y - toMe.y * dir.x);
+            if (along > 0f && miss <= 0.8f && along / Mathf.Max(0.1f, ball.Speed) <= HexReactTime && Time.time >= nextJumpTime) {
+                if (Mathf.Abs(dir.y) < 0.5f) {
+                    // a level shot: jump straight over it
+                    frame.jumpPressed = true;
+                    frame.jumpHeld = true;
+                    nextJumpTime = Time.time + jumpCooldown;
+                    action = "Pulando o feitiço";
+                } else {
+                    // from above (a tower): run out from under it
+                    float away = Mathf.Sign(me.x - pos.x);
+                    frame.move = away == 0f ? (player.FacingRight ? 1f : -1f) : away;
+                    frame.runHeld = player.RunReady;
+                    action = "Saindo de baixo do feitiço";
+                }
+                return true;
+            }
+        }
         foreach (Shockwave wave in Shockwave.Active) {
             if (wave == null) {
                 continue;
