@@ -44,7 +44,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private float nextScanTime;
     private float nextDecisionTime;
     private bool comboPress;                       // the last decision pressed the next combo hit
-    private const float ComboRethink = 0.15f;      // decision gap while a sword combo is going
+    private const float ComboRethink = 0.06f;      // decision gap while a sword combo is going
     private float nextJumpTime;
     private PlayerInputFrame plan;
     private bool planIsFresh;
@@ -287,9 +287,10 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 return frame;
             }
 
-            // mid-combo: press again now, the swing buffer fires hit 2 or 3 as soon as it is ready
+            // mid-combo: press again just before the sword is ready (the swing buffer fires it), so
+            // the last hit has landed and the target is known to be still alive
             if (player.ComboContinues && facingTarget) {
-                frame.meleePressed = true;
+                frame.meleePressed = player.AttackReadyIn <= 0.08f; // otherwise wait a moment, no shot
                 action = "Combo de espada";
                 comboPress = true;
                 return frame;

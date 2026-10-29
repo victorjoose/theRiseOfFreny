@@ -99,11 +99,15 @@ public class FrenyMotion : MonoBehaviour {
     private static readonly Vector2 Shoulder = new Vector2(0.2f, -0.28f);  // the arm's root, in the Sprite's space
     private const float ArmAndBlade = 0.86f, ArmAndGreatBlade = 1.2f;      // shoulder to the tip
     private float swingArm, swingBlade;                                    // this frame's angles
+    private float lastCutFrame = -10f;
+    private const float LowerTime = 0.07f;                                 // the sword lowered, then put away
     private Dictionary<string, Sprite> blades;
 
     // the sword hurts only once the cut starts, not during the wind-up (MeleeAttack asks)
+    // (for the overhead finisher, once the blade has come halfway down in front of him: a hit any
+    // earlier froze him in the hit-stop with the sword still behind his head)
     public bool SwordLive => !enabled || rig == null || (player && player.IsCrouching)
-        || swingClock >= Swings[slashStep - 1].windup;
+        || swingClock >= Swings[slashStep - 1].windup + Swings[slashStep - 1].cut * (slashStep == 3 ? 0.5f : 0f);
     private float frozenUntil;
     private float nextGhost;
     private bool dead;
@@ -443,9 +447,17 @@ public class FrenyMotion : MonoBehaviour {
         // the Animator's slash frames are the cue: while they play he is swinging
         // and between two hits of a combo the arm and blade stay where the last cut ended, so the
         // combo reads as one move instead of the sword vanishing between hits
+        bool free = !crouching && !climbing && !dashing && Time.time - shotStart > 0.3f && player && !player.IsStunned;
         bool cutFrame = body.sprite && body.sprite.name.StartsWith("Player slash_")
-            || (!crouching && !climbing && !dashing && Time.time - shotStart > 0.3f
-                && player && player.ComboContinues && !player.IsStunned);
+            || (free && player.ComboContinues);
+        if (cutFrame) {
+            lastCutFrame = Time.time;
+        } else if (free && Time.time - lastCutFrame < LowerTime) {
+            // a moment with the arm and sword lowered before the sword is put away
+            cutFrame = true;
+            swingArm = SwingMin;
+            swingBlade = BladeMin;
+        }
         UpdatePose(crouching, climbing, grounded, sinceSlash, vy, dt, cutFrame);
         UpdateSword(crouching, sinceSlash, cutFrame);
         UpdateHead();
