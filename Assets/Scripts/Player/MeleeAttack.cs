@@ -15,6 +15,7 @@ public class MeleeAttack : MonoBehaviour
     private readonly Dictionary<IDamageable, int> lastHit = new Dictionary<IDamageable, int>(); // swing that hit it
     private bool ownerIsEnemy;
     private Player owner;
+    private FrenyMotion motion;   // Freny's swing: no damage during its wind-up
 
     private void Awake() {
         ownerIsEnemy = GetComponentInParent<Enemy>() != null;
@@ -41,6 +42,15 @@ public class MeleeAttack : MonoBehaviour
         // hitboxes must not hurt anyone: before, a Licker's tongue could hit the Golem next to it
         if (ownerIsEnemy) {
             return;
+        }
+
+        if (owner) {
+            if (motion == null) {
+                motion = owner.GetComponent<FrenyMotion>();
+            }
+            if (motion && !motion.SwordLive) {
+                return;
+            }
         }
 
         // the sword hitbox overlaps Freny himself, and he is IDamageable too

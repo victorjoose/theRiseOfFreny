@@ -57,7 +57,7 @@ public class FrenyMotion : MonoBehaviour {
     private Vector3 rigBase;
     private float bodyCenter = 0.6f;       // height of his middle above the feet
 
-    private Spring squash, angle, lunge;
+    private Spring squash, angle, lunge, hop;
     private float lastVx, lastVy;
     private bool wasGrounded = true;
     private bool couldAirJump;
@@ -67,6 +67,43 @@ public class FrenyMotion : MonoBehaviour {
     private float shotStart = -10f;
     private bool arcPending;
     private int slashStep = 1;             // the combo hit being drawn (1, 2 or 3)
+    private float swingClock = 10f;        // time into the swing; stands still during the hit-stop
+    private bool strikePending;            // the wind-up is still on: the cut hasn't started
+
+    // The 3-hit combo, standing or in the air: the arm ("Freny swing_<deg>" poses, every 15 degrees)
+    // and the sword ("Freny blade_<deg>") go from a wind-up to the end of the cut. Angles are in
+    // degrees, 0 = straight ahead, up is +. Tools/ArtGen/freny_poses.py draws the poses and prints
+    // SwingGrips, the fist of each pose in the Sprite's space.
+    //   1  a flat cut forward from above the shoulder, with a step
+    //   2  a rising cut back up from below the hip, with a hop
+    //   3  the sword taken back over his head and brought down hard, with a lunge and a shake
+    private struct Swing {
+        public float armFrom, bladeFrom, armTo, bladeTo, windup, cut;
+        public Swing(float armFrom, float bladeFrom, float armTo, float bladeTo, float windup, float cut) {
+            this.armFrom = armFrom; this.bladeFrom = bladeFrom; this.armTo = armTo; this.bladeTo = bladeTo;
+            this.windup = windup; this.cut = cut;
+        }
+    }
+    private static readonly Swing[] Swings = {
+        new Swing(45f, 105f, -15f, -15f, 0.035f, 0.065f),
+        new Swing(-45f, -60f, 75f, 105f, 0.03f, 0.06f),
+        new Swing(90f, 150f, -45f, -75f, 0.08f, 0.07f),
+    };
+    private const float WindupPull = 15f;  // the sword keeps drawing back a little during the wind-up
+    private const int SwingMin = -60, SwingMax = 90, BladeMin = -90, BladeMax = 180, AngleStep = 15;
+    private static readonly Vector2[] SwingGrips = {
+        new Vector2(0.32f, -0.52f), new Vector2(0.40f, -0.48f), new Vector2(0.44f, -0.40f), new Vector2(0.44f, -0.36f),
+        new Vector2(0.48f, -0.28f), new Vector2(0.44f, -0.20f), new Vector2(0.44f, -0.16f), new Vector2(0.40f, -0.08f),
+        new Vector2(0.32f, -0.04f), new Vector2(0.28f, -0.04f), new Vector2(0.20f, 0.00f),
+    };
+    private static readonly Vector2 Shoulder = new Vector2(0.2f, -0.28f);  // the arm's root, in the Sprite's space
+    private const float ArmAndBlade = 0.86f, ArmAndGreatBlade = 1.2f;      // shoulder to the tip
+    private float swingArm, swingBlade;                                    // this frame's angles
+    private Dictionary<string, Sprite> blades;
+
+    // the sword hurts only once the cut starts, not during the wind-up (MeleeAttack asks)
+    public bool SwordLive => !enabled || rig == null || (player && player.IsCrouching)
+        || swingClock >= Swings[slashStep - 1].windup;
     private float frozenUntil;
     private float nextGhost;
     private bool dead;
@@ -127,6 +164,7 @@ public class FrenyMotion : MonoBehaviour {
         Dictionary<string, Sprite> swords = LoadHeads("FrenyPoses/swords");
         swords.TryGetValue("Freny sword", out normalSword);
         swords.TryGetValue("Freny great sword", out longSword);
+        blades = LoadHeads("FrenyPoses/blades");
         sword = new GameObject("Sword").AddComponent<SpriteRenderer>();
         sword.transform.SetParent(body.transform, false);
         sword.sharedMaterial = body.sharedMaterial;
@@ -187,10 +225,33 @@ public class FrenyMotion : MonoBehaviour {
     public void Slash(int step = 1) {
         slashStart = Time.time;
         arcPending = true;
-        slashStep = step;
-        if (step == 3) {
-            lunge.v += 3.5f;
-            squash.v -= 2f;
+        slashStep = Mathf.Clamp(step, 1, 3);
+        swingClock = 0f;
+        strikePending = true;
+        if (slashStep == 3) {
+            squash.v += 2.5f;   // rising onto his toes for the big one
+        }
+    }
+
+    // the moment the cut leaves the wind-up: the body throws itself into it
+    private void Strike() {
+        switch (slashStep) {
+            case 1:
+                lunge.v += 3f;
+                break;
+            case 2:
+                hop.v += 3.2f;
+                squash.v += 2f;
+                break;
+            default:
+                lunge.v += 5.5f;
+                squash.v -= 3.5f;
+                CameraShake.Kick(0.07f, 0.16f);
+                if (player && player.IsGrounded) {
+                    Vector3 feet = player.feetPos ? player.feetPos.position : transform.position;
+                    Fx.Dust(feet + Vector3.right * (0.4f * Mathf.Sign(transform.localScale.x)), 6);
+                }
+                break;
         }
     }
 
@@ -243,6 +304,9 @@ public class FrenyMotion : MonoBehaviour {
         }
         if (anim && anim.speed == 0f && Time.time >= frozenUntil) {
             anim.speed = 1f;
+        }
+        if (Time.time >= frozenUntil) {
+            swingClock += dt;
         }
 
         float facing = transform.localScale.x >= 0f ? 1f : -1f;
@@ -301,19 +365,37 @@ public class FrenyMotion : MonoBehaviour {
         if (player && player.IsStunned) {
             angleTarget = 8f;
         }
-        // the body stays planted and upright while he swings (only the arm and the arc move),
-        // and while he climbs (the climbing frames do the moving)
+        // the body stays planted while he swings, only leaning into the big one, and while he
+        // climbs (the climbing frames do the moving)
+        Swing swing = Swings[slashStep - 1];
         if ((sinceSlash < 0.3f && grounded) || climbing) {
             angleTarget = 0f;
             squashTarget = 0f;
+            if (slashStep == 3 && !climbing && !crouching) {
+                angleTarget = swingClock < swing.windup ? 7f : swingClock < swing.windup + 0.15f ? -9f : 0f;
+            }
         }
-        if (arcPending && sinceSlash >= windup) {
-            arcPending = false;
-            float scale = (GreatSword ? GreatSwordScale : 1f) * (slashStep == 3 ? FinisherScale : 1f);
-            bool upward = slashStep == 2;
-            SlashArc.Spawn(transform, body, hand + new Vector2(ArcAhead * scale, ArcLift), ArcRadius * scale,
-                upward ? ArcTo : ArcFrom, upward ? ArcFrom : ArcTo, GreatSword, slashStep == 3);
+        if (crouching) {
+            // crouched, the arm can't swing: the old crescent in front of the blade
+            if (arcPending && sinceSlash >= windup) {
+                arcPending = false;
+                float scale = GreatSword ? GreatSwordScale : 1f;
+                SlashArc.Spawn(transform, body, hand + new Vector2(ArcAhead * scale, ArcLift), ArcRadius * scale,
+                    ArcFrom, ArcTo, GreatSword, false, SlashArc.DefaultLife, 1f);
+            }
+            strikePending = false;
+        } else if (strikePending && swingClock >= swing.windup) {
+            strikePending = false;
+            Strike();
+            if (arcPending) {
+                // the smear follows the tip of the blade, around his shoulder
+                arcPending = false;
+                float radius = (GreatSword ? ArmAndGreatBlade : ArmAndBlade) * (slashStep == 3 ? 1.08f : 1f);
+                SlashArc.Spawn(body.transform, body, Shoulder, radius, swing.bladeFrom, swing.bladeTo, GreatSword,
+                    slashStep == 3, swing.cut * 1.6f, slashStep == 3 ? 1.5f : 1.15f);
+            }
         }
+        UpdateSwingAngles(swing);
 
         // ---- springs (frozen during the hit-stop)
         if (Time.time >= frozenUntil) {
@@ -321,6 +403,7 @@ public class FrenyMotion : MonoBehaviour {
             bool settling = grounded && Mathf.Abs(vx) < 0.1f && Mathf.Abs(angleTarget) < 0.5f;
             angle.Step(angleTarget, settling ? SettleStiff : AngleStiff, settling ? SettleDamp : AngleDamp, dt);
             lunge.Step(lungeTarget, SpringStiff, 22f, dt);
+            hop.Step(0f, SpringStiff, 20f, dt);
         }
         squash.x = Mathf.Clamp(squash.x, -0.35f, 0.35f);
         angle.x = Mathf.Clamp(angle.x, -35f, 35f);
@@ -339,7 +422,7 @@ public class FrenyMotion : MonoBehaviour {
 
         rig.localRotation = Quaternion.Euler(0f, 0f, angle.x + flip);
         rig.localScale = new Vector3(1f - squash.x * 0.8f, 1f + squash.x, 1f);
-        rig.localPosition = rigBase + new Vector3(lunge.x, 0f, 0f) + flipOffset + shake;
+        rig.localPosition = rigBase + new Vector3(lunge.x, Mathf.Max(0f, hop.x), 0f) + flipOffset + shake;
 
         // The sword hitbox covers the whole cut: from his hand forward by the reach, from above the
         // shoulder to below the hip. The Melee Attack clip still keys the old box (and switches it
@@ -355,8 +438,10 @@ public class FrenyMotion : MonoBehaviour {
             }
         }
 
-        UpdatePose(crouching, climbing, grounded, sinceSlash, vy, dt);
-        UpdateSword(crouching, sinceSlash);
+        // the Animator's slash frames are the cue: while they play he is swinging
+        bool cutFrame = body.sprite && body.sprite.name.StartsWith("Player slash_");
+        UpdatePose(crouching, climbing, grounded, sinceSlash, vy, dt, cutFrame);
+        UpdateSword(crouching, sinceSlash, cutFrame);
         UpdateHead();
 
         lastVx = vx;
@@ -365,7 +450,7 @@ public class FrenyMotion : MonoBehaviour {
         wasFacingRight = facingRight;
     }
 
-    private void UpdatePose(bool crouching, bool climbing, bool grounded, float sinceSlash, float vy, float dt) {
+    private void UpdatePose(bool crouching, bool climbing, bool grounded, float sinceSlash, float vy, float dt, bool cutFrame) {
         float sinceShot = Time.time - shotStart;
         string pose = null;
         if (climbing) {
@@ -375,6 +460,8 @@ public class FrenyMotion : MonoBehaviour {
         } else if (crouching) {
             pose = sinceSlash >= CrouchCut && sinceShot < 0.3f ? "Freny crouch ranged_" + Mathf.Min(2, (int)(sinceShot * 10f))
                 : "Freny crouch_0";
+        } else if (cutFrame) {
+            pose = "Freny swing_" + Snap(swingArm, SwingMin, SwingMax);
         } else if (!grounded && sinceShot < 0.33f) {
             pose = "Freny air ranged_" + Mathf.Min(4, (int)(sinceShot * 15f));
         }
@@ -385,13 +472,31 @@ public class FrenyMotion : MonoBehaviour {
 
     private const float CrouchCut = 0.25f;  // how long a crouched cut holds the sword out
 
-    // the icon exactly as drawn, raised forward at 45 degrees, while the crescent cuts in front
-    private void UpdateSword(bool crouching, float sinceSlash) {
-        string frame = body.sprite ? body.sprite.name : "";
-        bool cutting = crouching ? sinceSlash < CrouchCut : frame.StartsWith("Player slash_");
+    // the sword in his fist while he cuts: standing or in the air, the blade drawn at the swing's
+    // angle; crouched, the icon exactly as drawn, raised forward at 45 degrees
+    private void UpdateSword(bool crouching, float sinceSlash, bool cutFrame) {
+        bool cutting = crouching ? sinceSlash < CrouchCut : cutFrame;
         Sprite held = GreatSword ? longSword : normalSword;
         sword.enabled = cutting && body.enabled && held != null;
         if (!sword.enabled) {
+            return;
+        }
+        sword.sortingOrder = body.sortingOrder + 1;
+        int arm = Snap(swingArm, SwingMin, SwingMax);
+        int bladeAngle = Snap(swingBlade, BladeMin, BladeMax);
+        if (!crouching && blades != null
+                && blades.TryGetValue((GreatSword ? "Freny great blade_" : "Freny blade_") + bladeAngle, out Sprite drawn)) {
+            // swinging: the sword drawn at this moment's angle, in the fist of this moment's arm
+            Vector2 fist = SwingGrips[(arm - SwingMin) / AngleStep];
+            if (body.flipX) {
+                fist.x = -fist.x;
+            }
+            sword.sprite = drawn;
+            sword.flipX = body.flipX;
+            sword.transform.localPosition = fist;
+            if (bladeAngle > 120) {
+                sword.sortingOrder = body.sortingOrder - 1; // taken back over his head: behind him
+            }
             return;
         }
         Vector2 grip = crouching ? CrouchGrip : SlashGrip;
@@ -401,6 +506,27 @@ public class FrenyMotion : MonoBehaviour {
         sword.sprite = held;
         sword.flipX = body.flipX;
         sword.transform.localPosition = grip;
+    }
+
+    // this frame's arm and sword angles: held in the wind-up (drawing back a little), then swept
+    // to the end of the cut with an ease-out, then held there while the slash frames last
+    private void UpdateSwingAngles(Swing swing) {
+        float pull = Mathf.Sign(swing.bladeFrom - swing.bladeTo) * WindupPull;
+        if (swingClock < swing.windup) {
+            float t = swing.windup > 0f ? swingClock / swing.windup : 1f;
+            swingArm = swing.armFrom;
+            swingBlade = swing.bladeFrom + pull * t;
+            return;
+        }
+        float k = Mathf.Clamp01((swingClock - swing.windup) / swing.cut);
+        k = 1f - (1f - k) * (1f - k) * (1f - k);
+        swingArm = Mathf.Lerp(swing.armFrom, swing.armTo, k);
+        swingBlade = Mathf.Lerp(swing.bladeFrom + pull, swing.bladeTo, k);
+    }
+
+    // an angle to the nearest drawn one (every AngleStep degrees), kept within what was drawn
+    private static int Snap(float degrees, int min, int max) {
+        return Mathf.Clamp(Mathf.RoundToInt(degrees / AngleStep) * AngleStep, min, max);
     }
 
     // LadderClimber (campaign) holds him on a ladder; it is looked up by name so this file doesn't
@@ -451,16 +577,19 @@ public class FrenyMotion : MonoBehaviour {
     // a crescent swept in front of the blade: the head runs ahead, the tail follows and thins out
     private class SlashArc : MonoBehaviour {
         private const int Segments = 18;
-        private const float Life = 0.11f;
+        public const float DefaultLife = 0.11f;
 
         private Mesh mesh;
         private Vector3[] verts;
         private Color[] colors;
         private float born;
-        private float from, to, radius, squashY;
+        private float from, to, radius, squashY, life, thickness;
         private Color tint;
 
-        public static void Spawn(Transform owner, SpriteRenderer body, Vector2 center, float radius, float from, float to, bool greatSword, bool finisher) {
+        // life: how long it lasts (its head reaches the end of the cut at life / 1.6); thickness
+        // scales how wide the band is
+        public static void Spawn(Transform owner, SpriteRenderer body, Vector2 center, float radius, float from, float to,
+                bool greatSword, bool finisher, float life, float thickness) {
             GameObject go = new GameObject("SlashArc");
             go.transform.SetParent(owner, false);
             go.transform.localPosition = new Vector3(center.x, center.y, -0.01f);
@@ -468,7 +597,9 @@ public class FrenyMotion : MonoBehaviour {
             arc.radius = radius;
             arc.from = from;
             arc.to = to;
-            arc.squashY = 1.1f;
+            arc.squashY = 1f;
+            arc.life = life;
+            arc.thickness = thickness;
             arc.tint = greatSword ? new Color(0.65f, 0.85f, 1f) : new Color(1f, 0.97f, 0.88f);
             if (finisher) {
                 arc.tint = Color.Lerp(arc.tint, new Color(1f, 0.8f, 0.4f), 0.5f); // a warmer flash
@@ -499,7 +630,7 @@ public class FrenyMotion : MonoBehaviour {
         }
 
         private void Update() {
-            float t = (Time.time - born) / Life;
+            float t = (Time.time - born) / life;
             if (t >= 1f) {
                 Destroy(gameObject);
                 return;
@@ -510,7 +641,7 @@ public class FrenyMotion : MonoBehaviour {
             for (int i = 0; i <= Segments; i++) {
                 float k = i / (float)Segments;                     // 0 = tail, 1 = head
                 float a = Mathf.Lerp(from, to, Mathf.Lerp(tail, head, k)) * Mathf.Deg2Rad;
-                float width = Mathf.Lerp(0.04f, 0.4f, k * k) * radius;
+                float width = Mathf.Min(Mathf.Lerp(0.04f, 0.4f, k * k) * thickness, 0.85f) * radius;
                 Vector3 dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a) * squashY, 0f);
                 verts[i * 2] = dir * radius;
                 verts[i * 2 + 1] = dir * (radius - width);
