@@ -61,9 +61,9 @@ public static class GuideScreen {
             "Do chão vale 6 golpes (2 combos); comprado no Armeiro, é para sempre.");
         Entry(parent, art ? art.revolver : null, "Revólver",
             "4 tiros por tambor; vazio, recarrega sozinho em 1,6 s com a reserva de balas " +
-            "(começa com 8, máximo 16). Sem reserva, fica sem tiro. Cima atira para cima.");
+            "(começa com 8, máximo 16). Sem reserva, fica sem tiro. Cima atira para cima. Não empurra o inimigo.");
         Entry(parent, art ? art.shotgun : null, "Escopeta",
-            "3 balas em leque, 1 cartucho por tiro. Troque com o botão Escopeta. Vem de baús " +
+            "3 balas em leque, 1 cartucho por tiro; cada bala empurra o inimigo. Troque com o botão Escopeta. Vem de baús " +
             "da Arena ou do Armeiro (6 cartuchos por fase). Até 30 cartuchos.");
         Entry(parent, art ? art.grenade : null, "Granada",
             "Segure para carregar a força, solte para lançar em arco; sem espera entre uma e outra. " +

@@ -7,8 +7,9 @@ public class RangedAttack : MonoBehaviour {
     private Vector3 bulletDirection = Vector3.right;
     private bool hasDirection;
     [SerializeField] private float speed = 15f; // units per second
+    private float push = 1f; // how hard it shoves an enemy back (x its HitPush): the revolver's 0, the shotgun's 1
 
-    // Player calls this right after spawning the bullet
+    // Player calls these two right after spawning the bullet
     public void SetDirection(Vector3 direction) {
         bulletDirection = direction;
         hasDirection = true;
@@ -20,6 +21,10 @@ public class RangedAttack : MonoBehaviour {
             transform.rotation = Quaternion.Euler(0f, 0f, direction.y > 0 ? 90f : -90f);
             transform.localScale = new Vector3(Mathf.Abs(scale.x), scale.y, scale.z);
         }
+    }
+
+    public void SetPush(float amount) {
+        push = amount;
     }
 
     private void Start() {
@@ -53,7 +58,11 @@ public class RangedAttack : MonoBehaviour {
         IDamageable hit = other.GetComponent<IDamageable>();
 
         if (hit != null) {
-            hit.Damage();
+            if (hit is Enemy enemy) {
+                enemy.Damage(1, push);
+            } else {
+                hit.Damage();
+            }
             Fx.Burst(transform.position, new Color(1f, 0.85f, 0.4f), 8, 2f, 0.07f, 0.3f);
             Destroy(gameObject);
         }
