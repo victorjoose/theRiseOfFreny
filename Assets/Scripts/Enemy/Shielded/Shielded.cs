@@ -46,11 +46,13 @@ public class Shielded : Enemy {
 
     private float TurnDelay => ArenaBounds.Active ? Mathf.Lerp(TurnSlow, TurnFast, ArenaDirector.CurrentDifficulty) : TurnSlow;
 
+    // is the shield between it and a hit from there: in front, not from above, not mid-swing
+    public bool Guards(Vector3 from) {
+        return (from.x > transform.position.x) == FacingRight && from.y <= Center.y + HalfHeight * 0.9f && !IsAttacking;
+    }
+
     protected override float HitScale(Vector3 from, bool shot) {
-        // from above (a jump over it) or while it swings, the shield is not in the way
-        bool front = (from.x > transform.position.x) == FacingRight
-            && from.y <= Center.y + HalfHeight * 0.9f && !IsAttacking;
-        if (!front) {
+        if (!Guards(from)) {
             return shot ? 1f : BackSword;
         }
         Vector3 spark = Center + Vector3.right * ((FacingRight ? 1f : -1f) * HalfWidth);

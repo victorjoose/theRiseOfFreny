@@ -17,9 +17,11 @@ using UnityEngine.Rendering.Universal;
 // arena itself, and on top of the Brilho setting (BrightnessLights), never instead of it.
 public class ArenaDayNight : MonoBehaviour {
 
-    // a whole day and night; a run starts at night with the moon a third of the way across
-    private const float CycleSeconds = 240f;
-    private const float StartPhase = 0.667f;
+    // José, 2026-10-29: 1 minute of day, 5 of night; a run starts at night with the moon a third
+    // of the way across. Phase stays 0..0.5 for the day and 0.5..1 for the night
+    private const float DaySeconds = 60f;
+    private const float NightSeconds = 300f;
+    private const float StartSeconds = DaySeconds + NightSeconds / 3f;
     private const float CloudSpeed = 0.25f;   // units per second, to the left
 
     // where the sun and the moon travel, as a fraction of the screen: an arch from the left
@@ -90,7 +92,11 @@ public class ArenaDayNight : MonoBehaviour {
     }
 
     // 0 = sunrise: the sun is up for the first half of the cycle, the moon for the second
-    public float Phase => PhaseOverride >= 0f ? PhaseOverride : Mathf.Repeat(StartPhase + (Time.time - startTime) / CycleSeconds, 1f);
+    public float Phase => PhaseOverride >= 0f ? PhaseOverride : PhaseAt(Mathf.Repeat(StartSeconds + Time.time - startTime, DaySeconds + NightSeconds));
+
+    private static float PhaseAt(float seconds) {
+        return seconds < DaySeconds ? 0.5f * seconds / DaySeconds : 0.5f + 0.5f * (seconds - DaySeconds) / NightSeconds;
+    }
 
     private void Start() {
         cam = Camera.main;

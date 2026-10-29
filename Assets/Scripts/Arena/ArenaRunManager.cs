@@ -10,7 +10,8 @@ using UnityEngine.UI;
 // upgrades live in FrenyProgress (PlayerPrefs), so they survive the reload.
 public class ArenaRunManager : MonoBehaviour {
 
-    [SerializeField] private float restartDelay = 8f;
+    // the automatic run starts again after this (José, 2026-10-29: 10 s, with "Jogar agora" to skip it)
+    private const float restartDelay = 10f;
     [SerializeField] private int askAboveScore = 10000;
     [SerializeField] private float minDeathTime = 1f;   // a jump held while dying does not skip the score
 
@@ -102,7 +103,9 @@ public class ArenaRunManager : MonoBehaviour {
             banner.lineSpacing = AutoRun || hasRecord ? 1.3f : 1.6f;
             MenuKit.Stretch(banner.rectTransform);
             if (asking) {
-                AddChoices(canvas.transform);
+                AddChoices(canvas.transform, "Jogar de novo");
+            } else if (!WaitsForKey) {
+                AddChoices(canvas.transform, "Jogar agora");   // skips the countdown
             }
         }
         if (saveButton == null && Record == Online.OnlineServices.RecordStatus.CanSave) {
@@ -165,8 +168,8 @@ public class ArenaRunManager : MonoBehaviour {
         saveButton = row.gameObject;
     }
 
-    // "Jogar de novo" (also on Space) and "Menu", under the banner
-    private void AddChoices(Transform canvas) {
+    // "Jogar de novo" or "Jogar agora" (also on Space) and "Menu", under the banner
+    private void AddChoices(Transform canvas, string playLabel) {
         MenuKit.EnsureEventSystem();
         RectTransform row = MenuKit.MakeRect("Choices", canvas);
         row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
@@ -178,7 +181,7 @@ public class ArenaRunManager : MonoBehaviour {
         layout.childForceExpandHeight = true;
         layout.childControlWidth = true;
         layout.childControlHeight = true;
-        Button again = MenuKit.MakeButton(row, "Jogar de novo", PlayAgain);
+        Button again = MenuKit.MakeButton(row, playLabel, PlayAgain);
         if (GameMenus.HasMainMenu) {
             MenuKit.MakeButton(row, "Menu", GameMenus.LoadMainMenu);
         }

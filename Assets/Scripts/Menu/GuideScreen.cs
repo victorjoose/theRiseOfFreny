@@ -150,10 +150,11 @@ public static class GuideScreen {
             "dele (pulando por cima ou na hora do ataque também vale); quanto mais difícil, mais rápido ele vira. " +
             "6 de vida, 300 pontos.");
         Entry(parent, null, "Ciclope",
-            "O chefe gigante da Arena: chega a cada 25 mil pontos e, enquanto ele vive, ninguém " +
-            "mais aparece. 40 de vida, com a barra no topo da tela. O soco tira 2 e joga o Freny " +
+            "O chefe gigante da Arena: chega no centro do chão a cada 50 mil pontos e, enquanto ele vive, " +
+            "ninguém mais aparece. 100 de vida, com a barra de chefe no topo. O soco tira 2 e joga o Freny " +
             "longe; a pancada no chão solta uma onda pelo piso (pule!); o vômito deixa uma poça que " +
-            "queima. Vale 5 000 pontos, 30 moedas e deixa um baú.");
+            "queima. Depois de cada golpe ele descansa um pouco: é a hora de bater. Vale 5 000 pontos, " +
+            "30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",
             "Fica parado e lança uma bola a cada 5 segundos (o Supremo a cada 3,5); ela tira 2 e empurra, e abaixar desvia " +
             "de um tiro reto. " +
@@ -174,7 +175,7 @@ public static class GuideScreen {
             "No automático o piloto joga por você e dá para assumir. Só corrida toda manual " +
             "vale para o Ranking. Com o piloto ligado, aparece um A grande ao lado da cabeça do Freny e uma moldura roxa em volta da tela. " +
             "Um recorde novo aparece no fim da corrida, com o botão Salvar recorde ou o motivo de não poder ir para o Ranking. " +
-            "No automático, a próxima corrida começa 8 s depois; com 10 mil " +
+            "No automático, a próxima corrida começa 10 s depois (ou na hora, em Jogar agora); com 10 mil " +
             "pontos ou mais, o jogo pergunta antes.");
         Entry(parent, art ? art.rageHelmet : null, "Dificuldade",
             "Fácil, Médio, Difícil ou Freny: quanto maior, mais inimigos, mais rápidos e mais cedo.");

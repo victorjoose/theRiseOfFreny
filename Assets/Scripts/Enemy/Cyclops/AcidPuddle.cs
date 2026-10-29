@@ -14,6 +14,18 @@ public class AcidPuddle : MonoBehaviour {
     private SpriteRenderer renderer2d;
     private float nextBubble;
 
+    // the puddles on the floor now (the autopilot steps out of them)
+    public static readonly System.Collections.Generic.List<AcidPuddle> Active = new System.Collections.Generic.List<AcidPuddle>();
+    public float Width => width;
+
+    private void OnEnable() {
+        Active.Add(this);
+    }
+
+    private void OnDisable() {
+        Active.Remove(this);
+    }
+
     public static void Create(Vector3 floorPoint, float width, float seconds) {
         GameObject go = new GameObject("Acid Puddle");
         go.transform.position = floorPoint + Vector3.up * 0.06f;

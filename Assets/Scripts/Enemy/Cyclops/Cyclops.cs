@@ -9,7 +9,7 @@ using UnityEngine.UI;
 // - the vomit: a puddle in front of it that burns for a few seconds.
 // Built at runtime from the Golem prefab (EnemyTemplates) and drawn by FrameAnimator.
 public class Cyclops : Enemy {
-    public const int Life = 40;
+    public const int Life = 100;   // José, 2026-10-29
     private const float SmashCooldown = 7f;
     private const float VomitCooldown = 9f;
     private const float SmashReach = 9f;
@@ -21,6 +21,11 @@ public class Cyclops : Enemy {
     private float nextSmash;
     private float nextVomit;
     private int maxHealth;
+    private const float AfterBlowRest = 2f;   // seconds of calm after any of its blows
+    private float quietUntil;
+
+    // resting after a blow: the moment to go in with the sword (the autopilot waits for it)
+    public bool Exposed => !isDead && !special && !IsAttacking && Time.time < quietUntil;
 
     protected override int HitDamage => 2;
     protected override float HitPush => 0f;   // nothing moves it
@@ -39,7 +44,7 @@ public class Cyclops : Enemy {
         knockback = 14f;
         attackDistance = 0.6f;
         attackWindup = 0.5f;
-        attackCooldown = 2.2f;
+        attackCooldown = 3.5f;   // a breather after each punch, or it was too strong
         radius = 16f;
         sightHeight = 4f;
         base.Init();
@@ -80,8 +85,12 @@ public class Cyclops : Enemy {
             ClampToArena();
             return;
         }
+        bool wasAttacking = IsAttacking;
         base.Update();
-        if (isDead || IsAttacking || player == null || player.Health <= 0) {
+        if (wasAttacking && !IsAttacking) {
+            quietUntil = Time.time + AfterBlowRest;   // after a punch, no smash or vomit right away
+        }
+        if (isDead || IsAttacking || player == null || player.Health <= 0 || Time.time < quietUntil) {
             return;
         }
         Vector3 feet = Feet;
@@ -116,6 +125,7 @@ public class Cyclops : Enemy {
         }
         yield return new WaitForSeconds(length * 0.45f);
         nextSmash = Time.time + SmashCooldown * ScoreCooldown;
+        quietUntil = Time.time + AfterBlowRest;
         special = false;
     }
 
@@ -131,6 +141,7 @@ public class Cyclops : Enemy {
         }
         yield return new WaitForSeconds(length * 0.5f);
         nextVomit = Time.time + VomitCooldown * ScoreCooldown;
+        quietUntil = Time.time + AfterBlowRest;
         special = false;
     }
 

@@ -102,7 +102,7 @@ public class ArenaDirector : MonoBehaviour {
 
     // ---- the Escudeiro and the Ciclope (EnemyTemplates) ----
 
-    public const int BossEvery = 25000;
+    public const int BossEvery = 50000;   // José, 2026-10-29: at 50k (was 25k), then every 50k
     private GameObject cyclopsTemplate;
     private int nextBossScore = BossEvery;
     private bool bossPending;
@@ -145,10 +145,11 @@ public class ArenaDirector : MonoBehaviour {
         }
         bossPending = true;
         ArenaMap.Platform floor = map.Floor;
-        float heroX = hero ? hero.transform.position.x : (floor.xMin + floor.xMax) * 0.5f;
+        // right in the middle of the arena floor (José, 2026-10-29), announced by a long portal
         float left = Mathf.Max(floor.xMin + 2f, ArenaBounds.Left + 2f);
         float right = Mathf.Min(floor.xMax - 2f, ArenaBounds.Right - 2f);
-        float x = Mathf.Abs(heroX - left) > Mathf.Abs(heroX - right) ? left : right;
+        float middle = (ArenaBounds.Left + ArenaBounds.Right) * 0.5f;
+        float x = float.IsNaN(middle) || float.IsInfinity(middle) ? (floor.xMin + floor.xMax) * 0.5f : Mathf.Clamp(middle, left, right);
         Vector3 floorPoint = new Vector3(x, floor.y, 0f);
         Fx.Portal(floorPoint + Vector3.up * 1.2f, portalSeconds * 2f, new Color(0.75f, 0.2f, 0.85f));
         Sfx.Play("portal", floorPoint, 1f, 0.6f);

@@ -212,6 +212,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     // the shotgun up close while it has shells, the revolver farther away; false when neither can fire
     private bool Shoot(ref PlayerInputFrame frame, float dx, bool facingTarget, float towardTarget) {
+        if (currentTarget is Shielded shield && shield.Guards(player.Feet)) {
+            return false;   // a sixth of a point a shot: get behind it instead
+        }
         bool shotgun = Mathf.Abs(dx) <= shotgunRange && player.GunReadyFor(true);
         bool revolver = !shotgun && player.GunReadyFor(false);
         if (!shotgun && !revolver) {
@@ -245,6 +248,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
         }
 
+        // 1a. the red Golem's mines, the Ciclope's shockwave and acid: get away or jump over
+        if (AvoidHazards(ref frame, me, myFeet)) {
+            return frame;
+        }
+
         Enemy target = PickTarget(me, myFeet);
         if (target == null) {
             if (GoToPickup(ref frame, me, myFeet, myPlatform, pickupRange * 3f)) {
@@ -264,6 +272,32 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         // never beyond what the sword really reaches (a saved 3.0 had him swinging at the air)
         float meleeRange = Mathf.Min(Tuning.AutoMeleeRange.Value, MaxMeleeReach) * (player.GreatSwordActive ? 1.4f : 1f);
         float nearestEnemy = NearestEnemyDistance(me);
+
+        // 1c. the Ciclope: keep out of its reach and shoot, go in with the sword only while it
+        // rests after a blow
+        if (target is Cyclops boss && !boss.Exposed && sameFloor) {
+            if (Mathf.Abs(dx) < CyclopsSafeDistance) {
+                frame.move = -towardTarget;
+                frame.runHeld = player.RunReady;
+                action = "Saindo do alcance do Ciclope";
+                return frame;
+            }
+            if (player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && Shoot(ref frame, dx, facingTarget, towardTarget)) {
+                return frame;
+            }
+            action = "Esperando o Ciclope abrir a guarda";
+            return frame;
+        }
+
+        // 1d. the Escudeiro's shield faces him: jump over it to hit its back (from above counts too)
+        if (target is Shielded shield && sameFloor && Mathf.Abs(dx) <= ShieldJumpDistance
+            && shield.Guards(player.Feet) && player.IsGrounded && Time.time >= nextJumpTime) {
+            frame.jumpPressed = true;
+            frame.jumpHeld = true;
+            frame.move = towardTarget;
+            action = "Pulando o escudo do Escudeiro";
+            return frame;
+        }
 
         // 1b. an enemy next to him is winding up a hit: get out of the way (a person would)
         Enemy striker = WindingUpNearby(me, myFeet, meleeRange + 0.6f);
@@ -401,6 +435,66 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         currentTarget = null;
         action = "Sem caminho, trocando de alvo";
         return frame;
+    }
+
+    // ---- hazards ----
+
+    private const float CyclopsSafeDistance = 3.2f;   // its punch and the start of the smash
+    private const float ShieldJumpDistance = 2.4f;    // close enough to jump over the Escudeiro
+    private const float MineKeepOut = 0.8f;           // beyond the blast radius
+    private const float WaveJumpAt = 3.2f;            // a shockwave this close: jump now
+
+    private bool AvoidHazards(ref PlayerInputFrame frame, Vector2 me, float myFeet) {
+        // a mine near him: run out of its blast (it goes off 0.9 s after it lands, or on touch)
+        foreach (GolemMine mine in GolemMine.Active) {
+            if (mine == null) {
+                continue;
+            }
+            Vector2 at = mine.transform.position;
+            float dx = me.x - at.x;
+            if (Mathf.Abs(dx) < Grenade.BlastRadius + MineKeepOut && Mathf.Abs(myFeet - at.y) < Grenade.BlastRadius) {
+                float away = Mathf.Abs(dx) < 0.05f ? (player.FacingRight ? -1f : 1f) : Mathf.Sign(dx);
+                frame.move = away;
+                frame.runHeld = player.RunReady;
+                // right on top of it: jump away instead of walking through the blast
+                if (Mathf.Abs(dx) < 1f && player.IsGrounded && Time.time >= nextJumpTime) {
+                    frame.jumpPressed = true;
+                    frame.jumpHeld = true;
+                }
+                action = mine.Landed ? "Fugindo da mina" : "Saindo de onde a mina vai cair";
+                return true;
+            }
+        }
+        // a shockwave coming along his floor: jump it at the last moment
+        foreach (Shockwave wave in Shockwave.Active) {
+            if (wave == null) {
+                continue;
+            }
+            float toMe = me.x - wave.transform.position.x;
+            bool coming = Mathf.Sign(toMe) == Mathf.Sign(wave.Direction);
+            if (coming && Mathf.Abs(toMe) < WaveJumpAt && Mathf.Abs(myFeet - wave.FloorY) < 0.6f
+                && player.IsGrounded && Time.time >= nextJumpTime) {
+                frame.jumpPressed = true;
+                frame.jumpHeld = true;
+                action = "Pulando a onda do Ciclope";
+                return true;
+            }
+        }
+        // standing in (or at the edge of) the acid: step out the shorter way
+        foreach (AcidPuddle puddle in AcidPuddle.Active) {
+            if (puddle == null) {
+                continue;
+            }
+            Vector2 at = puddle.transform.position;
+            float dx = me.x - at.x;
+            if (Mathf.Abs(dx) < puddle.Width / 2f + 0.4f && Mathf.Abs(myFeet - at.y) < 0.6f) {
+                frame.move = dx >= 0f ? 1f : -1f;
+                frame.runHeld = player.RunReady;
+                action = "Saindo do ácido";
+                return true;
+            }
+        }
+        return false;
     }
 
     // ---- actions ----
