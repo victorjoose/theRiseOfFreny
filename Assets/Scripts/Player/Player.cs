@@ -378,6 +378,10 @@ public class Player : MonoBehaviour, IDamageable {
         _speed = _baseSpeed * FrenyProgress.SpeedMultiplier;
         attackCooldown = _baseAttackCooldown * FrenyProgress.AttackCooldownMultiplier;
 
+        // the bought hearts stay in the row for good, empty when lost
+        if (UIManager.Instance) {
+            UIManager.Instance.EnsureBars(MaxHealth);
+        }
         // a bought heart arrives full
         if (Health > 0 && MaxHealth > oldMax) {
             Health += MaxHealth - oldMax;

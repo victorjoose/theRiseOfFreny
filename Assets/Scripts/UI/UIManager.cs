@@ -73,7 +73,8 @@ public class UIManager : MonoBehaviour {
         }
     }
 
-    // the scenes have 4 hearts; the Armeiro's Vida máxima adds more in the same row and spacing
+    // the scenes have 4 hearts; the Armeiro's Vida máxima adds more in the same row and spacing,
+    // each with its empty heart behind, so a lost heart shows empty like the first four
     public void EnsureBars(int count) {
         if (healthBars == null || healthBars.Length < 2 || healthBars.Length >= count
             || healthBars[0] == null || healthBars[healthBars.Length - 1] == null) {
@@ -83,6 +84,7 @@ public class UIManager : MonoBehaviour {
         Image last = healthBars[healthBars.Length - 1];
         Vector2 spacing = (last.rectTransform.anchoredPosition - first.anchoredPosition) / (healthBars.Length - 1);
         List<Image> bars = new List<Image>(healthBars);
+        AddEmptyHearts(last.rectTransform.parent, count - bars.Count);
         while (bars.Count < count) {
             Image heart = Instantiate(last, last.rectTransform.parent);
             heart.name = "Health_Bar_" + (bars.Count + 1);
@@ -90,6 +92,25 @@ public class UIManager : MonoBehaviour {
             bars.Add(heart);
         }
         healthBars = bars.ToArray();
+    }
+
+        // the empty hearts sit in "Empty_Hearts", next to the full ones' "Full_Hearts"
+    private static void AddEmptyHearts(Transform fullRow, int extra) {
+        Transform empties = fullRow != null && fullRow.parent != null ? fullRow.parent.Find("Empty_Hearts") : null;
+        if (empties == null || empties.childCount < 2 || extra <= 0) {
+            return;
+        }
+        RectTransform first = empties.GetChild(0) as RectTransform;
+        RectTransform last = empties.GetChild(empties.childCount - 1) as RectTransform;
+        if (first == null || last == null) {
+            return;
+        }
+        Vector2 spacing = (last.anchoredPosition - first.anchoredPosition) / (empties.childCount - 1);
+        for (int i = 1; i <= extra; i++) {
+            RectTransform heart = Instantiate(last, empties);
+            heart.name = "Heart_Empty_Bonus_" + i;
+            heart.anchoredPosition = last.anchoredPosition + spacing * i;
+        }
     }
 
         public void HandleComboManager(Enemy enemy) {
