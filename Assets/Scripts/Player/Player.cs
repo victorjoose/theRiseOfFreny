@@ -669,7 +669,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
         Fx.Spray(muzzle, forward, new Color(1f, 0.9f, 0.5f), 6, 5f, 0.3f);
 
-        // the shotgun fires three bullets in a fan, one shell per shot
+        // the shotgun fires three bullets in a fan, one shell per shot; only its pellets shove enemies back
         bool shotgun = UsingShotgun;
         Sfx.Play(shotgun ? "shotgun_shot" : "pistol_shot", muzzle);
         if (shotgun) {
@@ -679,18 +679,21 @@ public class Player : MonoBehaviour, IDamageable {
             FireBullet(muzzle, Quaternion.Euler(0f, 0f, -10f) * forward);
         } else {
             RevolverBullets--;
-            FireBullet(muzzle, forward);
+            FireBullet(muzzle, forward, RevolverPush);
         }
         gunReadyAt = Time.time + (shotgun ? shotgunCooldown : pistolCooldown) * FrenyProgress.AttackCooldownMultiplier;
     }
 
     private const float CrouchMuzzleDrop = 0.32f; // the crouched gun sits 8 art pixels lower
 
-    private void FireBullet(Vector3 from, Vector3 direction) {
+    private const float RevolverPush = 0f; // the revolver only hurts: no shove
+
+    private void FireBullet(Vector3 from, Vector3 direction, float push = 1f) {
         GameObject bullet = Instantiate(revolverBulletPrefab, from, Quaternion.identity);
         RangedAttack shot = bullet.GetComponent<RangedAttack>();
         if (shot) {
             shot.SetDirection(direction);
+            shot.SetPush(push);
         }
     }
 
