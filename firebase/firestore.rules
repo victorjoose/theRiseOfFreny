@@ -9,13 +9,31 @@ service cloud.firestore {
     // One board per arena difficulty (leaderboard_hard, _freny, _medium, _easy), with one
     // entry per player holding their best score there. Anyone can read a board; a player can
     // only write their own entry, and the score can only go up.
-    // "leaderboard" is the old board that mixed every difficulty; the game no longer writes it,
-    // but builds already out there (the web build) still do until they are replaced.
+    // A new score needs the run ticket below for the same board, and has to fit in the real
+    // time since that run started (maxScoreAfter). updatedAt is the server's clock, and an entry
+    // takes at most one write every 20 s. Renaming (only "name" changes) needs no ticket.
+    // Every score also carries the game's signature (validSig).
+    // "leaderboard" is the old board that mixed every difficulty: still readable, no longer writable.
     match /{board}/{userId} {
-      allow read: if isBoard(board);
-      allow create: if isBoard(board) && isOwner(userId) && validEntry();
+      allow read: if isBoard(board) || board == 'leaderboard';
+      allow create: if isBoard(board) && isOwner(userId) && validEntry() && validSig(board, userId)
+                    && scoreFitsRun(board, userId);
       allow update: if isBoard(board) && isOwner(userId) && validEntry()
-                    && request.resource.data.score >= resource.data.score;
+                    && request.time > resource.data.get('updatedAt', timestamp.value(0)) + duration.value(20, 's')
+                    && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt'])
+                        || (request.resource.data.score >= resource.data.score && validSig(board, userId)
+                            && scoreFitsRun(board, userId)));
+      allow delete: if false;
+    }
+
+    // Run ticket: the game writes it when a manual arena run starts, with the server's time.
+    // It is what scoreFitsRun measures the run against.
+    match /runs/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+                            && request.resource.data.keys().hasOnly(['board', 'startedAt'])
+                            && isBoard(request.resource.data.board)
+                            && request.resource.data.startedAt == request.time;
       allow delete: if false;
     }
 
@@ -38,7 +56,7 @@ service cloud.firestore {
     }
 
     function isBoard(board) {
-      return board in ['leaderboard', 'leaderboard_hard', 'leaderboard_freny', 'leaderboard_medium', 'leaderboard_easy'];
+      return board in ['leaderboard_hard', 'leaderboard_freny', 'leaderboard_medium', 'leaderboard_easy'];
     }
 
     function isOwner(userId) {
@@ -47,9 +65,35 @@ service cloud.firestore {
 
     function validEntry() {
       let d = request.resource.data;
-      return d.keys().hasOnly(['name', 'score', 'updatedAt'])
+      return d.keys().hasOnly(['name', 'score', 'sig', 'updatedAt'])
           && d.name is string && d.name.size() > 0 && d.name.size() <= 16
-          && d.score is int && d.score >= 0 && d.score <= 10000000;
+          && d.score is int && d.score >= 0 && d.score <= 1000000000
+          && d.updatedAt == request.time;
+    }
+
+    // sig = sha256("<key>|<uid>|<board>|<score>") in hex, made by ScoreSignature.cs.
+    // The key below is a placeholder that Tools/ScoreKey/make_score_key.py swaps for the secret;
+    // the secret is not in this repository (see docs/firebase/SETUP.md).
+    function validSig(board, userId) {
+      let d = request.resource.data;
+      return d.sig == hashing.sha256('__SCORE_KEY__|' + userId + '|' + board + '|' + string(d.score)).toHexString().lower();
+    }
+
+    // The score was reached in the run whose ticket is on this board, in the time it has lasted.
+    function scoreFitsRun(board, userId) {
+      let path = /databases/$(database)/documents/runs/$(userId);
+      return exists(path)
+          && get(path).data.board == board
+          && request.resource.data.score <= maxScoreAfter((request.time - get(path).data.startedAt).seconds());
+    }
+
+    // Most points a run can make in s real seconds. The combo only resets when Freny stops
+    // killing, so a long run grows about with the cube of its length. Measured with the arena
+    // autopilot on Hard and Freny (2026-10-28, invulnerable up to 20 min) and fitted with ~1.5x
+    // room: 300 g + 0.03 g^3 points after g game seconds. The game runs at up to 1.5x speed,
+    // so g = 1.5 s: 450 s + 0.10125 s^3.
+    function maxScoreAfter(s) {
+      return 450 * s + 0.10125 * s * s * s;
     }
 
     function validSave() {

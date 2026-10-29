@@ -4,7 +4,7 @@ using UnityEngine;
 // side (like Pac-Man). Added to the player by ArenaBootstrap; enemies are kept inside instead.
 public class ArenaWrap : MonoBehaviour {
 
-    [SerializeField] private float margin = 0f; // 0: wraps as soon as her centre crosses the edge (half out, half in)
+    [SerializeField] private float margin = 0f; // 0: wraps as soon as his centre crosses the edge (half out, half in)
 
     private void LateUpdate() {
         if (!ArenaBounds.Active) {

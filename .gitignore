@@ -80,6 +80,10 @@ crashlytics-build.properties
 # Firebase config for the online features (see docs/firebase/SETUP.md)
 /[Aa]ssets/[Rr]esources/FirebaseConfig.json
 /[Aa]ssets/[Rr]esources/FirebaseConfig.json.meta
+# Leaderboard signing key (Tools/ScoreKey/make_score_key.py)
+/[Aa]ssets/[Ss]cripts/[Oo]nline/ScoreKey.cs
+/[Aa]ssets/[Ss]cripts/[Oo]nline/ScoreKey.cs.meta
+/Tools/ScoreKey/firestore.rules.publish
 
 # compile-check build output
 /.ci/**/bin/

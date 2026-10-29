@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Lets Freny climb ladders: on a ladder, up (W, up arrow, stick) or down (S, down arrow) grabs it,
-// and she then moves up and down at climbSpeed with no gravity, sideways a little, until she
+// and he then moves up and down at climbSpeed with no gravity, sideways a little, until he
 // jumps, walks off its side or reaches the end. Runs after Player (execution order) so its
 // vertical speed wins over the player's fall in the same physics step.
 [DefaultExecutionOrder(100)]
@@ -71,11 +71,11 @@ public class LadderClimber : MonoBehaviour {
     }
 
     // at the top: stand on the floor the ladder leads to (a hop was not enough to clear its edge,
-    // she fell back onto the rungs); with no floor there, a small hop
+    // he fell back onto the rungs); with no floor there, a small hop
     private void StepOntoTop(Ladder from) {
         float top = from.Area.max.y - 0.5f; // the top of the last rung cell
         int ground = LayerMask.GetMask("Ground");
-        // straight above the ladder first, then the floor beside it (the side she leans to first;
+        // straight above the ladder first, then the floor beside it (the side he leans to first;
         // ladders often stick out of a hole with the floor next to them)
         float facing = horizontal != 0f ? Mathf.Sign(horizontal) : (transform.localScale.x >= 0f ? 1f : -1f);
         foreach (float dx in new[] { 0f, facing, -facing }) {

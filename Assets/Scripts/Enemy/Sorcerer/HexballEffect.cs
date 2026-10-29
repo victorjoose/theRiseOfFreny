@@ -83,7 +83,7 @@ public class HexballEffect : MonoBehaviour
         }
         Vector3 to = homingTarget.HeadPoint - transform.position;
         if (to.sqrMagnitude < 0.01f || Vector2.Dot(to, direction) <= 0f) {
-            homingTarget = null; // went past her: no turning around
+            homingTarget = null; // went past him: no turning around
             return;
         }
         float current = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;

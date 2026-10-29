@@ -1,8 +1,8 @@
 using UnityEngine;
 
-// Freny in a pool (Liquid). Water: she floats up to the surface and bobs there, moves slower, and
-// a jump pushes her up and out. Acid: she sinks slowly, can barely move and loses a heart every
-// second until she dies (a slow death instead of an instant one). Runs after Player so its
+// Freny in a pool (Liquid). Water: he floats up to the surface and bobs there, moves slower, and
+// a jump pushes him up and out. Acid: he sinks slowly, can barely move and loses a heart every
+// second until he dies (a slow death instead of an instant one). Runs after Player so its
 // vertical speed wins in the same physics step.
 [DefaultExecutionOrder(110)]
 public class LiquidSwimmer : MonoBehaviour {

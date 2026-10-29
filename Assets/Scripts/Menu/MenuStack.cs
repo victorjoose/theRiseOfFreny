@@ -81,6 +81,12 @@ public class MenuPage {
         return slider;
     }
 
+    public InputField Input(string label, string value, bool password = false, int maxLength = 64) {
+        InputField input = MenuKit.MakeInput(Content, label, value, password, maxLength);
+        rows.Add(new Selectable[] { input });
+        return input;
+    }
+
     public MenuChoice Choice(string label, string[] options, int index, Action<int> onChange) {
         MenuChoice choice = MenuKit.MakeChoice(Content, label, options, index, onChange);
         rows.Add(new Selectable[] { choice });
@@ -156,6 +162,16 @@ public class MenuStack : MonoBehaviour {
         Push(page);
     }
 
+    // swaps the top page for a fresh one (e.g. the account page after signing in)
+    public void ReplaceTop(MenuPage page) {
+        if (Top != null) {
+            MenuPage top = Top;
+            pages.RemoveAt(pages.Count - 1);
+            Destroy(top.Root.gameObject);
+        }
+        Push(page);
+    }
+
     public void Back() {
         Sfx.Ui("ui_back");
         if (pages.Count <= 1) {
@@ -200,6 +216,12 @@ public class MenuStack : MonoBehaviour {
             lastSelected = selected;
         }
         if (Busy || Time.frameCount == shownFrame) {
+            return;
+        }
+
+        // typing in a text box: Esc only leaves the box (InputField does that), letters are text
+        InputField typing = selected != null ? selected.GetComponent<InputField>() : null;
+        if (typing != null && typing.isFocused) {
             return;
         }
 

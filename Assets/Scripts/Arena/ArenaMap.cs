@@ -4,7 +4,7 @@ using UnityEngine;
 // The arena's standable surfaces, found once by casting rays down through the screen on the Ground
 // layer: the floor and every platform become segments (top y, xMin..xMax). The autopilot plans its
 // way to another platform over this map: beside which edge to stand and jump, or off which edge to
-// walk, instead of probing the ground around Freny on every decision (that found edges she could
+// walk, instead of probing the ground around Freny on every decision (that found edges he could
 // not climb and never saw the platform two steps away).
 public class ArenaMap {
 
@@ -13,7 +13,7 @@ public class ArenaMap {
         public float y;              // the top surface
         public float xMin, xMax;
         public Collider2D collider;  // the collider the samples came from (edges are refined on it)
-        public bool tower;           // a raised ledge against the arena's side wall (the towers)
+        public bool tower;           // the pocket ledge up in a side tower, out of Freny's reach (MarkTowers)
 
         public float Width => xMax - xMin;
 
@@ -59,7 +59,7 @@ public class ArenaMap {
     private const float MinRise = 0.3f;        // lower than this is a step, not a platform to climb
     private const float RiseMargin = 0.3f;     // a platform this close to the jump's apex is not climbed (no time left to move onto it)
     private const float MinHeadroom = 0.6f;    // free height above a top for it to count as a surface
-    private const float SteerRoom = 0.35f;     // the feet rise this much above the platform before she moves onto it (headroom checked up to there)
+    private const float SteerRoom = 0.35f;     // the feet rise this much above the platform before he moves onto it (headroom checked up to there)
 
     private static readonly RaycastHit2D[] hits = new RaycastHit2D[16];
 
@@ -104,6 +104,7 @@ public class ArenaMap {
             steps[i] = new List<Step>();
         }
         FindSteps();
+        MarkTowers();
     }
 
     // ---- surfaces ----
@@ -211,16 +212,49 @@ public class ArenaMap {
             Platforms[i].index = i;
         }
 
-        // the floor is the widest of the lowest surfaces; towers are raised ledges against a side wall
+        // the floor is the widest surface (the lowest one when two are as wide). It used to be the
+        // widest of the LOWEST ones, but the floor tilemap has short tops under it (y 5 under the
+        // y 6 floor in ZE Arena), so a scrap under the floor was taken for it: nothing was reachable
+        // from there and every walker came out of the old scene spawners.
         foreach (Platform platform in Platforms) {
-            if (Floor == null || platform.y < Floor.y - 0.5f || (Mathf.Abs(platform.y - Floor.y) <= 0.5f && platform.Width > Floor.Width)) {
+            if (Floor == null || platform.Width > Floor.Width + 0.5f || (platform.Width > Floor.Width - 0.5f && platform.y < Floor.y)) {
                 Floor = platform;
             }
         }
-        foreach (Platform platform in Platforms) {
-            bool atWall = platform.xMin <= left + 0.35f || platform.xMax >= right - 0.35f;
-            platform.tower = Floor != null && platform != Floor && atWall && platform.y >= Floor.y + 3f;
+    }
+
+    private const float TowerBand = 5f; // how far from a side edge a tower's pocket can be
+
+    // the towers' pockets: on each side, the highest ledge near that edge that Freny can't get to
+    // (and the ones level with it). Touching the screen edge is not required: the right tower's
+    // pocket in ZE Arena stops a bit short of it, so only the left tower used to be found.
+    private void MarkTowers() {
+        if (Floor == null) {
+            return;
         }
+        int[] hops = HopsFrom(Floor);
+        for (int side = 0; side < 2; side++) {
+            Platform highest = null;
+            foreach (Platform platform in Platforms) {
+                if (IsTowerCandidate(platform, side, hops) && (highest == null || platform.y > highest.y)) {
+                    highest = platform;
+                }
+            }
+            if (highest == null) {
+                continue;
+            }
+            foreach (Platform platform in Platforms) {
+                if (IsTowerCandidate(platform, side, hops) && platform.y >= highest.y - 0.3f) {
+                    platform.tower = true;
+                }
+            }
+        }
+    }
+
+    private bool IsTowerCandidate(Platform platform, int side, int[] hops) {
+        float center = (platform.xMin + platform.xMax) * 0.5f;
+        bool nearEdge = side == 0 ? center <= left + TowerBand : center >= right - TowerBand;
+        return nearEdge && platform != Floor && hops[platform.index] == int.MaxValue && platform.y >= Floor.y + 3f;
     }
 
     // the samples are SampleStep apart: find the real edges between the last hit and the first miss
@@ -335,13 +369,13 @@ public class ArenaMap {
                 }
             }
             if (landing == null || !landing.Contains(offX, 0.2f)) {
-                continue; // nothing below, or she would land on an edge
+                continue; // nothing below, or he would land on an edge
             }
             steps[from.index].Add(new Step { from = from, to = landing, kind = StepKind.Drop, x = offX, direction = direction });
         }
     }
 
-    // nothing above the body standing at x up to `rise` higher (the platform she climbs is beside, not above)
+    // nothing above the body standing at x up to `rise` higher (the platform he climbs is beside, not above)
     private bool Headroom(float x, float floorY, float rise) {
         Vector2 center = new Vector2(x, floorY + height * 0.5f + 0.03f);
         Vector2 size = new Vector2(halfWidth * 1.8f, height * 0.9f);
@@ -391,7 +425,7 @@ public class ArenaMap {
     }
 
     // the first hop of the shortest route from `from` to `to`, fewest hops first and the least
-    // walking among those (from x `fromX`); false when there is no route or she is already there
+    // walking among those (from x `fromX`); false when there is no route or he is already there
     public bool FirstStep(Platform from, Platform to, float fromX, out Step first) {
         first = default;
         if (from == null || to == null || from == to) {

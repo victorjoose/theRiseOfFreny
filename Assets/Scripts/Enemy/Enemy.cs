@@ -21,11 +21,11 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     }
 
     // in the arena every enemy knows where Freny is, but only ArenaDirector.MaxChasers of them
-    // go after her from afar at once; the others patrol until a place frees up. Those that see
-    // her up close (their own sight) or were hit always fight.
+    // go after him from afar at once; the others patrol until a place frees up. Those that see
+    // him up close (their own sight) or were hit always fight.
     private static readonly HashSet<Enemy> chasers = new HashSet<Enemy>();
 
-    // true when it should chase Freny; nearby = she is in its own sight, or it was provoked
+    // true when it should chase Freny; nearby = he is in its own sight, or it was provoked
     protected bool JoinChase(bool nearby) {
         bool chase = nearby || (ArenaBounds.Active && (chasers.Contains(this) || chasers.Count < ArenaDirector.MaxChasers));
         if (chase) {
@@ -66,7 +66,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     protected Player player;
     public string spawnerUuid;
     // sight: enemies look sideways. They only notice Freny within `radius` horizontally and
-    // `sightHeight` vertically, so a Golem on a platform ignores her walking underneath
+    // `sightHeight` vertically, so a Golem on a platform ignores him walking underneath
     public float radius;
     [SerializeField]
     protected float sightHeight = 1.5f;
@@ -77,7 +77,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     [SerializeField]
     protected float attackWindup = 0.35f; // seconds between the Attack animation and the hit
     [SerializeField]
-    protected float knockback = 0f; // horizontal push given to Freny by a hit (0 = none)
+    protected float knockback = 0f; // a heavy hit: shoves Freny this hard and knocks him down (0 = only the light shove)
+    // every hit pushes Freny back a little, so two enemies can't keep him pinned between them
+    private const float LightKnockback = 4f;
     private bool isPlayerInRange = false;
     private float patrolPositionTolerance = 0.1f;
     public LayerMask ignoreLayer;
@@ -151,8 +153,13 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // ground enemies are moved by their transform and kept on the floor by StickToGround; the Bat flies
     protected virtual bool WalksOnGround => true;
-    // the one-hit enemies (Bug, Bat), which the arena's harder levels speed up the most
+    // the one-hit enemies (Bug, Bat), which the arena's harder levels speed up the most. Any hit kills
+    // them, whatever the prefab or the scene says
     protected virtual bool Small => false;
+    // how hard Freny's hits push it back (units per second at the start of the push; heavy ones less)
+    protected virtual float HitPush => 6f;
+    private float pushVelocity;              // > 0 right, < 0 left; fades out over a moment
+    private const float PushDrag = 40f;
     // arena difficulty on attack rhythm (1 outside the arena)
     protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp : 1f;
 
@@ -189,7 +196,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         playerCol = player ? player.GetComponent<Collider2D>() : null;
         if (playerCol != null) {
-            // in every mode: a kinematic body would shove Freny around, so she walks through enemies
+            // in every mode: a kinematic body would shove Freny around, so he walks through enemies
             // and the fight happens with the sword and the guns. Per instance: the project's layer
             // matrix (which Play mode edits would save) is never touched
             foreach (Collider2D c in GetComponentsInChildren<Collider2D>(true)) {
@@ -198,7 +205,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
                 }
             }
         }
-        Health = health; // the inspector value
+        Health = Small ? 1 : health; // the inspector value
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
         hasMovingParam = anim && HasParameter(anim, "Moving");
         hasInCombatParam = anim && HasParameter(anim, "InCombat");
@@ -251,13 +258,13 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             bool playerBehind = (player_t.position.x > transform.position.x) != FacingRight;
             float sight = radius * Tuning.EnemyAggro.Value * (playerBehind ? rearSightFactor : 1f);
             if (isPlayerInRange) {
-                sight *= keepChasingFactor; // already after her: it doesn't let go the moment she steps out of sight
+                sight *= keepChasingFactor; // already after him: it doesn't let go the moment he steps out of sight
             }
             bool provoked = isHit && distance <= provokedRadius;
-            // walkers also go after her on a platform above or below (they jump and drop, see AttackMode)
+            // walkers also go after him on a platform above or below (they jump and drop, see AttackMode)
             bool reachable = sameLevel || (Climbs && dy <= ClimbSight);
             bool nearby = reachable && (dx <= sight || provoked);
-            // from afar only walkers that climb come for her (they work their way up or down)
+            // from afar only walkers that climb come for him (they work their way up or down)
             bool shouldChase = player.Health > 0 && (sameLevel || Climbs || nearby) && JoinChase(nearby);
             if (player.Health <= 0) {
                 LeaveChase();
@@ -275,6 +282,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Vector3 before = transform.position;
         if (airborne) {
             MoveInAir();
+        } else if (UpdatePush()) {
+            if (WalksOnGround) {
+                StickToGround();
+            }
         } else {
             Movement();
             if (WalksOnGround) {
@@ -585,10 +596,10 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         float myFeet = Feet.y;
         bool canJump = Climbs && Time.time >= nextJumpTime;
         if (canJump && herFeet > myFeet + 0.6f && TryJumpUp(dir)) {
-            return; // she is on a platform above
+            return; // he is on a platform above
         }
         if (Climbs && herFeet < myFeet - 0.6f) {
-            // she is on a floor below: head for an edge it can walk off, not for the spot over her head
+            // he is on a floor below: head for an edge it can walk off, not for the spot over his head
             if (PlanDrop(Target.position.x, herFeet, out float dropX)) {
                 targetX = ArenaBounds.ClampX(dropX, 0.5f);
                 step = targetX - transform.position.x;
@@ -609,11 +620,11 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         }
         if (!GroundAhead(dir)) {
             if (canJump && herFeet < myFeet - 0.6f && FloorBelowEdge(Feet.x + dir * (HalfWidth + 0.15f), dir, out _)) {
-                StartAirborne(new Vector2(dir * MoveSpeed, 0f), false); // she is below: step off the edge
+                StartAirborne(new Vector2(dir * MoveSpeed, 0f), false); // he is below: step off the edge
             } else if (canJump) {
                 TryJumpAcross(dir); // a gap at this height
             }
-            return; // otherwise hold the edge and keep facing her
+            return; // otherwise hold the edge and keep facing him
         }
         Vector2 target = new Vector2(targetX, transform.position.y);
         transform.position = Vector2.MoveTowards(transform.position, target, MoveSpeed * Time.deltaTime);
@@ -722,11 +733,11 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         return false;
     }
 
-    // She is on a floor below. Walking towards her x only gets it off its platform when she is beyond
-    // the edge: with her right underneath it just followed her along the top (the Licker on Hard).
+    // He is on a floor below. Walking towards his x only gets it off its platform when he is beyond
+    // the edge: with him right underneath it just followed him along the top (the Licker on Hard).
     // Enemies never drop through a platform the way Freny does with S+Space, so they go round: this
     // looks for the edges of its own platform it can walk off onto a floor (not a pit or spikes) and
-    // picks the side with the shortest way to her. Returns the x to walk to, a little past that edge.
+    // picks the side with the shortest way to him. Returns the x to walk to, a little past that edge.
     private bool PlanDrop(float herX, float herFeet, out float goalX) {
         if (Time.time >= nextDropPlan) {
             nextDropPlan = Time.time + 0.4f;
@@ -900,14 +911,20 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // hearts one hit takes (the Golem hits for 2)
     protected virtual int HitDamage => 1;
 
-    // damages Freny and, for heavy hitters, shoves her away from the enemy (she stays down for a moment)
+    // damages Freny and shoves him away from the enemy: a little for most, hard for heavy hitters
+    // (those knock him down for a moment)
     protected void HitPlayer() {
         if (!player.TryDamage(HitDamage)) {
             return;
         }
-        if (knockback > 0f) {
-            float dir = Mathf.Sign(player_t.position.x - transform.position.x);
+        float dir = Mathf.Sign(player_t.position.x - transform.position.x);
+        if (dir == 0f) {
+            dir = FacingRight ? 1f : -1f;
+        }
+        if (knockback > LightKnockback) {
             player.Knockback(new Vector2(dir * knockback, knockback * 0.5f));
+        } else {
+            player.Knockback(new Vector2(dir * LightKnockback, LightKnockback * 0.4f), false);
         }
     }
 
@@ -1010,12 +1027,42 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         if (isDead) {
             return;
         }
-        rival = null; // Freny hit it: she is the one it goes after now
+        rival = null; // Freny hit it: he is the one it goes after now
         Health--;
         TakeHit(true);
         if (Health < 1) {
             Die(true);
+        } else {
+            PushedBack();
         }
+    }
+
+    // a hit from Freny shoves it a little away from him (walkers only, and never through a wall,
+    // into spikes or off a ledge); it doesn't walk while the push lasts
+    private void PushedBack() {
+        if (!WalksOnGround || player_t == null || airborne) {
+            return;
+        }
+        float dir = Mathf.Sign(transform.position.x - player_t.position.x);
+        if (dir == 0f) {
+            dir = FacingRight ? -1f : 1f;
+        }
+        pushVelocity = dir * HitPush;
+    }
+
+    // moves it along the push; true while it is still being pushed (Update skips Movement)
+    protected bool UpdatePush() {
+        if (pushVelocity == 0f) {
+            return false;
+        }
+        float dir = Mathf.Sign(pushVelocity);
+        if (Blocked(dir) || !GroundAhead(dir)) {
+            pushVelocity = 0f;
+            return false;
+        }
+        transform.position += Vector3.right * (pushVelocity * Time.deltaTime);
+        pushVelocity = Mathf.MoveTowards(pushVelocity, 0f, PushDrag * Time.deltaTime);
+        return true;
     }
 
     // flinch, fight back, and bleed a few particles
@@ -1080,7 +1127,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         Coin coin = dropped.GetComponent<Coin>();
         if (coin) {
             coin.coins = coins;
-            coin.Expire();
+            coin.Toss(new Vector2(Random.Range(-0.6f, 0.6f), 3.5f)); // a small hop, then falls to the floor (bats die mid-air)
         }
     }
 

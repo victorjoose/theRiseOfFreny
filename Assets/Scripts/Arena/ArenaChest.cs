@@ -3,7 +3,7 @@ using UnityEngine;
 
 // Treasure chest dropped into the arena by the director. It has to be broken: a sword swing or a
 // bullet makes it burst into one reward: a handful of coins (often with a diamond), grenades, or a shotgun (shells when
-// she already has one), so the weapons get used without buying them first.
+// he already has one), so the weapons get used without buying them first.
 public class ArenaChest : MonoBehaviour, IDamageable {
 
     [SerializeField] private GameObject coinPrefab;

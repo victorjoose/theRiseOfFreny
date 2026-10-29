@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// What Freny carries and when it is ready again, drawn under the hearts of the uGUI HUD (laid
-// out for 1920x1080) the same way in the arena and in the campaign: weapon icons, sword charge,
-// revolver bullets, shells, grenade, the jump/run/dash meters and Rage. It also adds the armor
-// hearts after the life hearts and swaps the portrait's helmet (red in Rage, Berserker with armor). Lives on the FrenyHud prefab
-// (campaign) or on the player (arena, added by ArenaBootstrap; icons come from ArenaAssets).
+// What Freny carries and when it is ready again, drawn around the hearts of the uGUI HUD the
+// same way in the arena and in the campaign: under the portrait and hearts the Corrida energy
+// (yellow) and Rage (red); on the right of the hearts the weapons, loose:
+// sword charge, revolver bullets, shells, grenade. It also adds the armor hearts after the
+// life hearts and swaps the portrait's helmet (red in Rage, Berserker with armor). Lives on
+// the FrenyHud prefab (campaign) or on the player (arena, added by ArenaBootstrap; icons come
+// from ArenaAssets). Hidden when Freny dies and while a menu is open.
 public class CombatHud : MonoBehaviour {
 
     public Sprite revolverIcon;
@@ -18,13 +20,17 @@ public class CombatHud : MonoBehaviour {
     public Sprite armorHelmetIcon;
     public Sprite armorHeart;
 
-    private static readonly Color ReadyColor = new Color(0.35f, 0.9f, 0.35f);
-    private static readonly Color ChargingColor = new Color(1f, 0.6f, 0.2f);
-    private static readonly Color ActiveColor = new Color(0.3f, 0.8f, 1f);
+    // the menus' purple (MenuKit): pink when ready, dull violet while charging
+    private static readonly Color ReadyColor = MenuKit.TitleColor;
+    private static readonly Color ChargingColor = new Color(0.47f, 0.33f, 0.68f);
     private static readonly Color RageColor = new Color(1f, 0.25f, 0.2f);
+    private static readonly Color EnergyColor = new Color(1f, 0.86f, 0.2f);
+    private static readonly Color EnergyRefillColor = new Color(0.85f, 0.65f, 0.15f);
+    private static readonly Color RageFillColor = new Color(0.75f, 0.15f, 0.15f);
+    private static readonly Color RageBack = new Color(0.22f, 0.04f, 0.06f, 1f);   // reads red even when empty
+    private static readonly Color MeterBack = new Color(0.04f, 0.02f, 0.08f, 1f);
 
     private Player player;
-    private Dash dash;
     private GUIStyle labelStyle;
     private Image portrait;          // the uGUI helmet next to the hearts ("Head" sprite)
     private Sprite portraitDefault;
@@ -33,29 +39,75 @@ public class CombatHud : MonoBehaviour {
     private void OnGUI() {
         if (player == null) {
             player = GetComponent<Player>() ? GetComponent<Player>() : FindAnyObjectByType<Player>();
-            dash = player ? player.GetComponent<Dash>() : null;
             if (player == null) {
                 return;
             }
         }
-        if (dash == null) {
-            dash = player.GetComponent<Dash>();
+
+        // a menu is up: nothing (the menus hide the uGUI HUD too)
+        if (GameMenus.Paused) {
+            return;
         }
 
         float scale = Screen.width / 1920f;
         if (labelStyle == null) {
-            labelStyle = new GUIStyle(GUI.skin.label);
+            labelStyle = new GUIStyle(GUI.skin.label) { font = MenuKit.Font, wordWrap = false, clipping = TextClipping.Overflow };
         }
-        labelStyle.fontSize = Mathf.Max(11, Mathf.RoundToInt(20f * scale));
-        float size = 56f * scale;
-        float x = 60f * scale;
-        float y = 200f * scale; // a little under the portrait frame
-        DrawWeapons(x, y, size, scale);
-        // stacked on the left, below the sword bar, the bullet dots and the ammo counts
-        DrawCooldowns(60f * scale, y + size + 46f * scale, scale);
+        labelStyle.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * scale));
+
+        // the game is over: only the hearts row and the score stay
+        if (!player.IsDead) {
+            Rect head;
+            float heartsRight, rowRight, rowMiddle;
+            FindHeartsRow(scale, out head, out heartsRight, out rowRight, out rowMiddle);
+            heartsMiddle = rowMiddle;
+            // the energy (Corrida) and Rage bars right under the portrait and the hearts
+            DrawBars(head.xMin, head.yMax + 6f * scale, heartsRight - head.xMin, scale);
+            // the weapons loose on the right of the hearts (and of the armor hearts' places)
+            float size = 84f * scale;   // the sword and gun sprites are small inside their frames
+            weaponsRight = DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
+        }
+        DrawScore(scale);
     }
 
-    private void DrawWeapons(float x, float y, float size, float scale) {
+    // the portrait and hearts of the uGUI HUD, on screen in GUI coordinates (y down); a fixed
+    // spot for the 1920x1080 layout when the HUD is not there
+    private void FindHeartsRow(float scale, out Rect head, out float heartsRight, out float rowRight, out float rowMiddle) {
+        Image[] bars = UIManager.Instance != null ? UIManager.Instance.healthBars : null;
+        Image lastHeart = bars != null && bars.Length > 0 ? bars[bars.Length - 1] : null;
+        if (portrait == null || lastHeart == null) {
+            head = new Rect(74f * scale, 37f * scale, 73f * scale, 80f * scale);
+            heartsRight = 400f * scale;
+            rowRight = heartsRight;
+            rowMiddle = 77f * scale;
+            return;
+        }
+        head = ScreenRect(portrait.rectTransform);
+        Rect heart = ScreenRect(lastHeart.rectTransform);
+        heartsRight = heart.xMax;
+        // right after the last heart shown: the weapons move over when armor comes or goes
+        rowRight = heartsRight;
+        foreach (Image armor in armorHearts) {
+            if (armor != null && armor.enabled) {
+                rowRight = Mathf.Max(rowRight, ScreenRect(armor.rectTransform).xMax);
+            }
+        }
+        rowMiddle = heart.center.y;
+    }
+
+    private static readonly Vector3[] Corners = new Vector3[4];
+
+    private static Rect ScreenRect(RectTransform rect) {
+        Canvas canvas = rect.GetComponentInParent<Canvas>();
+        Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        rect.GetWorldCorners(Corners);
+        Vector2 min = RectTransformUtility.WorldToScreenPoint(camera, Corners[0]);
+        Vector2 max = RectTransformUtility.WorldToScreenPoint(camera, Corners[2]);
+        return Rect.MinMaxRect(min.x, Screen.height - max.y, max.x, Screen.height - min.y);
+    }
+
+    // returns where the last icon ends, so the score can keep clear of it
+    private float DrawWeapons(float x, float y, float size, float scale) {
         float swordX = x;
         DrawIcon(player.GreatSwordActive ? Icon(greatSwordIcon, a => a.greatSwordIcon) : Icon(swordIcon, a => a.swordIcon), ref x, y, size);
         if (player.GreatSwordSwings > 0 && !FrenyProgress.HasGreatSword) {
@@ -84,17 +136,15 @@ public class CombatHud : MonoBehaviour {
             ShadowLabel(new Rect(sx + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.ShotgunShells}");
         }
         if (player.Grenades > 0) {
-            Color old = GUI.color;
-            GUI.color = player.GrenadeReady ? Color.white : new Color(1f, 1f, 1f, 0.35f);
             float gx = x;
             DrawIcon(Icon(grenadeIcon, a => a.grenadeIcon), ref x, y, size);
-            GUI.color = old;
             ShadowLabel(new Rect(gx + size - 14f * scale, y + size + 10f * scale, 60f * scale, 26f * scale), $"x{player.Grenades}");
             if (player.ChargingGrenade) {
                 // power bar while G is held
                 DrawMeter(new Rect(gx, y + size + 2f, size, 6f * scale), player.GrenadeCharge, Color.Lerp(Color.yellow, Color.red, player.GrenadeCharge));
             }
         }
+        return x;
     }
 
     // the gun in hand: a bright frame around its icon, and its name for a moment after a switch
@@ -107,39 +157,22 @@ public class CombatHud : MonoBehaviour {
             lastShotgun = shotgun;
             switchedAt = Time.time;
         }
-        float t = Mathf.Max(2f, 3f * scale);
-        Color old = GUI.color;
-        GUI.color = ReadyColor;
-        GUI.DrawTexture(new Rect(r.x, r.y, r.width, t), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(r.x, r.yMax - t, r.width, t), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(r.x, r.y, t, r.height), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(r.xMax - t, r.y, t, r.height), Texture2D.whiteTexture);
-        GUI.color = old;
         if (Time.time - switchedAt < 1.2f) {
             ShadowLabel(new Rect(r.x, r.y - 30f * scale, 160f * scale, 28f * scale), shotgun ? "Escopeta" : "Pistola");
         }
     }
 
-    // run and dash readiness, so a key that does nothing shows why
-    private void DrawCooldowns(float x, float y, float scale) {
-        float width = 170f * scale;
-        float height = 48f * scale;
-        float step = height + 10f * scale;
-        DrawLabeledMeter(new Rect(x, y, width, height), $"{(FrenyProgress.HasDoubleJump ? "Pulo duplo" : "Pulo")} ({Key(GameAction.Jump)})", player.JumpReady ? 1f : 0f,
-            player.JumpReady ? ReadyColor : ChargingColor, scale);
-        y += step;
+    // Corrida is an energy bar (yellow), always shown; Rage (red) under it,
+    // filled by kills and drained over the 20 s of Rage
+    private void DrawBars(float x, float y, float width, float scale) {
+        float height = 10f * scale;
         float run = player.RunMeter;
-        DrawLabeledMeter(new Rect(x, y, width, height), $"Corrida ({Key(GameAction.Run)})", run,
-            player.IsRunning ? ActiveColor : run >= 1f ? ReadyColor : ChargingColor, scale);
-        if (dash) {
-            y += step;
-            DrawLabeledMeter(new Rect(x, y, width, height), $"Dash no ar ({Key(GameAction.Run)})", dash.Readiness,
-                dash.Readiness >= 1f ? ReadyColor : ChargingColor, scale);
+        DrawMeter(new Rect(x, y, width, height), run, player.IsRunning || run >= 1f ? EnergyColor : EnergyRefillColor);
+        y += height + 6f * scale;
+        DrawMeter(new Rect(x, y, width, height), player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : RageFillColor, RageBack);
+        if (player.Raging) {
+            ShadowLabel(new Rect(x + width + 8f * scale, y - 6f * scale, 160f * scale, 22f * scale), $"FÚRIA! {Mathf.CeilToInt(player.RageLeft * 20f)}s");
         }
-        // kills fill it; full, it drains over the 20 s of Rage
-        y += step;
-        DrawLabeledMeter(new Rect(x, y, width, height), player.Raging ? $"FÚRIA! {Mathf.CeilToInt(player.RageLeft * 20f)}s" : "Fúria",
-            player.Raging ? player.RageLeft : player.Rage, player.Raging ? RageColor : new Color(0.75f, 0.3f, 0.25f), scale);
     }
 
     // ---- the uGUI part: helmet and armor hearts ------------------------------------------------
@@ -150,6 +183,83 @@ public class CombatHud : MonoBehaviour {
         }
         UpdatePortrait();
         UpdateArmorHearts();
+        HideScoreTexts();
+    }
+
+    // ---- Score and Combo: right of centre, and always clear of the weapons ----
+    // The scene's own texts sit on nested canvases with a zero z scale and can't be moved (moving
+    // them changes nothing on screen), so they are hidden and their text is drawn here instead.
+
+    private Text scoreTitle, scoreValue, comboTitle, comboValue;
+    private bool scoreSearched;
+    private float weaponsRight = -1f;   // screen x where the weapon icons end
+    private float heartsMiddle = -1f;   // screen y of the hearts row, to keep the score on that line
+    private GUIStyle scoreStyle;
+
+    private void FindScoreTexts() {
+        scoreSearched = true;
+        foreach (Text text in FindCompat.All<Text>(true)) {
+            switch (text.name) {
+                case "ScoreTitleText": scoreTitle = text; break;
+                case "ScoreText": scoreValue = text; break;
+                case "ComboTitleText": comboTitle = text; break;
+                case "ComboText": comboValue = text; break;
+                default: continue;
+            }
+        }
+    }
+
+    // invisible but still enabled: ComboManager blinks the combo by switching enabled on and
+    // off, and that blink is copied below
+    private void HideScoreTexts() {
+        foreach (Text text in new[] { scoreTitle, scoreValue, comboTitle, comboValue }) {
+            if (text != null) {
+                text.canvasRenderer.SetAlpha(0f);
+            }
+        }
+    }
+
+    private void DrawScore(float scale) {
+        if (!scoreSearched) {
+            FindScoreTexts();
+        }
+        if (scoreValue == null) {
+            return;
+        }
+        if (scoreStyle == null) {
+            scoreStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.UpperLeft };
+        }
+        string score = (scoreTitle != null ? scoreTitle.text : "Score: ") + scoreValue.text;
+        HideScoreTexts();
+        bool combo = comboValue != null && comboValue.gameObject.activeInHierarchy;
+        // the value blinks while the combo runs out, like the old text
+        string comboLine = combo ? (comboTitle != null ? comboTitle.text + " " : "Combo: ") + (comboValue.enabled ? comboValue.text : "") : null;
+
+        int scoreSize = Mathf.Max(10, Mathf.RoundToInt(40f * scale));
+        int comboSize = Mathf.Max(8, Mathf.RoundToInt(26f * scale));
+        scoreStyle.fontSize = scoreSize;
+        float width = scoreStyle.CalcSize(new GUIContent(score)).x;
+        // a bit right of the centre (José), and never over the last weapon icon
+        float x = Mathf.Max(Screen.width * 0.58f - width / 2f, weaponsRight + 40f * scale);
+        // on the line of the hearts and coins (the uGUI row moves with the screen's shape)
+        float y = heartsMiddle > 0f ? heartsMiddle - scoreSize * 0.8f : 34f * scale;
+        ShadowLabel(new Rect(x, y, width + 20f, scoreSize * 1.4f), score, scoreStyle);
+        if (comboLine != null) {
+            scoreStyle.fontSize = comboSize;
+            ShadowLabel(new Rect(x, y + scoreSize * 1.5f, 600f * scale, comboSize * 1.4f), comboLine, scoreStyle);
+        }
+    }
+
+    // Rage with the Berserker armor: the Berserker helmet in red, made by Tools/ArtGen/freny_heads.py
+    private static Sprite rageBerserkerIcon;
+    private static Sprite RageBerserkerIcon {
+        get {
+            if (rageBerserkerIcon == null) {
+                Sprite[] sprites = Resources.LoadAll<Sprite>("FrenyHeads/rage_berserker_icon");
+                rageBerserkerIcon = sprites.Length > 0 ? sprites[0] : null;
+            }
+            return rageBerserkerIcon;
+        }
     }
 
     private void UpdatePortrait() {
@@ -165,7 +275,8 @@ public class CombatHud : MonoBehaviour {
                 return;
             }
         }
-        Sprite want = player.Raging ? Icon(rageHelmetIcon, a => a.rageHelmetIcon)
+        Sprite want = player.Raging && player.Armor > 0 && RageBerserkerIcon != null ? RageBerserkerIcon
+            : player.Raging ? Icon(rageHelmetIcon, a => a.rageHelmetIcon)
             : player.Armor > 0 ? Icon(armorHelmetIcon, a => a.armorHelmetIcon)
             : null;
         if (want == null) {
@@ -202,7 +313,7 @@ public class CombatHud : MonoBehaviour {
         }
         for (int i = 0; i < armorHearts.Count; i++) {
             if (armorHearts[i]) {
-                armorHearts[i].enabled = i < player.Armor;
+                armorHearts[i].enabled = i < player.Armor && !player.IsDead;
             }
         }
     }
@@ -212,14 +323,12 @@ public class CombatHud : MonoBehaviour {
         return InputBindings.KeyName(InputBindings.Keyboard(action)).Replace(" esq.", "").Replace(" dir.", "");
     }
 
-    private void DrawLabeledMeter(Rect rect, string label, float fill, Color color, float scale) {
-        // label on top, a clear gap, then the bar
-        ShadowLabel(new Rect(rect.x, rect.y, rect.width + 40f * scale, rect.height - 18f * scale), label);
-        DrawMeter(new Rect(rect.x, rect.yMax - 10f * scale, rect.width, 10f * scale), fill, color);
-    }
-
     // white text with a dark outline, readable over the cave background
     private void ShadowLabel(Rect rect, string text) {
+        ShadowLabel(rect, text, labelStyle);
+    }
+
+    private static void ShadowLabel(Rect rect, string text, GUIStyle labelStyle) {
         Color old = GUI.color;
         Color oldText = labelStyle.normal.textColor;
         labelStyle.normal.textColor = Color.black;
@@ -228,7 +337,7 @@ public class CombatHud : MonoBehaviour {
         GUI.Label(new Rect(rect.x + o, rect.y, rect.width, rect.height), text, labelStyle);
         GUI.Label(new Rect(rect.x, rect.y - o, rect.width, rect.height), text, labelStyle);
         GUI.Label(new Rect(rect.x, rect.y + o, rect.width, rect.height), text, labelStyle);
-        labelStyle.normal.textColor = Color.white;
+        labelStyle.normal.textColor = MenuKit.TextColor;
         GUI.Label(rect, text, labelStyle);
         labelStyle.normal.textColor = oldText;
         GUI.color = old;
@@ -258,18 +367,37 @@ public class CombatHud : MonoBehaviour {
         return ArenaAssets.Instance ? arena(ArenaAssets.Instance) : null;
     }
 
+    // a dark well with a violet edge, filled from the left
     private static void DrawMeter(Rect rect, float fill, Color color) {
+        DrawMeter(rect, fill, color, MeterBack);
+    }
+
+    private static void DrawMeter(Rect rect, float fill, Color color, Color back) {
+        float t = Mathf.Max(1f, rect.height / 6f);
+        Fill(rect, ButtonEdge);
+        Rect inner = new Rect(rect.x + t, rect.y + t, rect.width - 2f * t, rect.height - 2f * t);
+        Fill(inner, back);
+        Fill(new Rect(inner.x, inner.y, inner.width * Mathf.Clamp01(fill), inner.height), color);
+    }
+
+    private static readonly Color ButtonEdge = new Color(0.36f, 0.22f, 0.55f, 1f);
+
+    private static void Fill(Rect rect, Color color) {
         Color old = GUI.color;
-        GUI.Box(rect, GUIContent.none);
-        GUI.color = color;
-        GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(fill), rect.height), Texture2D.whiteTexture);
+        GUI.color = color * old;
+        GUI.DrawTexture(rect, Texture2D.whiteTexture);
         GUI.color = old;
+    }
+
+    private static float IconGap(float scale) {
+        return 10f * scale;
     }
 
     private static void DrawIcon(Sprite sprite, ref float x, float y, float size, bool selected = true) {
         if (sprite == null) {
             return;
         }
+        float scale = Screen.width / 1920f;
         Color old = GUI.color;
         if (!selected) {
             GUI.color = new Color(old.r, old.g, old.b, old.a * 0.35f);
@@ -277,8 +405,14 @@ public class CombatHud : MonoBehaviour {
         Rect tr = sprite.textureRect;
         Texture tex = sprite.texture;
         Rect uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
-        GUI.DrawTextureWithTexCoords(new Rect(x, y, size, size), tex, uv);
+        // fit the drawn pixels in the slot, a little inset, without stretching
+        float inset = 2f * scale;
+        float box = size - 2f * inset;
+        float aspect = tr.width / Mathf.Max(1f, tr.height);
+        float w = aspect >= 1f ? box : box * aspect;
+        float h = aspect >= 1f ? box / aspect : box;
+        GUI.DrawTextureWithTexCoords(new Rect(x + (size - w) / 2f, y + (size - h) / 2f, w, h), tex, uv);
         GUI.color = old;
-        x += size + 6f;
+        x += size + IconGap(scale);
     }
 }

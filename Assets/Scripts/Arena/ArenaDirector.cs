@@ -5,9 +5,11 @@ using UnityEngine;
 // Decides what spawns in the arena and when, so a run starts calm and gets busier.
 // Difficulty climbs from 0 to 1 over Tuning.RampSeconds (5 minutes by default): more enemies
 // alive at once, shorter gaps between spawns, and tougher enemy types unlocking over time.
-// Where things appear is random: any clear spot on a platform Freny can reach (ArenaMap), never
-// right next to her. Sorcerers take the towers first (ledges against the side walls, out of her
-// reach, so they leave after a few casts). The scene's EnemySpawners are only a fallback.
+// Where things appear is random: any platform Freny can reach (ArenaMap), each platform as likely
+// as the next so the corners and the small ledges get their share, never close to him and away from
+// the enemies already there. Sorcerers take the towers first (ledges against the side walls, out of
+// his reach, so they leave after a few casts), one per tower so both sides get one; with both towers
+// taken they appear on the platforms like everyone else. The scene's EnemySpawners are only a fallback.
 public class ArenaDirector : MonoBehaviour {
 
     [System.Serializable]
@@ -25,8 +27,9 @@ public class ArenaDirector : MonoBehaviour {
     [SerializeField] private int maxVases = 3;
     [SerializeField] private float portalSeconds = 1f;
     [SerializeField] private float firstSpawnDelay = 2f;
-    [SerializeField] private float minDistanceFromHero = 3.5f;
+    [SerializeField] private float minDistanceFromHero = 7f;   // about a quarter of the screen
     [SerializeField] private int towerSorcererCasts = 8;
+    [SerializeField] private int sorcerersPerTower = 1;        // one more each once the run is past its peak
 
     private readonly List<EnemySpawner> spawners = new List<EnemySpawner>();
     private float runStart;
@@ -34,6 +37,8 @@ public class ArenaDirector : MonoBehaviour {
     private float nextChestTime;
     private float nextVaseTime;
     private int pendingSpawns; // portals already open
+    private readonly List<Vector3> pendingPoints = new List<Vector3>(); // where those portals are
+    private readonly int[] pendingTower = new int[2];                  // tower portals open per side (0 left, 1 right)
     private Player hero;
     private readonly Dictionary<ArenaMap.Platform, Transform[]> patrols = new Dictionary<ArenaMap.Platform, Transform[]>();
 
@@ -59,7 +64,7 @@ public class ArenaDirector : MonoBehaviour {
     public float SpawnInterval => Mathf.Lerp(3f, 0.8f, Difficulty) * ArenaDifficulty.SpawnIntervalFactor / (1f + 0.15f * Overtime);
 
     // how many enemies go after Freny from anywhere in the arena (Enemy.JoinChase); the ones that
-    // see her up close always fight, the rest patrol until a place frees up
+    // see him up close always fight, the rest patrol until a place frees up
     public static int MaxChasers => Mathf.RoundToInt(Mathf.Lerp(4f, 6f, CurrentDifficulty) + Mathf.Min(3f, CurrentOvertime * 0.5f));
     // enemy pace over the run, on top of the menu level (ArenaDifficulty): slower at the start,
     // faster at the peak and still faster in overtime
@@ -107,7 +112,7 @@ public class ArenaDirector : MonoBehaviour {
 
         if (Time.time >= nextVaseTime) {
             nextVaseTime = Time.time + vaseInterval;
-            if (ArenaVase.Active.Count < maxVases && RandomSpot(false, 1f, out Vector3 floorPoint, out ArenaMap.Platform _)) {
+            if (ArenaVase.Active.Count < maxVases && RandomSpot(Reachable(Map), 1f, out Vector3 floorPoint, out ArenaMap.Platform _)) {
                 ArenaVase.Create(floorPoint);
             }
         }
@@ -174,37 +179,101 @@ public class ArenaDirector : MonoBehaviour {
 
     private ArenaMap Map => ArenaMap.Shared(hero);
 
-    // A random clear spot: a platform picked by width among those that suit what spawns, then a
-    // random x on it with room above and away from Freny. False when the map has nothing (the
-    // spawners are used then).
-    // the lowest tower ledges: the two pockets in the side towers, where the sorcerers appear
-    private static List<ArenaMap.Platform> TowerLedges(ArenaMap map) {
+    // how far a spot is from Freny; he wraps around the screen edges, so the two edges are
+    // neighbours and the distance goes the short way round
+    private float HeroDistance(Vector2 spot) {
+        if (!hero) {
+            return float.MaxValue;
+        }
+        Vector2 heroPos = hero.transform.position;
+        float dx = Mathf.Abs(spot.x - heroPos.x);
+        if (ArenaBounds.Active) {
+            dx = Mathf.Min(dx, ArenaBounds.Right - ArenaBounds.Left - dx);
+        }
+        return new Vector2(dx, spot.y - heroPos.y).magnitude;
+    }
+
+    // distance to the nearest enemy already there or about to come out of a portal
+    private float CrowdDistance(Vector2 spot) {
+        float nearest = float.MaxValue;
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy && !enemy.IsDead) {
+                nearest = Mathf.Min(nearest, Vector2.Distance(spot, enemy.Feet));
+            }
+        }
+        foreach (Vector3 pending in pendingPoints) {
+            nearest = Mathf.Min(nearest, Vector2.Distance(spot, pending));
+        }
+        return nearest;
+    }
+
+    // ---- towers ----
+
+    private static float MidX => (ArenaBounds.Left + ArenaBounds.Right) * 0.5f;
+
+    private static int SideOf(float x) {
+        return x < MidX ? 0 : 1;
+    }
+
+    // the lowest tower ledges on one side (0 left, 1 right): the pocket in that side's tower, where
+    // the sorcerers appear. Each side is looked at on its own, so a pocket a little higher than the
+    // other one still counts (both used to be measured against the lowest of the two)
+    private static List<ArenaMap.Platform> TowerLedges(ArenaMap map, int side) {
         List<ArenaMap.Platform> ledges = new List<ArenaMap.Platform>();
         float lowest = float.MaxValue;
         foreach (ArenaMap.Platform p in map.Platforms) {
-            if (p.tower) {
+            if (p.tower && SideOf((p.xMin + p.xMax) * 0.5f) == side) {
                 lowest = Mathf.Min(lowest, p.y);
             }
         }
         foreach (ArenaMap.Platform p in map.Platforms) {
-            if (p.tower && p.y <= lowest + 0.5f) {
+            if (p.tower && SideOf((p.xMin + p.xMax) * 0.5f) == side && p.y <= lowest + 0.5f) {
                 ledges.Add(p);
             }
         }
         return ledges;
     }
 
-    // where a tower sorcerer jumps to after a cast: another tower ledge (the other side when there
-    // is one), so Freny has to keep finding it
+    private int TowerCapacity => sorcerersPerTower + (Overtime > 0f ? 1 : 0);
+
+    // tower sorcerers on each side right now, portals included (the ones that teleport are on a tower)
+    private int[] TowerSorcerers() {
+        int[] count = { pendingTower[0], pendingTower[1] };
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy is Sorcerer caster && !caster.IsDead && caster.teleportTo != null) {
+                count[SideOf(caster.Feet.x)]++;
+            }
+        }
+        return count;
+    }
+
+    // the tower a new sorcerer goes to: the emptier one (a coin flip when even), -1 when both are full
+    private int TowerForNewSorcerer(ArenaMap map) {
+        int[] count = TowerSorcerers();
+        int best = -1;
+        for (int side = 0; side < 2; side++) {
+            if (count[side] >= TowerCapacity || TowerLedges(map, side).Count == 0) {
+                continue;
+            }
+            if (best < 0 || count[side] < count[best] || (count[side] == count[best] && Random.value < 0.5f)) {
+                best = side;
+            }
+        }
+        return best;
+    }
+
+    // where a tower sorcerer jumps to after a cast: the other tower when it has room, so Freny has
+    // to keep turning round; otherwise another spot on its own tower
     private Vector3? TeleportSpot(Sorcerer caster) {
         ArenaMap map = Map;
         if (map == null || caster == null) {
             return null;
         }
-        List<ArenaMap.Platform> ledges = TowerLedges(map);
-        ArenaMap.Platform here = map.PlatformUnder(caster.Feet + Vector3.up * 0.1f, 0.5f);
-        if (ledges.Count > 1) {
-            ledges.Remove(here);
+        int here = SideOf(caster.Feet.x);
+        int[] count = TowerSorcerers();
+        List<ArenaMap.Platform> ledges = TowerLedges(map, 1 - here);
+        if (ledges.Count == 0 || count[1 - here] >= TowerCapacity) {
+            ledges = TowerLedges(map, here);
         }
         for (int attempt = 0; attempt < 8 && ledges.Count > 0; attempt++) {
             ArenaMap.Platform pick = ledges[Random.Range(0, ledges.Count)];
@@ -222,54 +291,71 @@ public class ArenaDirector : MonoBehaviour {
         return null;
     }
 
-    private bool RandomSpot(bool towersFirst, float headroom, out Vector3 point, out ArenaMap.Platform platform) {
+    // ---- spots ----
+
+    // A random clear spot on one of `candidates`: a few samples (a platform picked at random, each as
+    // likely as the next, then a random x on it with room above), the ones too close to Freny thrown
+    // away, and of the rest the one farthest from the other enemies, so they come from everywhere
+    // instead of piling up. With nothing far enough, the farthest sample still goes if it is at least
+    // half the distance. False when nothing fits (the spawners are used then).
+    private bool RandomSpot(List<ArenaMap.Platform> candidates, float headroom, out Vector3 point, out ArenaMap.Platform platform) {
         point = Vector3.zero;
         platform = null;
         ArenaMap map = Map;
-        if (map == null || map.Floor == null) {
+        if (map == null || candidates == null || candidates.Count == 0) {
             return false;
         }
-        List<ArenaMap.Platform> candidates = new List<ArenaMap.Platform>();
-        if (towersFirst) {
-            candidates.AddRange(TowerLedges(map));
-        }
-        if (candidates.Count == 0) {
-            candidates = map.ReachableFrom(map.Floor);
-        }
-        Vector2 heroPos = hero ? (Vector2)hero.transform.position : new Vector2(float.MaxValue, float.MaxValue);
-        for (int attempt = 0; attempt < 16 && candidates.Count > 0; attempt++) {
-            ArenaMap.Platform pick = PickByWidth(candidates);
+        const int Wanted = 6;
+        int found = 0;
+        float bestScore = float.MinValue;
+        float farthest = 0f;
+        Vector3 farthestPoint = Vector3.zero;
+        ArenaMap.Platform farthestPlatform = null;
+        for (int attempt = 0; attempt < 32 && found < Wanted; attempt++) {
+            ArenaMap.Platform pick = candidates[Random.Range(0, candidates.Count)];
             float min = Mathf.Max(pick.xMin + 0.5f, ArenaBounds.Left + 1f);
             float max = Mathf.Min(pick.xMax - 0.5f, ArenaBounds.Right - 1f);
             if (max < min) {
-                candidates.Remove(pick);
                 continue;
             }
             float x = Random.Range(min, max);
             Vector2 spot = new Vector2(x, pick.y);
-            if (Vector2.Distance(spot, heroPos) < minDistanceFromHero || map.HeadroomAt(x, pick.y) < headroom) {
+            if (map.HeadroomAt(x, pick.y) < headroom) {
                 continue;
             }
-            point = spot;
-            platform = pick;
+            float fromHero = HeroDistance(spot);
+            if (fromHero < minDistanceFromHero) {
+                if (fromHero > farthest) {
+                    farthest = fromHero;
+                    farthestPoint = spot;
+                    farthestPlatform = pick;
+                }
+                continue;
+            }
+            found++;
+            // past 8 units every spot is spread enough: the jitter keeps the pick random among them
+            float score = Mathf.Min(CrowdDistance(spot), 8f) + Random.Range(0f, 2f);
+            if (score > bestScore) {
+                bestScore = score;
+                point = spot;
+                platform = pick;
+            }
+        }
+        if (found > 0) {
+            return true;
+        }
+        if (farthestPlatform != null && farthest >= minDistanceFromHero * 0.5f) {
+            point = farthestPoint;
+            platform = farthestPlatform;
             return true;
         }
         return false;
     }
 
-    private static ArenaMap.Platform PickByWidth(List<ArenaMap.Platform> platforms) {
-        float total = 0f;
-        foreach (ArenaMap.Platform p in platforms) {
-            total += p.Width;
-        }
-        float roll = Random.Range(0f, total);
-        foreach (ArenaMap.Platform p in platforms) {
-            roll -= p.Width;
-            if (roll <= 0f) {
-                return p;
-            }
-        }
-        return platforms[platforms.Count - 1];
+    // platforms a walker, a flyer, a chest or a vase can go to: the ones Freny can reach (a flyer over
+    // a closed-off ledge or a scrap under the floor would be stuck there)
+    private List<ArenaMap.Platform> Reachable(ArenaMap map) {
+        return map == null || map.Floor == null ? null : map.ReachableFrom(map.Floor);
     }
 
     // two points at the ends of the platform: the enemy patrols the whole of it
@@ -289,13 +375,21 @@ public class ArenaDirector : MonoBehaviour {
     }
 
     private IEnumerator SpawnWithPortal(Entry entry) {
+        ArenaMap map = Map;
         bool sorcerer = entry.prefab.GetComponent<Sorcerer>() != null;
         float headroom = entry.flying ? 3.2f : sorcerer ? 1.6f : 2.2f;
-        if (!RandomSpot(sorcerer, headroom, out Vector3 floorPoint, out ArenaMap.Platform platform)) {
+        int tower = sorcerer && map != null ? TowerForNewSorcerer(map) : -1;
+        List<ArenaMap.Platform> candidates = tower >= 0 ? TowerLedges(map, tower)
+            : Reachable(map);
+        if (!RandomSpot(candidates, headroom, out Vector3 floorPoint, out ArenaMap.Platform platform)
+            && (tower < 0 || !RandomSpot(Reachable(map), headroom, out floorPoint, out platform))) {
             if (spawners.Count > 0) {
                 yield return SpawnAtSpawner(entry);
             }
             yield break;
+        }
+        if (!platform.tower) {
+            tower = -1; // the tower had no room: on a platform like the rest
         }
         Vector3 position = floorPoint;
         if (entry.flying) {
@@ -303,9 +397,20 @@ public class ArenaDirector : MonoBehaviour {
         }
 
         pendingSpawns++;
+        pendingPoints.Add(floorPoint);
+        if (tower >= 0) {
+            pendingTower[tower]++;
+        }
         Fx.Portal(entry.flying ? position : floorPoint + Vector3.up * 0.6f, portalSeconds, PortalColor);
         yield return new WaitForSeconds(portalSeconds);
         pendingSpawns--;
+        pendingPoints.Remove(floorPoint);
+        if (tower >= 0) {
+            pendingTower[tower]--;
+        }
+#if UNITY_EDITOR
+        Debug.Log($"[Arena] {entry.prefab.name} em {platform} x {floorPoint.x:0.0}, a {HeroDistance(floorPoint):0.0} do Freny");
+#endif
 
         GameObject spawned = Instantiate(entry.prefab, position, Quaternion.identity);
         Enemy enemy = spawned.GetComponent<Enemy>();
@@ -327,7 +432,7 @@ public class ArenaDirector : MonoBehaviour {
 
     // the old way, when the map found nothing: on a scene spawner's platform
     private IEnumerator SpawnAtSpawner(Entry entry) {
-        EnemySpawner spawner = spawners[Random.Range(0, spawners.Count)];
+        EnemySpawner spawner = FarSpawner();
         Vector3 position = SpawnPoint(spawner);
         if (entry.flying) {
             position += Vector3.up * Random.Range(1.5f, 2.5f);
@@ -354,12 +459,28 @@ public class ArenaDirector : MonoBehaviour {
         }
     }
 
+    // a random spawner far enough from Freny (the farthest one when none is)
+    private EnemySpawner FarSpawner() {
+        EnemySpawner farthest = spawners[0];
+        List<EnemySpawner> far = new List<EnemySpawner>();
+        foreach (EnemySpawner spawner in spawners) {
+            float distance = HeroDistance(spawner.transform.position);
+            if (distance >= minDistanceFromHero) {
+                far.Add(spawner);
+            }
+            if (distance > HeroDistance(farthest.transform.position)) {
+                farthest = spawner;
+            }
+        }
+        return far.Count > 0 ? far[Random.Range(0, far.Count)] : farthest;
+    }
+
     private IEnumerator SpawnChest() {
         Vector3 position;
-        if (RandomSpot(false, 1.2f, out Vector3 floorPoint, out ArenaMap.Platform _)) {
+        if (RandomSpot(Reachable(Map), 1.2f, out Vector3 floorPoint, out ArenaMap.Platform _)) {
             position = floorPoint;
         } else if (spawners.Count > 0) {
-            position = SpawnPoint(spawners[Random.Range(0, spawners.Count)]);
+            position = SpawnPoint(FarSpawner());
         } else {
             yield break;
         }

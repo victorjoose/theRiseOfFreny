@@ -12,6 +12,9 @@ public static class SettingsScreens {
         page.Slider("Música", 0, 10, Tenths(GameSettings.MusicVolume), Percent, v => GameSettings.MusicVolume = v / 10f);
         page.Slider("Efeitos", 0, 10, Tenths(GameSettings.SfxVolume), Percent, v => GameSettings.SfxVolume = v / 10f);
 
+        page.Slider("Brilho", 0, GameSettings.BrightnessSteps, GameSettings.Brightness,
+            v => (v - GameSettings.DefaultBrightness).ToString("+0;-0;0"), v => GameSettings.Brightness = v);
+
         int minSpeed = Mathf.RoundToInt(GameSpeed.Min * 10f);
         int maxSpeed = Mathf.RoundToInt(GameSpeed.Max * 10f);
         // the pause menu stops time; GameSpeed.Value saves without applying until the game resumes

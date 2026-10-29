@@ -6,7 +6,7 @@ using UnityEngine;
 // every FrenyProgress.AutopilotReactionTime seconds, which the brain upgrades shorten.
 //
 // Priorities (GDD, "Arena idle"):
-// 1. dodge an incoming projectile or a wind-up next to her
+// 1. dodge an incoming projectile or a wind-up next to him
 // 2. enemy in sword range -> sword (or step back while it recharges)
 // 3. grenade at a group or at an enemy on a platform above
 // 4. enemy aligned and far -> shot
@@ -47,16 +47,16 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private PlayerInputFrame plan;
     private bool planIsFresh;
     private bool planTurnsOnly;      // the move in the plan is a one-frame tap to turn around
-    private Enemy currentTarget;     // kept between decisions, so she doesn't flip-flop between two enemies
+    private Enemy currentTarget;     // kept between decisions, so he doesn't flip-flop between two enemies
     private bool retreating;         // decided once per sword cooldown
-    private float bestTargetDistance = float.MaxValue; // closest she has been to the current target
+    private float bestTargetDistance = float.MaxValue; // closest he has been to the current target
     private float lastProgressTime;
     private Enemy progressTarget;
     private LayerMask ground;
 
-    // the map of platforms and where she is on it
+    // the map of platforms and where he is on it
     private ArenaMap map;
-    private ArenaMap.Platform standingOn;   // the last platform she stood on
+    private ArenaMap.Platform standingOn;   // the last platform he stood on
     private int[] hops;                     // hops from standingOn to every platform, for this decision
     private bool wantsRoute;                // this decision asked for the current route
 
@@ -66,11 +66,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private ArenaMap.Step route;
     private float phaseStart;
     private int attempts;
-    private float walkBestDx;               // closest she has been to the stand spot (the walk is stuck when it stops shrinking)
+    private float walkBestDx;               // closest he has been to the stand spot (the walk is stuck when it stops shrinking)
     private Transform routeLoot;            // the coin/chest this route is for (null: it is for the enemy)
     private readonly Dictionary<Transform, float> lootUnreachableUntil = new Dictionary<Transform, float>();
 
-    public string CurrentAction { get; private set; } = "";  // enemies, target and what she is doing (logged to the console)
+    public string CurrentAction { get; private set; } = "";  // enemies, target and what he is doing (logged to the console)
     private string action = "";
     private string lastLogged = "";
 
@@ -108,7 +108,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             nextScanTime = Time.time + scanInterval;
         }
 
-        // in the air during a hop nothing is re-decided: the hop steers her until she lands
+        // in the air during a hop nothing is re-decided: the hop steers him until he lands
         bool airborne = phase == Phase.Jump || phase == Phase.Steer || phase == Phase.Fall;
         if (!airborne && Time.time >= nextDecisionTime) {
             planTurnsOnly = false;
@@ -145,7 +145,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             frame.potionPressed = false;
             frame.grenadePressed = false;
             if (planTurnsOnly) {
-                // turning around takes one frame; keeping the stick held walked her past the enemy
+                // turning around takes one frame; keeping the stick held walked him past the enemy
                 frame.move = 0f;
             }
         }
@@ -180,7 +180,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
     }
 
-    // where she is for route planning: the platform she stands on, or the one she will land on
+    // where he is for route planning: the platform he stands on, or the one he will land on
     private ArenaMap.Platform MyPlatform() {
         if (player.IsGrounded && standingOn != null) {
             return standingOn;
@@ -228,7 +228,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         ArenaMap.Platform myPlatform = MyPlatform();
         hops = map.HopsFrom(myPlatform);
 
-        // 1. dodge, only when a projectile is about to land (before, any hexball nearby kept her
+        // 1. dodge, only when a projectile is about to land (before, any hexball nearby kept him
         // hopping forever instead of fighting)
         HexballEffect threat = IncomingProjectile(me);
         if (threat) {
@@ -253,11 +253,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float towardTarget = Mathf.Sign(dx);
         bool facingTarget = (dx > 0) == player.FacingRight;
         bool sameFloor = dy <= verticalTolerance && dy >= -0.7f;
-        // never beyond what the sword really reaches (a saved 3.0 had her swinging at the air)
+        // never beyond what the sword really reaches (a saved 3.0 had him swinging at the air)
         float meleeRange = Mathf.Min(Tuning.AutoMeleeRange.Value, MaxMeleeReach) * (player.GreatSwordActive ? 1.4f : 1f);
         float nearestEnemy = NearestEnemyDistance(me);
 
-        // 1b. an enemy next to her is winding up a hit: get out of the way (a person would)
+        // 1b. an enemy next to him is winding up a hit: get out of the way (a person would)
         Enemy striker = WindingUpNearby(me, myFeet, meleeRange + 0.6f);
         if (striker && (!player.AttackReady || player.Health <= lowHealth)) {
             float away = Mathf.Sign(me.x - striker.transform.position.x);
@@ -297,7 +297,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
         retreating = false;
 
-        // 2b. a flyer right over her head: shoot straight up
+        // 2b. a flyer right over his head: shoot straight up
         if (target is Bat && Mathf.Abs(target.Center.x - me.x) <= 0.7f && target.Center.y - me.y > 0.9f
             && target.Center.y - me.y <= Tuning.AutoShootRange.Value && player.GunReadyFor(false)) {
             frame.aimUpHeld = true;
@@ -308,7 +308,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         // 3. grenade (they are counted now: found in chests or bought): a group, an enemy on a
-        // platform above, or one she can't reach at all (a sorcerer on a tower), lobbed with the
+        // platform above, or one he can't reach at all (a sorcerer on a tower), lobbed with the
         // charge that lands there
         if (player.CanThrowGrenade && player.IsGrounded) {
             Enemy lob = GrenadeTarget(me, target, out string why);
@@ -345,7 +345,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             return frame;
         }
 
-        // 7. go to the target: walk when it stands on her platform (or flies at her height), else hop
+        // 7. go to the target: walk when it stands on his platform (or flies at his height), else hop
         // towards its platform over the map
         ArenaMap.Platform targetPlatform = PlatformOf(target);
         bool flying = targetPlatform == null;
@@ -370,7 +370,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         if (flying) {
-            // a bat above or below her comes down by itself: no route, and never "unreachable"
+            // a bat above or below him comes down by itself: no route, and never "unreachable"
             action = "Esperando o inimigo voador";
             return frame;
         }
@@ -447,8 +447,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         nextDecisionTime = Time.time; // think again right away
     }
 
-    // the thing the route was for is forgotten for a while: the loot when she was after loot,
-    // else the enemy (before, a failed coin route blamed an enemy standing right next to her)
+    // the thing the route was for is forgotten for a while: the loot when he was after loot,
+    // else the enemy (before, a failed coin route blamed an enemy standing right next to him)
     private void FailRoute(string why) {
         Debug.Log($"[Autopiloto {Time.time:0.0}s] Rota abandonada ({why}): {route}");
         if (routeLoot != null) {
@@ -463,8 +463,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         nextDecisionTime = Time.time;
     }
 
-    // one frame of the current hop. The jump is straight up beside the platform and she only moves
-    // onto it once her feet are above it: jumping diagonally at the edge bumped the body into the
+    // one frame of the current hop. The jump is straight up beside the platform and he only moves
+    // onto it once his feet are above it: jumping diagonally at the edge bumped the body into the
     // platform's side and the jump died there (the cause of the endless pacing under a platform)
     private PlayerInputFrame ManeuverFrame() {
         PlayerInputFrame frame = new PlayerInputFrame();
@@ -496,7 +496,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                         action = $"Caindo para {route.to}";
                     }
                 }
-                // stuck only when she stops getting closer to the spot (a far edge takes longer than any fixed time)
+                // stuck only when he stops getting closer to the spot (a far edge takes longer than any fixed time)
                 float remaining = Mathf.Abs(route.x - x);
                 if (remaining < walkBestDx - 0.25f) {
                     walkBestDx = remaining;
@@ -513,7 +513,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 action = $"Pulando reto ao lado de {route.to}";
                 // move onto the platform as soon as the feet will be above it by the time the body's
                 // side reaches its edge (waiting until they are above it already lost too much of the
-                // jump: on the floor-to-platform step she landed on the very edge)
+                // jump: on the floor-to-platform step he landed on the very edge)
                 float edgeX = route.direction > 0f ? route.to.xMin : route.to.xMax;
                 float sideGap = Mathf.Max(0f, route.direction > 0f ? edgeX - (x + player.BodyHalfWidth) : (x - player.BodyHalfWidth) - edgeX);
                 float predictedFeet = feet + Mathf.Max(0f, player.VerticalSpeed) * (sideGap / Mathf.Max(0.1f, player.MaxSpeed));
@@ -534,10 +534,10 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
             case Phase.Steer: {
                 frame.move = route.direction;
-                frame.runHeld = true; // the sprint, when ready, buys room over the edge before she drops
+                frame.runHeld = true; // the sprint, when ready, buys room over the edge before he drops
                 action = $"Entrando em {route.to}";
-                // the feet circle touches the top a little before she rests on it, so landing also
-                // means the body stopped falling (else she could turn and walk off the edge in mid-air)
+                // the feet circle touches the top a little before he rests on it, so landing also
+                // means the body stopped falling (else he could turn and walk off the edge in mid-air)
                 bool resting = grounded && Mathf.Abs(player.VerticalSpeed) < 0.5f && feet <= route.to.y + 0.1f;
                 ArenaMap.Platform landed = resting ? map.PlatformUnder(new Vector2(x, feet + 0.1f), 0.5f) : null;
                 if (landed != null && elapsed > 0.1f) {
@@ -597,6 +597,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         foreach (ArenaVase vase in ArenaVase.Active) {
             Consider(vase ? vase.transform : null, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, "o vaso");
         }
+        foreach (Breakable prop in Breakable.Active) {
+            if (prop && !prop.Broken) {
+                Consider(prop.transform, me, myPlatform, range, ref best, ref bestItem, ref bestPlatform, ref bestDist, ref what, prop.Describe());
+            }
+        }
         foreach (ItemPickup item in ItemPickup.Active) {
             if (item && item.Landed && item.UsefulTo(player)) {
                 // items count as closer than coins: a potion or ammo matters more than a coin
@@ -606,7 +611,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (bestDist == float.MaxValue) {
             return false;
         }
-        bool isChest = what == "o baú" || what == "o vaso";   // both open only when hit
+        bool isChest = what == "o baú" || what == "o vaso" || what == "a caixa" || what == "o barril";   // they open only when hit
         float dx = best.x - me.x;
 
         if (bestPlatform != myPlatform) {
@@ -624,7 +629,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             } else if (player.AttackReady) {
                 frame.meleePressed = true;
             }
-            action = what == "o vaso" ? "Quebrando o vaso" : "Quebrando o baú";
+            action = "Quebrando " + what;
             return true;
         }
         if (Mathf.Abs(dx) < 0.15f) {
@@ -636,8 +641,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     }
 
     // Travelling towards the target without ever getting closer for stuckSeconds means the route is
-    // blocked (a wall, a ledge she can't reach, pacing above it): forget that target for a while.
-    // Pacing moves her, so progress is measured as distance to the target, not as movement. A hop in
+    // blocked (a wall, a ledge he can't reach, pacing above it): forget that target for a while.
+    // Pacing moves him, so progress is measured as distance to the target, not as movement. A hop in
     // progress has its own timeouts, so it never counts as being stuck.
     private void CheckStuck() {
         if (currentTarget != progressTarget) {
@@ -725,11 +730,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             Vector2 pos = projectile.transform.position;
             Vector2 dir = ((Vector2)projectile.Direction).normalized;
             Vector2 toMe = body - pos;
-            float along = Vector2.Dot(toMe, dir);           // distance still to travel towards her
+            float along = Vector2.Dot(toMe, dir);           // distance still to travel towards him
             if (along < 0f || along > Tuning.AutoDodgeRange.Value) {
                 continue;                                    // moving away, or still far
             }
-            float miss = Mathf.Abs(toMe.x * dir.y - toMe.y * dir.x); // closest approach to her body
+            float miss = Mathf.Abs(toMe.x * dir.y - toMe.y * dir.x); // closest approach to his body
             float timeToHit = along / Mathf.Max(0.1f, projectile.Speed);
             if (miss <= 0.8f && timeToHit <= dodgeWindow) {
                 return projectile;
@@ -770,8 +775,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         return count;
     }
 
-    // who deserves a grenade: the current target when it stands in a group or above her, else an
-    // enemy she has no route to (it would never be fought otherwise). Only within a lob's reach.
+    // who deserves a grenade: the current target when it stands in a group or above him, else an
+    // enemy he has no route to (it would never be fought otherwise). Only within a lob's reach.
     private Enemy GrenadeTarget(Vector2 me, Enemy target, out string why) {
         why = "";
         if (target != null && InLobRange(me, target)) {
@@ -813,15 +818,16 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private bool InLobRange(Vector2 me, Enemy enemy) {
         float dx = enemy.transform.position.x - me.x;
-        if (Mathf.Abs(dx) < 1.5f || Mathf.Abs(dx) > 8f) {
+        // never so close that Freny would be caught in his own blast
+        if (Mathf.Abs(dx) < Grenade.BlastRadius + 1f || Mathf.Abs(dx) > 8f) {
             return false;
         }
         return player.GrenadeChargeFor(dx, enemy.Center.y - (me.y + 0.6f)) >= 0f;
     }
 
-    // Enemies on her own platform come first; each hop over the map to another platform costs
+    // Enemies on his own platform come first; each hop over the map to another platform costs
     // routeHopCost metres, and a platform with no route is only a target when nothing else is
-    // around. The current target is kept unless another is clearly better, so she doesn't
+    // around. The current target is kept unless another is clearly better, so he doesn't
     // flip-flop between two. Enemies recently found unreachable are skipped. Smart targeting also
     // prefers enemies that are almost dead.
     private Enemy PickTarget(Vector2 me, float myFeet) {
@@ -841,7 +847,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             float score = Mathf.Abs(offset.x);
             ArenaMap.Platform platform = PlatformOf(enemy);
             if (platform == null) {
-                // in the air (a bat): worth it only at her height, it comes to her anyway
+                // in the air (a bat): worth it only at his height, it comes to him anyway
                 score += Mathf.Abs(dy) <= verticalTolerance ? 1f : 50f;
             } else {
                 int hopCount = HopsTo(platform);

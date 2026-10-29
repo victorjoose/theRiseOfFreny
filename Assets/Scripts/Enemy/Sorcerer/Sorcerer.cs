@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Ranged enemy: stands still and lobs hexballs at Freny wherever she is (any height, any side).
+// Ranged enemy: stands still and lobs hexballs at Freny wherever he is (any height, any side).
 // The Attack animation calls Attack() through SorcererAnimationEvent when the cast hand opens.
 public class Sorcerer : Enemy {
     public GameObject hexballEffectPrefab;
@@ -9,7 +9,7 @@ public class Sorcerer : Enemy {
     // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second)
     private const int HomingScore = 15000;
     private const float HomingTurn = 70f;
-    // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where she is
+    // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where he is
     [SerializeField] private bool predictive = false;
     private float nextCastTime;
     private Rigidbody2D playerRb;
@@ -30,7 +30,7 @@ public class Sorcerer : Enemy {
         SorcererCastPosition = FindCastPosition();
     }
 
-    protected override Color DeathColor => predictive ? new Color(0.8f, 0.4f, 1f) : new Color(0.45f, 0.3f, 0.7f);
+    protected override Color DeathColor => predictive ? new Color(1f, 0.3f, 0.3f) : new Color(0.45f, 0.3f, 0.7f);
     protected override string SoundName => predictive ? "supreme" : "sorcerer";
 
     // the sorcerer stands still and casts on a steady rhythm; the Fire animation event calls Attack()
@@ -39,6 +39,7 @@ public class Sorcerer : Enemy {
         if (isDead || FellOutOfWorld()) {
             return;
         }
+        UpdatePush(); // Freny's hits shove it back a little like everyone else
         StickToGround(); // stands still, but on the floor (one spawned over a gap floated there)
         ClampToArena();
         UpdateRival(); // an enemy that hit it gets the hexballs until the fight ends
@@ -79,7 +80,7 @@ public class Sorcerer : Enemy {
         Fx.Burst(castPosition, DeathColor, 8, 1.5f, 0.08f, 0.4f);
         Sfx.Play("hexball_launch", castPosition);
 
-        // aim at Freny wherever she is (below, above, diagonal), not only left or right
+        // aim at Freny wherever he is (below, above, diagonal), not only left or right
         HexballEffect effect = hexball.GetComponent<HexballEffect>();
         if (effect) {
             // quick from the start of an arena run, and faster with the difficulty and the overtime

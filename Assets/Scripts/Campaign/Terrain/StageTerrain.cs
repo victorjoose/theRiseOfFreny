@@ -10,7 +10,7 @@ using UnityEngine.Tilemaps;
 //   ladders (Tileset_90..94)         climbed with up and down (Ladder, LadderClimber)
 //   acid and water (the Liquids sheet)   not solid; Liquid pools (LiquidSwimmer on Freny)
 //   props on a solid tilemap (vases, chains, webs, arches, statues, banners...)   no collider
-// Before, every tile on a tilemap with a collider was solid, so Freny bumped her head on ledges,
+// Before, every tile on a tilemap with a collider was solid, so Freny bumped his head on ledges,
 // stood on spikes and walked on chains.
 public static class StageTerrain {
 

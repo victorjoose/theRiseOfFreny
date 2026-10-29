@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 public static class ArenaBootstrap {
 
     private const string ArenaSceneName = "ZE Arena";
+    private const float PropRegrowSeconds = 90f;   // a broken vase, crate or barrel comes back after this
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Init() {
@@ -34,8 +35,17 @@ public static class ArenaBootstrap {
                 area.gameObject.SetActive(false);
             }
         }
-        // (enemies are kinematic bodies and would shove Freny: each one ignores her collider in
-        // Enemy.Init, here and in the campaign, so she walks through them)
+        // (enemies are kinematic bodies and would shove Freny: each one ignores his collider in
+        // Enemy.Init, here and in the campaign, so he walks through them)
+
+        // the vases, crates and barrels painted on the foreground tilemaps break like the campaign's
+        Breakable.FromTilemaps(PropRegrowSeconds);
+
+        if (!System.Array.Exists(FindCompat.All<ArenaDayNight>(), d => d.gameObject.scene == scene)) {
+            GameObject dayNight = new GameObject("Day Night");
+            SceneManager.MoveGameObjectToScene(dayNight, scene);
+            dayNight.AddComponent<ArenaDayNight>();
+        }
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null || playerObj.GetComponent<Player>() == null) {

@@ -1,13 +1,14 @@
 # Builds Freny's swappable helmets: for every frame of every sheet her Animator plays, finds the
 # grey helmet (the pixels above the orange neck, flood-filled from the top of the figure) and
-# puts the HUD's helmet icons on it (Items 100x100_6 for Rage, _7 for Berserker), the same art
-# the life bar shows. Grey pixels an icon leaves uncovered are repainted in its colours. Each
+# puts the HUD's helmet icons on it (Items 100x100_6 for Rage, _7 for Berserker, and _7 in red
+# for Rage with the Berserker armor), the same art the life bar shows. Grey pixels an icon leaves uncovered are repainted in its colours. Each
 # helmet becomes one small sprite cropped to the head and pivoted so that, drawn on the body's
 # transform, it sits exactly on the old helmet.
 #
 #   python3 freny_heads.py <repo root>
 #
-# Writes Assets/Sprites/Characters/Player/Resources/FrenyHeads/{rage,berserker}.png + .meta; FrenyMotion loads them by the
+# Writes Assets/Sprites/Characters/Player/Resources/FrenyHeads/{rage,berserker,rage_berserker}.png + .meta (and the red
+# Berserker icon for the HUD, rage_berserker_icon.png); FrenyMotion loads them by the
 # body sprite's name. Rerun it after changing the icons or any of her sheets. Frames with no helmet (white hit flash, death) get no head.
 import os, re, sys, random
 from PIL import Image
@@ -26,12 +27,14 @@ LIGHT, MID, SHADE, WHITE = (176, 162, 141), (129, 111, 109), (99, 86, 85), (239,
 PLUM, DARK, BLACK = (69, 40, 60), (48, 27, 42), (26, 17, 25)
 RED, DEEP_RED, PALE_RED = (208, 47, 47), (150, 32, 40), (240, 120, 105)
 
-# the HUD icons drawn on the head: cell index in Items 100x100.png
-ICONS = {'rage': 6, 'berserker': 7}
+# the HUD icons drawn on the head: cell index in Items 100x100.png, and a recolour
+RED_BERSERKER = {PLUM: RED, BLACK: PLUM}     # the horns stay bone
+ICONS = {'rage': (6, {}), 'berserker': (7, {}), 'rage_berserker': (7, RED_BERSERKER)}
 # the grey helmet's colours, for any helmet pixel an icon doesn't cover
 PALETTES = {
     'rage': {LIGHT: RED, MID: DEEP_RED, SHADE: PLUM, WHITE: PALE_RED},
     'berserker': {LIGHT: PLUM, MID: DARK, SHADE: BLACK, WHITE: PLUM},
+    'rage_berserker': {LIGHT: RED, MID: DEEP_RED, SHADE: PLUM, WHITE: RED},
 }
 ALIGN = {0: (.5, .5), 1: (0, 1), 2: (.5, 1), 3: (1, 1), 4: (0, .5), 5: (1, .5), 6: (0, 0), 7: (.5, 0), 8: (1, 0)}
 
@@ -111,14 +114,27 @@ def repaint(c, pal):
     return pal[min(pal, key=lambda k: abs(lum(k) - lum(c)))]
 
 
-def icon_art(index):
-    """the icon's art pixels {(x, y): rgb}, cropped to the drawing, and its size"""
+def icon_art(index, recolour):
+    """the icon's art pixels {(x, y): rgb}, cropped to the drawing and recoloured, and its size"""
     items = Image.open(os.path.join(ROOT, 'Assets/Sprites/Items/Items 100x100.png')).convert('RGBA')
     cell = items.crop((index * 100, 0, index * 100 + 100, 100))
     cell = cell.crop(cell.getbbox())
     w, h = cell.width // PX, cell.height // PX
-    return {(x, y): cell.getpixel((x * PX, y * PX))[:3] for x in range(w) for y in range(h)
-            if cell.getpixel((x * PX, y * PX))[3] > 0}, w, h
+    pix = {(x, y): cell.getpixel((x * PX, y * PX))[:3] for x in range(w) for y in range(h)
+           if cell.getpixel((x * PX, y * PX))[3] > 0}
+    return {p: recolour.get(c, c) for p, c in pix.items()}, w, h
+
+
+def save_icon(icon, name):
+    """an icon as its own tight sprite, for the HUD portrait"""
+    pix, w, h = icon
+    im = Image.new('RGBA', (w * PX, h * PX))
+    for (x, y), c in pix.items():
+        im.paste(c + (255,), (x * PX, y * PX, x * PX + PX, y * PX + PX))
+    path = os.path.join(OUT, name + '_icon.png')
+    im.save(path)
+    random.seed(7)
+    write_meta(ROOT, path + '.meta', [('Freny ' + name.replace('_', ' ') + ' helmet', 0, 0, im.width, im.height, (0.5, 0.5))])
 
 
 def put_icon(head, icon):
@@ -132,7 +148,7 @@ def put_icon(head, icon):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    icons = {kind: icon_art(i) for kind, i in ICONS.items()}
+    icons = {kind: icon_art(i, recolour) for kind, (i, recolour) in ICONS.items()}
     entries = []                       # (name, pixels {(x,y): rgb per helmet}, origin, pivot px)
     for sheet in SHEETS:
         img = Image.open(os.path.join(PLAYER, sheet + '.png')).convert('RGBA')
@@ -179,6 +195,7 @@ def main():
         atlas.save(os.path.join(OUT, kind + '.png'))
         write_meta(ROOT, os.path.join(OUT, kind + '.png.meta'), sprites)
         print(kind, len(sprites), 'heads', atlas.size)
+    save_icon(icons['rage_berserker'], 'rage_berserker')
 
 
 
