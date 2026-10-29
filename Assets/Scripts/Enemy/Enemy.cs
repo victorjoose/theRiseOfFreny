@@ -605,9 +605,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
         FaceTarget();
 
-        if (InAttackReach()) {
+        if (InAttackReach(LungeDistance)) {
             // close enough: wind up, then hit; the cooldown starts after the hit, so the rhythm is steady
-            if (Time.time >= nextAttackTime) {
+            if (Time.time >= nextAttackTime && CanStartAttack) {
                 attackRoutine = StartCoroutine(AttackRoutine());
             }
             return;
@@ -665,16 +665,51 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // true when the colliders are within attackDistance of touching and roughly at the same height.
     // Falls back to centre distance when a collider is missing (e.g. the player died and lost its collider).
-    protected bool InAttackReach() {
+    protected bool InAttackReach(float extra = 0f) {
         if (col == null || (rival == null && playerCol == null)) {
-            return distance <= attackDistance + 1f;
+            return distance <= attackDistance + extra + 1f;
         }
 
         Bounds mine = col.bounds;
         Bounds theirs = rival != null ? rival.BodyBounds : playerCol.bounds;
         float gapX = Mathf.Max(0f, Mathf.Max(theirs.min.x - mine.max.x, mine.min.x - theirs.max.x));
         bool sameHeight = theirs.max.y > mine.min.y && theirs.min.y < mine.max.y;
-        return sameHeight && gapX <= attackDistance;
+        return sameHeight && gapX <= attackDistance + extra;
+    }
+
+    // false while it must not start a punch (the Ciclope resting after a blow)
+    protected virtual bool CanStartAttack => true;
+
+    // the horizontal gap between its collider and its target's (0 when they overlap)
+    protected float TargetGap() {
+        if (col == null || (rival == null && playerCol == null)) {
+            return Mathf.Max(0f, distance - 1f);
+        }
+        Bounds mine = col.bounds;
+        Bounds theirs = rival != null ? rival.BodyBounds : playerCol.bounds;
+        return Mathf.Max(0f, Mathf.Max(theirs.min.x - mine.max.x, mine.min.x - theirs.max.x));
+    }
+
+    // a dash forward at the end of the wind-up (the red Golem): it starts its punch from this much
+    // farther away and closes the gap as it swings
+    protected virtual float LungeDistance => 0f;
+    private const float LungePart = 0.35f;   // the last part of the wind-up is the dash
+
+    private IEnumerator Lunge(float seconds) {
+        float dir = FacingRight ? 1f : -1f;
+        float speed = LungeDistance / Mathf.Max(0.05f, seconds);
+        float end = Time.time + seconds;
+        Fx.Dust(Feet, 6);
+        while (Time.time < end && !isDead) {
+            // stops at Freny (in reach), at a wall, spikes or the platform's edge
+            float gap = TargetGap() - attackDistance * 0.5f;
+            if (gap <= 0f || Blocked(dir) || !GroundAhead(dir)) {
+                yield break;
+            }
+            // never past Freny, even on a long frame (it went through him at 15 fps)
+            transform.position += Vector3.right * (dir * Mathf.Min(speed * Time.deltaTime, gap));
+            yield return null;
+        }
     }
 
     private IEnumerator AttackRoutine() {
@@ -682,7 +717,14 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             anim.SetTrigger("Attack");
         }
         PlaySound("windup");
-        yield return new WaitForSeconds(attackWindup * Tuning.EnemyWindup.Value);
+        float windup = attackWindup * Tuning.EnemyWindup.Value;
+        if (LungeDistance > 0f) {
+            // charge the punch, then dash in with it
+            yield return new WaitForSeconds(windup * (1f - LungePart));
+            yield return Lunge(windup * LungePart);
+        } else {
+            yield return new WaitForSeconds(windup);
+        }
         if (!isDead) {
             PlaySound("attack");
         }
@@ -1064,6 +1106,21 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // hits scaled below a point add up here until they make one
     private float wear;
+    // where the current hit from Freny landed, when the weapon knows (the Ciclope's eye)
+    protected Vector3? HitPoint { get; private set; }
+
+    // a sword hit or a shot that knows where it landed
+    public void Damage(int amount, float push, Vector3 at) {
+        HitPoint = at;
+        Damage(amount, push);
+        HitPoint = null;
+    }
+
+    public void ShotDamage(float push, Vector3 at) {
+        HitPoint = at;
+        ShotDamage(push);
+        HitPoint = null;
+    }
 
     private void ScaledHit(int amount, bool shot) {
         float scale = player_t != null ? HitScale(player != null ? player.Feet : player_t.position, shot) : 1f;

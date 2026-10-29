@@ -59,7 +59,7 @@ public class RangedAttack : MonoBehaviour {
 
         if (hit != null) {
             if (hit is Enemy enemy) {
-                enemy.ShotDamage(push);
+                enemy.ShotDamage(push, transform.position);
             } else {
                 hit.Damage();
             }

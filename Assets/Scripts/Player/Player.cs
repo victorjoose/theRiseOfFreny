@@ -200,6 +200,17 @@ public class Player : MonoBehaviour, IDamageable {
     // body and jump, for the autopilot's platform map (the same numbers the physics uses)
     public float JumpHeight => jumpHeight;
     public float MaxSpeed => _speed * runMultiplier;
+
+    // slowed down for a moment (wading through the Ciclope's vomit)
+    private float slowUntil;
+    private float slowFactor = 1f;
+    private float SlowFactor => Time.time < slowUntil ? slowFactor : 1f;
+    public bool Slowed => Time.time < slowUntil;
+
+    public void Slow(float factor, float seconds) {
+        slowFactor = Time.time < slowUntil ? Mathf.Min(slowFactor, factor) : factor;
+        slowUntil = Mathf.Max(slowUntil, Time.time + seconds);
+    }
     public float BodyHalfWidth => col2d ? col2d.bounds.extents.x : 0.28f;
     public float BodyHeight => col2d ? col2d.bounds.size.y : 1.3f;
     // the middle of his body (the transform sits near the head), where flyers should aim
@@ -339,7 +350,7 @@ public class Player : MonoBehaviour, IDamageable {
             velocity.x = Mathf.MoveTowards(velocity.x, 0f, knockbackDrag * Time.fixedDeltaTime);
         } else if (_dash == null || !_dash.IsDashing) {
             // while dashing, Dash owns the horizontal velocity
-            velocity.x = IsCrouching ? 0f : _input.Current.move * _speed * (IsRunning ? runMultiplier : 1f);
+            velocity.x = IsCrouching ? 0f : _input.Current.move * _speed * (IsRunning ? runMultiplier : 1f) * SlowFactor;
         }
 
         // fixed-height jump with a quick fall: holding the button doesn't change the height

@@ -143,7 +143,8 @@ public class HexballEffect : MonoBehaviour
         Vector2 p = transform.position;
         for (int i = Enemy.Active.Count - 1; i >= 0; i--) {
             Enemy enemy = Enemy.Active[i];
-            if (enemy == null || enemy == caster || enemy.IsDead) {
+            // the Ciclope's helpers' spells pass through it (José, 2026-10-29)
+            if (enemy == null || enemy == caster || enemy.IsDead || enemy is Cyclops) {
                 continue;
             }
             Vector2 c = enemy.Center;

@@ -74,7 +74,10 @@ public class MeleeAttack : MonoBehaviour
         int damage = owner ? owner.MeleeDamage : 1;
         int step = owner ? Mathf.Clamp(owner.ComboStep, 1, 3) : 1;
         if (hit is Enemy enemy) {
-            enemy.Damage(damage, ComboPush[step - 1]);
+            // where the blade meets the body: the middle of the hitbox, pulled onto the enemy
+            Collider2D blade = GetComponent<Collider2D>();
+            Vector3 at = blade != null ? (Vector3)other.ClosestPoint(blade.bounds.center) : other.bounds.center;
+            enemy.Damage(damage, ComboPush[step - 1], at);
         } else {
             hit.Damage();
         }

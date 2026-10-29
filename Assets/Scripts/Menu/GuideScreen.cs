@@ -141,7 +141,7 @@ public static class GuideScreen {
             "2 de vida.");
         Entry(parent, null, "Golem Vermelho",
             "Pedra vermelha e olhos acesos. Um tanque: 6 de vida (aguenta uma granada), quase não " +
-            "recua com os golpes e o soco tira 2 e derruba. De longe, joga uma mina que gruda no chão, " +
+            "recua com os golpes, e o soco tira 2 e derruba: ele carrega o soco e avança num dash junto. De longe, joga uma mina que gruda no chão, " +
             "pisca e explode como uma granada (tire o Freny de perto, ou acerte a mina antes). " +
             "Vale 500 pontos e 6 moedas. Na Arena, só depois de 50 mil pontos.");
         Entry(parent, null, "Escudeiro",
@@ -150,11 +150,14 @@ public static class GuideScreen {
             "dele (pulando por cima ou na hora do ataque também vale); quanto mais difícil, mais rápido ele vira. " +
             "6 de vida, 300 pontos.");
         Entry(parent, null, "Ciclope",
-            "O chefe gigante da Arena: chega no centro do chão a cada 50 mil pontos e, enquanto ele vive, " +
-            "ninguém mais aparece. 100 de vida, com a barra de chefe no topo. O soco tira 2 e joga o Freny " +
-            "longe; a pancada no chão solta uma onda pelo piso (pule!); o vômito deixa uma poça verde que " +
-            "queima. Depois de cada golpe ele descansa um pouco: é a hora de bater. Vale 5 000 pontos, " +
-            "30 moedas e deixa um baú.");
+            "O chefe gigante: chega no centro do chão aos 50 mil pontos e a cada 50 mil depois (dois de uma vez " +
+            "a partir de 150 mil), com dois feiticeiros para ajudar; o feitiço deles não fere o Ciclope. 100 de " +
+            "vida e barra de chefe. Não pula: fica no chão. Soco: 1 coração e arremessa o Freny longe. " +
+            "Pancada no chão: uma onda pelo piso, 2 corações e o mesmo arremesso (pule!). Bomba: de longe, uma mina " +
+            "3 vezes maior jogada com força, 2 corações. Vômito: um jato de até 7 de distância, em 2 de 5 ataques de perto, " +
+            "quando o Freny está a alguns passos ou embaixo (numa plataforma, o jato a atravessa e cai no andar de baixo). " +
+            "Ele se espalha numa poça larga que fica 6 s: o jato e a poça queimam, e a poça deixa o Freny lento. Depois de cada golpe ele descansa " +
+            "3 s: é a hora de bater. Acertar o olho tira o dobro. Vale 5 000 pontos, 30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",
             "Fica parado e lança uma bola a cada 5 segundos (o Supremo a cada 3,5); ela tira 2 e empurra, e abaixar desvia " +
             "de um tiro reto. " +

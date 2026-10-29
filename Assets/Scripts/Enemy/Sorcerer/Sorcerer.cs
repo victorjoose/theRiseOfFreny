@@ -16,6 +16,7 @@ public class Sorcerer : Enemy {
     // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where he is
     [SerializeField] private bool predictive = false;
     private float CastCooldown => predictive ? CastCooldownSupreme : CastCooldownPlain;
+    public bool IsSupreme => predictive;
     private float nextCastTime;
     private Rigidbody2D playerRb;
     // set by the arena director for a sorcerer on a tower, which Freny can't climb to: after this
