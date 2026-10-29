@@ -60,6 +60,9 @@ public class ArenaDayNight : MonoBehaviour {
 
     // tests and screenshots: when 0..1, the cycle stays at this point of the day
     public static float PhaseOverride = -1f;
+    // how much daylight there is right now, 0 (night, or no cycle) to 1 (full day): the hexballs
+    // read it to draw their dark rim, which keeps them visible against the bright day
+    public static float Daylight { get; private set; }
 
     private Camera cam;
     private float startTime;
@@ -216,10 +219,16 @@ public class ArenaDayNight : MonoBehaviour {
         }
     }
 
+    // leaving the arena (campaign, menu) is always night for the hexballs
+    private void OnDisable() {
+        Daylight = 0f;
+    }
+
     private void LateUpdate() {
         float phase = Phase;
         float sunHeight = Mathf.Sin(phase * 2f * Mathf.PI);
         float day = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.12f, 0.2f, sunHeight));
+        Daylight = day;
         float dusk = Mathf.Clamp01(1f - Mathf.Abs(sunHeight - 0.02f) / 0.22f);
 
         float halfHeight = cam.orthographicSize;

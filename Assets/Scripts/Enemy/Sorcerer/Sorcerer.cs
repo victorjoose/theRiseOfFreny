@@ -6,8 +6,9 @@ public class Sorcerer : Enemy {
     public GameObject hexballEffectPrefab;
     [SerializeField] private float castRange = 100f;  // the sorcerer always knows where Freny is and keeps casting
     [SerializeField] private float castCooldown = 1.6f;
-    // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second)
-    private const int HomingScore = 15000;
+    // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second);
+    // José, 2026-10-29: only from 50k on (was 15k)
+    private const int HomingScore = 50000;
     private const float HomingTurn = 70f;
     // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where he is
     [SerializeField] private bool predictive = false;
