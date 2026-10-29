@@ -87,7 +87,7 @@ public class FrenyMotion : MonoBehaviour {
     private static readonly Swing[] Swings = {
         new Swing(45f, 105f, -15f, -15f, 0.035f, 0.065f),
         new Swing(-45f, -60f, 75f, 105f, 0.03f, 0.06f),
-        new Swing(90f, 150f, -45f, -75f, 0.08f, 0.07f),
+        new Swing(90f, 150f, -45f, -75f, 0.06f, 0.07f),
     };
     private const float WindupPull = 15f;  // the sword keeps drawing back a little during the wind-up
     private const int SwingMin = -60, SwingMax = 90, BladeMin = -90, BladeMax = 180, AngleStep = 15;
@@ -380,7 +380,7 @@ public class FrenyMotion : MonoBehaviour {
             if (arcPending && sinceSlash >= windup) {
                 arcPending = false;
                 float scale = GreatSword ? GreatSwordScale : 1f;
-                SlashArc.Spawn(transform, body, hand + new Vector2(ArcAhead * scale, ArcLift), ArcRadius * scale,
+                SlashArc.Spawn(this, transform, body, hand + new Vector2(ArcAhead * scale, ArcLift), ArcRadius * scale,
                     ArcFrom, ArcTo, GreatSword, false, SlashArc.DefaultLife, 1f);
             }
             strikePending = false;
@@ -391,7 +391,7 @@ public class FrenyMotion : MonoBehaviour {
                 // the smear follows the tip of the blade, around his shoulder
                 arcPending = false;
                 float radius = (GreatSword ? ArmAndGreatBlade : ArmAndBlade) * (slashStep == 3 ? 1.08f : 1f);
-                SlashArc.Spawn(body.transform, body, Shoulder, radius, swing.bladeFrom, swing.bladeTo, GreatSword,
+                SlashArc.Spawn(this, body.transform, body, Shoulder, radius, swing.bladeFrom, swing.bladeTo, GreatSword,
                     slashStep == 3, swing.cut * 1.6f, slashStep == 3 ? 1.5f : 1.15f);
             }
         }
@@ -433,13 +433,19 @@ public class FrenyMotion : MonoBehaviour {
             swordBox.localRotation = Quaternion.identity;
             swordBox.localScale = Vector3.one;
             if (swordCollider) {
-                swordCollider.offset = new Vector2(reach * 0.5f, 0.2f);
-                swordCollider.size = new Vector2(reach, 1.05f);
+                // the overhead finisher comes down from above his head: it covers higher up
+                bool overhead = slashStep == 3 && !crouching;
+                swordCollider.offset = new Vector2(reach * 0.5f, overhead ? 0.4f : 0.2f);
+                swordCollider.size = new Vector2(reach, overhead ? 1.45f : 1.05f);
             }
         }
 
         // the Animator's slash frames are the cue: while they play he is swinging
-        bool cutFrame = body.sprite && body.sprite.name.StartsWith("Player slash_");
+        // and between two hits of a combo the arm and blade stay where the last cut ended, so the
+        // combo reads as one move instead of the sword vanishing between hits
+        bool cutFrame = body.sprite && body.sprite.name.StartsWith("Player slash_")
+            || (!crouching && !climbing && !dashing && Time.time - shotStart > 0.3f
+                && player && player.ComboContinues && !player.IsStunned);
         UpdatePose(crouching, climbing, grounded, sinceSlash, vy, dt, cutFrame);
         UpdateSword(crouching, sinceSlash, cutFrame);
         UpdateHead();
@@ -582,13 +588,14 @@ public class FrenyMotion : MonoBehaviour {
         private Mesh mesh;
         private Vector3[] verts;
         private Color[] colors;
-        private float born;
         private float from, to, radius, squashY, life, thickness;
+        private float age;            // stands still during Freny's hit-stop, like his blade
+        private FrenyMotion motion;
         private Color tint;
 
         // life: how long it lasts (its head reaches the end of the cut at life / 1.6); thickness
         // scales how wide the band is
-        public static void Spawn(Transform owner, SpriteRenderer body, Vector2 center, float radius, float from, float to,
+        public static void Spawn(FrenyMotion motion, Transform owner, SpriteRenderer body, Vector2 center, float radius, float from, float to,
                 bool greatSword, bool finisher, float life, float thickness) {
             GameObject go = new GameObject("SlashArc");
             go.transform.SetParent(owner, false);
@@ -600,6 +607,7 @@ public class FrenyMotion : MonoBehaviour {
             arc.squashY = 1f;
             arc.life = life;
             arc.thickness = thickness;
+            arc.motion = motion;
             arc.tint = greatSword ? new Color(0.65f, 0.85f, 1f) : new Color(1f, 0.97f, 0.88f);
             if (finisher) {
                 arc.tint = Color.Lerp(arc.tint, new Color(1f, 0.8f, 0.4f), 0.5f); // a warmer flash
@@ -608,7 +616,6 @@ public class FrenyMotion : MonoBehaviour {
         }
 
         private void Build(SpriteRenderer body) {
-            born = Time.time;
             mesh = new Mesh();
             verts = new Vector3[(Segments + 1) * 2];
             colors = new Color[verts.Length];
@@ -626,11 +633,18 @@ public class FrenyMotion : MonoBehaviour {
             mr.sharedMaterial = VertexColorMaterial;
             mr.sortingLayerID = body.sortingLayerID;
             mr.sortingOrder = body.sortingOrder + 3; // over the sword and the head
-            Update();
+            Draw();
         }
 
         private void Update() {
-            float t = (Time.time - born) / life;
+            if (motion == null || Time.time >= motion.frozenUntil) {
+                age += Time.deltaTime;
+            }
+            Draw();
+        }
+
+        private void Draw() {
+            float t = age / life;
             if (t >= 1f) {
                 Destroy(gameObject);
                 return;

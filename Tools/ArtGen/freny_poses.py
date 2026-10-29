@@ -85,6 +85,9 @@ WHITE, LIGHT, MID, PLUM, DARK, BLUE, GOLD = (239, 239, 233, 255), (176, 162, 141
     (69, 40, 60, 255), (48, 27, 42, 255), (99, 155, 255, 255), (219, 165, 40, 255)
 
 
+OUTLINE = (26, 17, 25, 255)
+
+
 def blade_colour(great, u, j, length, width):
     """colour of the blade at u pixels from the grip, row j of width (0 = the top edge)"""
     if great:
@@ -120,6 +123,11 @@ def blade(great, deg):
             if great and int(u) == 3:
                 off *= 1.8                                   # the guard sticks out
             pix[(math.floor(u * dx + off * nx + 0.5), math.floor(u * dy + off * ny + 0.5))] = c
+    # a dark outline, so the blade reads against the helmet when it is taken back over his head
+    for (x, y) in list(pix):
+        for nb in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if nb not in pix:
+                pix[nb] = OUTLINE
     return pix
 
 
