@@ -145,8 +145,8 @@ public class ArenaRunManager : MonoBehaviour {
             case Online.OnlineServices.RecordStatus.CanSave: status = "Salve o recorde para ele ir para o ranking"; break;
             case Online.OnlineServices.RecordStatus.Saving: status = "Salvando o recorde..."; break;
             case Online.OnlineServices.RecordStatus.Saved: status = "<color=#7CFC8A>Recorde salvo no ranking!</color>"; break;
-            case Online.OnlineServices.RecordStatus.Refused: status = "<color=#FF7A7A>O servidor não aceitou o recorde: " + online.RecordNote + "</color>"; break;
-            default: status = "<color=#FF7A7A>O recorde não pode ser salvo: " + online.RecordNote + "</color>"; break;
+            case Online.OnlineServices.RecordStatus.Refused: status = "<color=#FF7A7A>Recusado pelo servidor: " + online.RecordNote + "</color>"; break;
+            default: status = "<color=#FF7A7A>Não vai para o ranking: " + online.RecordNote + "</color>"; break;
         }
         return "<size=30><color=#FFD84A>" + (online.RecordOnlyToday ? "RECORDE DO DIA!" : "NOVO RECORDE!") + "</color></size>\n" +
                "<size=16>" + online.RecordScore + " pontos no " + ArenaDifficulty.Label(online.RecordLevel) + "</size>\n" +

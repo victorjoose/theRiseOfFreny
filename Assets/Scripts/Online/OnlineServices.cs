@@ -272,7 +272,7 @@ namespace Online {
                 if (run.allTime) {
                     bool written = false;
                     yield return SubmitWithRetry(LeaderboardService.Collection(run.level), run.score, signed.sig, ok => written = ok);
-                    if (!written) refused = "o ranking não gravou a pontuação";
+                    if (!written) refused = "o ranking não gravou";
                 }
                 // today's board too (the site's Diário); a lower score than today's best there is
                 // simply not taken
@@ -280,7 +280,7 @@ namespace Online {
                     bool written = false;
                     yield return SubmitWithRetry(signed.dailyBoard, run.score, signed.dailySig, ok => written = ok);
                     if (written) SetDailyBest(run.level, signed.dailyBoard, run.score);
-                    else if (!run.allTime) refused = "o ranking do dia não gravou a pontuação";
+                    else if (!run.allTime) refused = "o ranking do dia não gravou";
                 }
             }
             // still the record the banner shows (no newer run ended since)
@@ -415,11 +415,11 @@ namespace Online {
             if (!record) {
                 SetRecord(RecordStatus.None);
             } else if (assisted) {
-                SetRecord(RecordStatus.CannotSave, "o piloto automático jogou nesta corrida");
+                SetRecord(RecordStatus.CannotSave, "o piloto automático jogou");
             } else if (State != Status.Online) {
                 SetRecord(RecordStatus.CannotSave, "sem conexão com o servidor");
             } else if (_runLog == null || _runToken == null) {
-                SetRecord(RecordStatus.CannotSave, "a partida não conseguiu falar com o servidor no começo");
+                SetRecord(RecordStatus.CannotSave, "sem ticket do servidor");
             } else {
                 _pending = new PendingRecord { level = _runLevel, score = score, previousBest = previousBest, allTime = allTime, log = _runLog, token = _runToken };
                 SetRecord(RecordStatus.CanSave);
