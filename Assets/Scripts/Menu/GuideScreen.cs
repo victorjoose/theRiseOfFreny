@@ -147,7 +147,8 @@ public static class GuideScreen {
         Entry(parent, null, "Escudeiro",
             "Anda atrás de um escudo de espinhos virado para o Freny: golpe e tiro de frente batem " +
             "no escudo. Acerte pelas costas, pule por cima, bata quando ele ataca ou use granada. " +
-            "3 golpes seguidos no escudo deixam ele tonto por um momento. 4 de vida, 300 pontos.");
+            "3 golpes seguidos no escudo deixam ele tonto por um momento. Um tanque: 10 de vida, e tiro tira só " +
+            "1/3 (3 tiros = 1 de vida); espada e granada tiram o normal. Um pouco mais rápido que o Golem. 300 pontos.");
         Entry(parent, null, "Ciclope",
             "O chefe gigante da Arena: chega a cada 25 mil pontos e, enquanto ele vive, ninguém " +
             "mais aparece. 40 de vida, com a barra no topo da tela. O soco tira 2 e joga o Freny " +

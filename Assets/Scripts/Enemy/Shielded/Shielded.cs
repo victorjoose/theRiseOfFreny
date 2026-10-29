@@ -15,11 +15,14 @@ public class Shielded : Enemy {
     private float staggeredUntil;
 
     protected override int HitDamage => 1;
+    // a tank (José, 2026-10-29): shots take a third of a point, the sword and grenades the usual
+    protected override float ShotFactor => 1f / 3f;
+    protected override float SpeedFactor => 1.3f;   // a bit quicker than the Golem
     protected override float HitPush => 2f;
     protected override Color DeathColor => new Color(0.35f, 0.4f, 0.75f);
 
     public override void Init() {
-        health = 4;
+        health = 10;
         speed = 2;
         coins = 4;
         scoreToAdd = 300;

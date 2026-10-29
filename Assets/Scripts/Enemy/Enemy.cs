@@ -336,13 +336,12 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         ContactFilter2D filter = new ContactFilter2D();
         filter.useTriggers = false;
         filter.SetLayerMask(GroundMask);
-        int count = Physics2D.Raycast(new Vector2(feet.x, feet.y + height), Vector2.down, filter, groundHits, probe);
-        float floorY = float.NegativeInfinity;
-        for (int i = 0; i < count; i++) {
-            float y = groundHits[i].point.y;
-            if (y <= feet.y + StepUp && y > floorY) {
-                floorY = y;
-            }
+        // first from just above the feet: a ray reports each collider once, so from a tall
+        // enemy's head height it met a step of the same tilemap above the feet and missed the
+        // floor under them (the Ciclope sank through the arena floor beside the side steps)
+        float floorY = FloorBelow(feet, StepUp + 0.05f, StepUp + 0.05f + Mathf.Max(0.3f, fallStep + 0.1f), filter);
+        if (floorY == float.NegativeInfinity) {
+            floorY = FloorBelow(feet, height, probe, filter);
         }
 
         if (floorY > float.NegativeInfinity) {
@@ -370,7 +369,20 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         transform.position += Vector3.down * (fallVelocity * dt);
     }
 
-    // is there floor to step on just ahead (within one unit below the feet)? Ground enemies stop
+    // the highest ground top at most StepUp above the feet, on a ray cast down from lift above them
+    private float FloorBelow(Vector3 feet, float lift, float probe, ContactFilter2D filter) {
+        int count = Physics2D.Raycast(new Vector2(feet.x, feet.y + lift), Vector2.down, filter, groundHits, probe);
+        float floorY = float.NegativeInfinity;
+        for (int i = 0; i < count; i++) {
+            float y = groundHits[i].point.y;
+            if (y <= feet.y + StepUp && y > floorY) {
+                floorY = y;
+            }
+        }
+        return floorY;
+    }
+
+        // is there floor to step on just ahead (within one unit below the feet)? Ground enemies stop
     // or turn at platform edges instead of walking off into a hole
     protected bool GroundAhead(float direction) {
         if (col == null) {
@@ -562,7 +574,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         transform.position = Vector2.MoveTowards(transform.position, goal, MoveSpeed * Time.deltaTime);
     }
 
-    protected float MoveSpeed => speed * Tuning.EnemySpeed.Value * (ArenaBounds.Active ? ArenaDifficulty.SpeedFactor(Small) * ArenaDirector.SpeedRamp : 1f);
+    // a little faster or slower than its whole-number speed
+    protected virtual float SpeedFactor => 1f;
+    protected float MoveSpeed => speed * SpeedFactor * Tuning.EnemySpeed.Value * (ArenaBounds.Active ? ArenaDifficulty.SpeedFactor(Small) * ArenaDirector.SpeedRamp : 1f);
 
     public void ChangeDirection() {
         if (pointA == null || pointB == null) {
@@ -1060,7 +1074,27 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         TakeDamage();
     }
 
-    // a sword hit: push scales how far it is shoved back (the combo's third hit pushes harder)
+    // how much of a point a bullet or shotgun pellet takes (the Escudeiro shrugs shots off)
+    protected virtual float ShotFactor => 1f;
+    private float shotWear;
+
+    // a bullet or pellet from Freny: a full point, or ShotFactor of one, adding up until it makes one
+    public void ShotDamage(float push) {
+        if (isDead || BlockedHit()) {
+            return;
+        }
+        shotWear += ShotFactor;
+        if (shotWear < 1f) {
+            TakeHit(true);   // it flinches, but holds
+            return;
+        }
+        shotWear -= 1f;
+        pushScale = push;
+        TakeDamage();
+        pushScale = 1f;
+    }
+
+        // a sword hit: push scales how far it is shoved back (the combo's third hit pushes harder)
     public void Damage(int amount, float push) {
         pushScale = push;
         Damage(amount);
