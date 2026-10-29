@@ -237,6 +237,7 @@ public class ArenaDirector : MonoBehaviour {
 
         UpdateBoss();
         UpdateBossHelpers();
+        UpdateBossFodder();
         int present = AliveEnemies() + pendingSpawns;
         bool spawnNow = BossAround ? Company() < BossCompany && !bossPending : present < MaxAlive;
         if (Time.time >= nextSpawnTime && spawnNow) {
@@ -268,14 +269,52 @@ public class ArenaDirector : MonoBehaviour {
     }
 
     // the usual enemies out during a Ciclope fight (not the Ciclopes, not the sorcerers)
+    // (the one bat and one bug that keep after Freny don't count: BossFodder)
     private int Company() {
         int count = pendingSpawns;
+        int bats = 0, bugs = 0;
         foreach (Enemy enemy in Enemy.Active) {
             if (enemy && !enemy.IsDead && !(enemy is Cyclops) && !(enemy is Sorcerer)) {
                 count++;
+                bats += enemy is Bat ? 1 : 0;
+                bugs += enemy is Bug ? 1 : 0;
             }
         }
-        return count;
+        return count - Mathf.Min(1, bats) - Mathf.Min(1, bugs);
+    }
+
+    // José, 2026-10-29: in a Ciclope fight Freny has little to kill and his combo would die, so one
+    // bat and one bug are always coming after him; a new one comes when one dies
+    private const float FodderGap = 1.5f;
+    private float nextBat, nextBug;
+
+    private void UpdateBossFodder() {
+        if (Cyclops.Current == null) {
+            return;
+        }
+        int bats = 0, bugs = 0;
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy && !enemy.IsDead) {
+                bats += enemy is Bat ? 1 : 0;
+                bugs += enemy is Bug ? 1 : 0;
+            }
+        }
+        if (bats == 0 && Time.time >= nextBat && SpawnKind<Bat>()) {
+            nextBat = Time.time + portalSeconds + FodderGap;   // its portal is still opening
+        }
+        if (bugs == 0 && Time.time >= nextBug && SpawnKind<Bug>()) {
+            nextBug = Time.time + portalSeconds + FodderGap;
+        }
+    }
+
+    private bool SpawnKind<T>() where T : Enemy {
+        foreach (Entry entry in enemies) {
+            if (entry.prefab != null && entry.prefab.GetComponent<T>() != null) {
+                StartCoroutine(SpawnWithPortal(entry));
+                return true;
+            }
+        }
+        return false;
     }
 
     private int AliveEnemies() {

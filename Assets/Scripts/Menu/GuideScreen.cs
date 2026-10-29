@@ -153,7 +153,7 @@ public static class GuideScreen {
             "O chefe gigante: chega no centro do chão aos 50 mil pontos e depois a cada 100 mil (150 mil, 250 mil...); " +
             "dois de uma vez só a partir de 1 milhão, com as barras embaixo, uma de cada lado. Cada luta traz mais " +
             "ajuda: 2 feiticeiros comuns na primeira, um a mais em cada uma seguinte (até 5), e a partir da segunda " +
-            "os outros inimigos também continuam vindo. O feitiço dos feiticeiros não fere o Ciclope. 100 de " +
+            "os outros inimigos também continuam vindo. Sempre vem um morcego e um inseto atrás do Freny, para manter o combo vivo. O feitiço dos feiticeiros não fere o Ciclope. 100 de " +
             "vida e barra de chefe. Não pula: fica no chão. Soco: 1 coração e arremessa o Freny longe. " +
             "Pancada no chão: uma onda pelo piso, 2 corações e o mesmo arremesso (pule!). Bomba: de longe, uma mina " +
             "3 vezes maior jogada com força, 2 corações. Vômito: um jato de até 7 de distância, em 2 de 5 ataques de perto, " +
