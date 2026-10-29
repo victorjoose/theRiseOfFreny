@@ -26,6 +26,10 @@ public class UIManager : MonoBehaviour {
 
     private ComboManager comboManager;
 
+    // each kill that scores: the enemy and the combo multiplier it got. OnlineServices logs them so
+    // the ranking server can check the run adds up to its score
+    public static event Action<Enemy, float> KillScored;
+
     private void Awake() {
         _instance = this;
         if (scoreCountHUD && int.TryParse(scoreCountHUD.text, out int initialScore)) {
@@ -76,10 +80,12 @@ public class UIManager : MonoBehaviour {
         if (!comboManager) {
             // scenes without a combo counter just score the base value
             UpdateScore(enemy.scoreToAdd, true);
+            KillScored?.Invoke(enemy, 1f);
             return;
         }
 
         UpdateScore(enemy.scoreToAdd * comboManager.GetCombo(), true); // todo -> each enemy = combo multiplier
+        KillScored?.Invoke(enemy, comboManager.GetCombo());
         comboManager.HandleComboManager();
     }
 }

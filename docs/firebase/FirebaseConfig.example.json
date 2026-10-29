@@ -1,4 +1,5 @@
 {
   "apiKey": "COLE_AQUI_A_WEB_API_KEY",
-  "projectId": "seu-projeto-firebase"
+  "projectId": "seu-projeto-firebase",
+  "apiUrl": ""
 }

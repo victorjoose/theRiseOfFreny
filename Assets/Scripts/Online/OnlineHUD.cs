@@ -27,6 +27,7 @@ namespace Online {
         private void Start() {
             _online = GetComponent<OnlineServices>();
             _online.RunReported += OnRunReported;
+            _online.RankingRefused += OnRankingRefused;
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             Canvas canvas = MenuKit.CreateCanvas("Online Hint", 50, transform);
@@ -40,7 +41,10 @@ namespace Online {
         }
 
         private void OnDestroy() {
-            if (_online != null) _online.RunReported -= OnRunReported;
+            if (_online != null) {
+                _online.RunReported -= OnRunReported;
+                _online.RankingRefused -= OnRankingRefused;
+            }
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
@@ -79,6 +83,10 @@ namespace Online {
                 : score + " pontos (recorde no " + ArenaDifficulty.Label(level) + ": " + _online.BestFor(level) + ")";
             if (newBest) Sfx.Play("new_record");
             _openAt = Time.unscaledTime + AutoOpenDelay;
+        }
+
+        private void OnRankingRefused(long score, string reason) {
+            LastResult = score + " pontos · o servidor não aceitou no ranking (" + reason + ")";
         }
     }
 }
