@@ -861,7 +861,9 @@ public class Player : MonoBehaviour, IDamageable {
             Sfx.Play("sword_hit", transform.position);
             return true;
         }
+        int before = Health;
         Health = Mathf.Max(Health - toLife, 0);
+        DamageNumbers.Show(HeadPoint + Vector3.up * 0.4f, "-" + (before - Health), DamageNumbers.Hurt);
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, true);
         }
@@ -913,7 +915,11 @@ public class Player : MonoBehaviour, IDamageable {
     }
 
     private void Heal(int amount) {
+        int before = Health;
         Health = Mathf.Min(Health + amount, MaxHealth);
+        if (Health > before) {
+            DamageNumbers.Show(HeadPoint + Vector3.up * 0.4f, "+" + (Health - before), DamageNumbers.Healed);
+        }
         if (UIManager.Instance) {
             UIManager.Instance.UpdateLives(Health, false);
         }

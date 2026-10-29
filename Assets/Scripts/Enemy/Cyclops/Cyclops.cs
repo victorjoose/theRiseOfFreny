@@ -1,8 +1,9 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 // The Ciclope, the Arena's boss (ArenaDirector calls one every BossEvery points). Slow and huge,
-// with a boss bar on top of the screen instead of the small one. Three attacks:
+// with the game's boss bar (BossHealth prefab) at the top of the screen instead of the small one. Three attacks:
 // - the punch up close: 2 hearts and a big knockback (José: "o knockback do ciclope deve ser grande");
 // - the smash: it pounds the floor and a shockwave runs both ways along it (jump over it);
 // - the vomit: a puddle in front of it that burns for a few seconds.
@@ -57,12 +58,16 @@ public class Cyclops : Enemy {
         nextSmash = Time.time + 4f;
         nextVomit = Time.time + 7f;
         Current = this;
+        ShowBar();
     }
 
     protected override void OnDisable() {
         base.OnDisable();
         if (Current == this) {
             Current = null;
+        }
+        if (bar != null) {
+            Destroy(bar);
         }
     }
 
@@ -130,24 +135,52 @@ public class Cyclops : Enemy {
     }
 
     // the boss bar, top centre
-    private void OnGUI() {
-        if (isDead || GameMenus.Paused || maxHealth <= 0) {
+    // the game's boss bar (Prefabs/HUD/Resources/BossHealth, taken from stage 1-9): the Boss
+    // Health frame with two sliders, the life and a darker trail that follows it down
+    private GameObject bar;
+    private Slider life;
+    private Slider trail;
+
+    private void ShowBar() {
+        GameObject prefab = Resources.Load<GameObject>("BossHealth");
+        Canvas canvas = null;
+        if (UIManager.Instance != null && UIManager.Instance.healthBars != null && UIManager.Instance.healthBars.Length > 0 && UIManager.Instance.healthBars[0] != null) {
+            canvas = UIManager.Instance.healthBars[0].canvas;
+        }
+        if (prefab == null || canvas == null) {
             return;
         }
-        float scale = Screen.width / 1920f;
-        float width = 640f * scale, height = 22f * scale;
-        // under the score and combo lines of the HUD (CombatHud), not over them
-        Rect bar = new Rect((Screen.width - width) / 2f, 200f * scale, width, height);
-        Color old = GUI.color;
-        GUI.color = new Color(0.04f, 0.02f, 0.08f, 0.9f);
-        GUI.DrawTexture(new Rect(bar.x - 3f * scale, bar.y - 3f * scale, bar.width + 6f * scale, bar.height + 6f * scale), Texture2D.whiteTexture);
-        GUI.color = new Color(0.75f, 0.2f, 0.85f);
-        GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * Mathf.Clamp01((float)Health / maxHealth), bar.height), Texture2D.whiteTexture);
-        GUI.color = old;
-        GUIStyle style = new GUIStyle(GUI.skin.label) {
-            font = MenuKit.Font, alignment = TextAnchor.MiddleCenter, fontSize = Mathf.Max(8, Mathf.RoundToInt(14f * scale)),
-        };
-        style.normal.textColor = MenuKit.TextColor;
-        GUI.Label(new Rect(bar.x, bar.y - 26f * scale, bar.width, 24f * scale), "CICLOPE", style);
+        bar = Instantiate(prefab, canvas.rootCanvas.transform, false);
+        bar.name = "BossHealth";
+        foreach (Slider slider in bar.GetComponentsInChildren<Slider>(true)) {
+            if (slider.name == "HealthBar") {
+                life = slider;
+            } else {
+                trail = slider;
+            }
+            slider.interactable = false;
+            slider.value = 1f;
+        }
+    }
+
+    private void UpdateBar() {
+        if (bar == null) {
+            return;
+        }
+        bar.SetActive(!GameMenus.Paused);
+        float value = Mathf.Clamp01((float)Health / Mathf.Max(1, maxHealth));
+        if (life != null) {
+            life.value = value;
+        }
+        if (trail != null) {
+            trail.value = trail.value > value ? Mathf.MoveTowards(trail.value, value, 0.4f * Time.deltaTime) : value;
+        }
+    }
+
+    private void LateUpdate() {
+        if (isDead && bar != null) {
+            Destroy(bar);
+        }
+        UpdateBar();
     }
 }
