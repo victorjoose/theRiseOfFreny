@@ -102,7 +102,6 @@ public class Cyclops : Enemy {
         attackDistance = 0.6f;
         attackWindup = 0.5f;
         attackCooldown = 3.5f;
-        maxJumpHeight = 2.6f;   // heavy: only the low platforms   // a breather after each punch, or it was too strong
         radius = 16f;
         sightHeight = 4f;
         base.Init();
@@ -211,6 +210,9 @@ public class Cyclops : Enemy {
     }
 
     private float Facing => FacingRight ? 1f : -1f;
+
+    // José, 2026-10-29: he stays on the floor; Freny up on a platform gets the bomb and the vomit
+    protected override bool Climbs => false;
 
     private void ThrowBomb() {
         FacePlayer();

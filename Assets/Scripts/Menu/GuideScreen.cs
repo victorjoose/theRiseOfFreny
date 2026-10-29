@@ -152,7 +152,7 @@ public static class GuideScreen {
         Entry(parent, null, "Ciclope",
             "O chefe gigante: chega no centro do chão aos 50 mil pontos e a cada 50 mil depois (dois de uma vez " +
             "a partir de 150 mil), com dois feiticeiros para ajudar; o feitiço deles não fere o Ciclope. 100 de " +
-            "vida e barra de chefe. Pula pelas plataformas baixas. Soco: 1 coração e arremessa o Freny longe. " +
+            "vida e barra de chefe. Não pula: fica no chão. Soco: 1 coração e arremessa o Freny longe. " +
             "Pancada no chão: uma onda pelo piso, 2 corações e o mesmo arremesso (pule!). Bomba: de longe, uma mina " +
             "3 vezes maior jogada com força, 2 corações. Vômito: em 2 de 5 ataques de perto, ou quando o Freny está " +
             "embaixo (um jato que atravessa a plataforma e cai no andar de baixo, onde se espalha); o jato e a poça verde queimam, e a poça deixa o Freny lento. Depois de cada golpe ele descansa " +
