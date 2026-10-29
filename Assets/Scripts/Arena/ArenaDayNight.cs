@@ -39,11 +39,17 @@ public class ArenaDayNight : MonoBehaviour {
     private static readonly Color DuskTop = new Color32(96, 84, 160, 255);
     private static readonly Color DuskBottom = new Color32(244, 148, 96, 255);
 
-    // global light: the scene's own colour at night, warm white by day, orange at dawn and dusk
-    private const float DayLightBoost = 1.8f;
-    private static readonly Color DayLight = new Color(1f, 0.97f, 0.9f);
+    // global light: the scene's own colour at night, warm white by day, orange at dawn and dusk.
+    // José, 2026-10-29: the day was too bright and the enemies turned blue. The torches' lights
+    // reach 10 units, and at full strength in blue they tinted everything near them; by day they
+    // now fade to a faint glow (the sun does the lighting), and the day light is lower (was 1.8)
+    // and warmer (was 1, 0.97, 0.9): the enemies are painted in navy blues, which a white light
+    // shows as plain blue
+    private const float DayLightBoost = 1.4f;
+    private static readonly Color DayLight = new Color(1f, 0.9f, 0.76f);
     private static readonly Color DuskLight = new Color(1f, 0.68f, 0.55f);
-    private static readonly Color BlueTorchLight = new Color(0.3f, 0.6f, 1f);
+    private static readonly Color BlueTorchLight = new Color(0.45f, 0.7f, 1f);
+    private const float DayTorchLight = 0.15f;   // of the torch light's night intensity
 
     // the sky's layers, behind the clouds (1) and the mountains (2)
     private const int NightSkyOrder = -10;
@@ -76,6 +82,7 @@ public class ArenaDayNight : MonoBehaviour {
 #if UNITY_5_3_OR_NEWER
         public Light2D light;
         public Color color;
+        public float intensity;
 #endif
     }
 
@@ -202,6 +209,7 @@ public class ArenaDayNight : MonoBehaviour {
             torch.light = flame.GetComponent<Light2D>();
             if (torch.light != null) {
                 torch.color = torch.light.color;
+                torch.intensity = torch.light.intensity;
             }
 #endif
             torches.Add(torch);
@@ -257,6 +265,7 @@ public class ArenaDayNight : MonoBehaviour {
 #if UNITY_5_3_OR_NEWER
             if (torch.light != null) {
                 torch.light.color = Color.Lerp(torch.color, BlueTorchLight, day);
+                torch.light.intensity = torch.intensity * Mathf.Lerp(1f, DayTorchLight, day);
             }
 #endif
         }
