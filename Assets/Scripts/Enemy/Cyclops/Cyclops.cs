@@ -13,7 +13,10 @@ public class Cyclops : Enemy {
     private const float SmashCooldown = 7f;
     private const float VomitCooldown = 9f;
     private const float SmashReach = 9f;
-    private const float VomitReach = 6f;
+    private const float VomitReach = 7f;    // the jet reaches this far (José, 2026-10-29: a ranged attack too)
+    private const float JetMinDistance = 2.5f;
+    private const float PuddleWidth = 4f;   // wide and lasting: a stretch of floor Freny can't walk on
+    private const float PuddleSeconds = 6f;
     private const string Sheets = "Cyclops/Cyclops ";
     // the red Golem's mine, thrown much harder: fast and flat, hard to dodge
     private const float BombCooldown = 8f;
@@ -163,8 +166,8 @@ public class Cyclops : Enemy {
             ThrowBomb();
         } else if (Time.time >= nextSmash && dx < SmashReach && Mathf.Abs(dy) < 2.5f) {
             StartCoroutine(Smash());
-        } else if (Time.time >= nextVomit && dx < VomitReach && dy < -1.5f) {
-            StartCoroutine(Vomit());   // Freny down below, near: it throws up on him
+        } else if (Time.time >= nextVomit && dx < VomitReach && (dy < -1.5f || (dx >= JetMinDistance && dy < 1f))) {
+            StartCoroutine(Vomit());   // Freny down below, or a few steps away: a jet of vomit at him
         }
     }
 
@@ -268,7 +271,7 @@ public class Cyclops : Enemy {
         if (player != null && Mathf.Sign(player.Feet.x - mouth.x) == Facing) {
             reach = Mathf.Abs(player.Feet.x - mouth.x);
         }
-        AcidPuddle.Pour(mouth, Facing, reach, feet.y, player, 3f, 4f);
+        AcidPuddle.Pour(mouth, Facing, Mathf.Min(reach, VomitReach), feet.y, player, PuddleWidth, PuddleSeconds);
     }
 
     // the game's boss bar (Prefabs/HUD/Resources/BossHealth, taken from stage 1-9): the Boss

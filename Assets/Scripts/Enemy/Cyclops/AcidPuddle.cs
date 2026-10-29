@@ -194,10 +194,11 @@ public class VomitStream : MonoBehaviour {
     private void Trace(Vector3 mouth, float facing, float reach, float standingY, Player player) {
         ArenaMap map = player != null ? ArenaMap.Shared(player) : null;
         float drop = Mathf.Max(0.3f, mouth.y - standingY);
-        float flight = Mathf.Sqrt(2f * drop / Gravity);
-        float vx = facing * Mathf.Clamp(reach, 0.8f, 4f) / flight;   // lands above Freny when he is below
+        reach = Mathf.Clamp(reach, 0.8f, 8f);
+        float vy = reach > 2.5f ? 4f : 0f;   // far off it is a jet, shot a little upward
+        float flight = (vy + Mathf.Sqrt(vy * vy + 2f * Gravity * drop)) / Gravity;
+        float vx = facing * reach / flight;   // lands on Freny (or above him when he is below)
         Vector3 p = mouth;
-        float vy = 0f;
         Add(p);
         while (p.y > standingY) {
             float dt = 0.02f;
