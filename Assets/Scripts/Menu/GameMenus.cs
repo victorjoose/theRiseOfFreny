@@ -165,6 +165,7 @@ public class GameMenus : MonoBehaviour {
         }
         UpdateTouchButton();
         RedrawTextsOnResize();
+        GameCursor.Apply(gameplayScene && !paused && Application.isFocused);
 
         if (!gameplayScene) {
             return;
