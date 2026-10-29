@@ -151,7 +151,9 @@ public static class GuideScreen {
         Sprite face = art != null && art.frenyFace != null && art.frenyFace.Length > 0 ? art.frenyFace[0] : null;
         Entry(parent, face, "Automático ou Manual",
             "No automático o piloto joga por você e dá para assumir. Só corrida toda manual " +
-            "vale para o Ranking.");
+            "vale para o Ranking. Com o piloto ligado, aparece AUTO ao lado da cabeça do Freny. " +
+            "No automático, a próxima corrida começa 8 s depois; com 10 mil " +
+            "pontos ou mais, o jogo pergunta antes.");
         Entry(parent, art ? art.rageHelmet : null, "Dificuldade",
             "Fácil, Médio, Difícil ou Freny: quanto maior, mais inimigos, mais rápidos e mais cedo.");
         Entry(parent, art ? art.run : null, "XP e piloto automático",
