@@ -43,8 +43,10 @@ public class ArenaDayNight : MonoBehaviour {
     // José, 2026-10-29: the day was too bright and the enemies turned blue. The torches' lights
     // reach 10 units, and at full strength in blue they tinted everything near them; by day they
     // now fade to a faint glow (the sun does the lighting), and the day light is lower (was 1.8)
+    // and warmer (was 1, 0.97, 0.9): the enemies are painted in navy blues, which a white light
+    // shows as plain blue
     private const float DayLightBoost = 1.4f;
-    private static readonly Color DayLight = new Color(1f, 0.97f, 0.9f);
+    private static readonly Color DayLight = new Color(1f, 0.9f, 0.76f);
     private static readonly Color DuskLight = new Color(1f, 0.68f, 0.55f);
     private static readonly Color BlueTorchLight = new Color(0.45f, 0.7f, 1f);
     private const float DayTorchLight = 0.15f;   // of the torch light's night intensity
