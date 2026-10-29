@@ -23,6 +23,9 @@ public class RangedAttack : MonoBehaviour {
         }
     }
 
+    // the shotgun shot this pellet belongs to (0 for the revolver)
+    public int ShotgunShot { get; set; }
+
     public void SetPush(float amount) {
         push = amount;
     }
@@ -59,7 +62,11 @@ public class RangedAttack : MonoBehaviour {
 
         if (hit != null) {
             if (hit is Enemy enemy) {
+                bool alive = !enemy.IsDead;
                 enemy.ShotDamage(push, transform.position);
+                if (alive && enemy.IsDead && ShotgunShot > 0) {
+                    Achievements.ShotKill(ShotgunShot);
+                }
             } else {
                 hit.Damage();
             }

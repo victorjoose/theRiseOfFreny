@@ -53,6 +53,7 @@ public class Shielded : Enemy {
 
     protected override float HitScale(Vector3 from, bool shot) {
         if (!Guards(from)) {
+            LastHitMark = BackHit;
             return shot ? 1f : BackSword;
         }
         Vector3 spark = Center + Vector3.right * ((FacingRight ? 1f : -1f) * HalfWidth);
