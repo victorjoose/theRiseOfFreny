@@ -150,8 +150,10 @@ public static class GuideScreen {
             "dele (pulando por cima ou na hora do ataque também vale); quanto mais difícil, mais rápido ele vira. " +
             "6 de vida, 300 pontos.");
         Entry(parent, null, "Ciclope",
-            "O chefe gigante: chega no centro do chão aos 50 mil pontos e a cada 50 mil depois (dois de uma vez " +
-            "a partir de 150 mil), com dois feiticeiros para ajudar; o feitiço deles não fere o Ciclope. 100 de " +
+            "O chefe gigante: chega no centro do chão aos 50 mil pontos e depois a cada 100 mil (150 mil, 250 mil...); " +
+            "dois de uma vez só a partir de 1 milhão, com as barras embaixo, uma de cada lado. Cada luta traz mais " +
+            "ajuda: 2 feiticeiros comuns na primeira, um a mais em cada uma seguinte (até 5), e a partir da segunda " +
+            "os outros inimigos também continuam vindo. O feitiço dos feiticeiros não fere o Ciclope. 100 de " +
             "vida e barra de chefe. Não pula: fica no chão. Soco: 1 coração e arremessa o Freny longe. " +
             "Pancada no chão: uma onda pelo piso, 2 corações e o mesmo arremesso (pule!). Bomba: de longe, uma mina " +
             "3 vezes maior jogada com força, 2 corações. Vômito: um jato de até 7 de distância, em 2 de 5 ataques de perto, " +
@@ -164,12 +166,12 @@ public static class GuideScreen {
             "Nas torres, muda de lugar a cada 3 feitiços e some depois de 8. 2 de vida. Na Arena, " +
             "contando os dois tipos, há no máximo 1 feiticeiro até 50 mil pontos, 2 depois disso e " +
             "3 depois de 100 mil; quando um morre, outro só aparece no lugar dele 15 s depois. " +
-            "Depois de 50 mil pontos, as bolas seguem o Freny por 2,5 s " +
-            "(fazem curva, mas pular ou abaixar na hora certa ainda desvia). De dia, as bolas " +
+            "De dia, as bolas " +
             "ganham uma borda escura para aparecer no céu claro.");
         Entry(parent, null, "Feiticeiro Supremo",
             "Olho e manto vermelhos. Mira onde o Freny vai estar, não onde ele está: mude de " +
-            "direção. 3 de vida; é o último a aparecer na Arena.");
+            "direção. Na Arena, só ele tem bolas que seguem o Freny por 2,5 s (fazem curva, mas pular ou " +
+            "abaixar na hora certa ainda desvia). 3 de vida; na Arena só aparece depois de 100 mil pontos.");
     }
 
     private static void Arena(Transform parent, MenuArt art) {

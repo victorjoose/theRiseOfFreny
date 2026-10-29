@@ -9,9 +9,8 @@ public class Sorcerer : Enemy {
     // difficulty was too strong, 10 s too weak; the Supreme casts more often
     private const float CastCooldownPlain = 5f;
     private const float CastCooldownSupreme = 3.5f;
-    // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second);
-    // José, 2026-10-29: only from 50k on (was 15k)
-    private const int HomingScore = 50000;
+    // only the Supreme's hexballs home in on Freny in the Arena (turning at most HomingTurn degrees a
+    // second); José, 2026-10-29 (it was every sorcerer from 50k)
     private const float HomingTurn = 70f;
     // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where he is
     [SerializeField] private bool predictive = false;
@@ -96,7 +95,7 @@ public class Sorcerer : Enemy {
                 ? Mathf.Lerp(1.4f, 2.6f, ArenaDirector.CurrentDifficulty) * Mathf.Min(1.3f, 1f + 0.03f * ArenaDirector.CurrentOvertime)
                 : 1.4f;
             effect.caster = this; // it hits any other enemy in its way, and they blame this sorcerer
-            if (Rival == null && ArenaBounds.Active && UIManager.Instance && UIManager.Instance.Score >= HomingScore) {
+            if (Rival == null && ArenaBounds.Active && IsSupreme) {
                 effect.homingTarget = player;
                 effect.homingTurn = HomingTurn;
             }
