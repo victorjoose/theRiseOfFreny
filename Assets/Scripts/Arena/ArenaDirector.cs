@@ -41,6 +41,9 @@ public class ArenaDirector : MonoBehaviour {
     private float nextVaseTime;
     private int pendingSpawns; // portals already open
     private int pendingSorcerers; // the ones of those portals a sorcerer comes out of
+    // a sorcerer that dies keeps its place for this long before another one can come (José, 2026-10-29)
+    private const float SorcererRespawnDelay = 15f;
+    private readonly List<float> sorcererDeaths = new List<float>();
     private readonly List<Vector3> pendingPoints = new List<Vector3>(); // where those portals are
     private readonly int[] pendingTower = new int[2];                  // tower portals open per side (0 left, 1 right)
     private Player hero;
@@ -77,6 +80,20 @@ public class ArenaDirector : MonoBehaviour {
 
     private static readonly Color PortalColor = new Color(0.6f, 0.3f, 1f);
     private static readonly Color ChestPortalColor = new Color(1f, 0.85f, 0.2f);
+
+    private void OnEnable() {
+        Enemy.Died += OnEnemyDied;
+    }
+
+    private void OnDisable() {
+        Enemy.Died -= OnEnemyDied;
+    }
+
+    private void OnEnemyDied(Enemy enemy) {
+        if (enemy is Sorcerer) {
+            sorcererDeaths.Add(Time.time);
+        }
+    }
 
     private void Start() {
         foreach (EnemySpawner spawner in FindCompat.All<EnemySpawner>()) {
@@ -144,8 +161,11 @@ public class ArenaDirector : MonoBehaviour {
         return score >= 100000 ? 3 : score >= 50000 ? 2 : 1;
     }
 
+    // alive ones, the portals they are coming out of, and the places of the ones that died in the
+    // last SorcererRespawnDelay seconds
     private int Sorcerers() {
-        int count = pendingSorcerers;
+        sorcererDeaths.RemoveAll(t => Time.time - t >= SorcererRespawnDelay);
+        int count = pendingSorcerers + sorcererDeaths.Count;
         foreach (Enemy enemy in Enemy.Active) {
             if (enemy is Sorcerer && !enemy.IsDead) {
                 count++;

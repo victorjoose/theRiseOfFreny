@@ -1014,6 +1014,8 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // any enemy killed (Freny's Rage meter counts them)
     public static event System.Action<Enemy> Killed;
+    // any enemy that died, whoever killed it (the arena holds a dead sorcerer's place for a while)
+    public static event System.Action<Enemy> Died;
 
     // a harder hit from Freny (the sword during Rage): the extra points first, then the usual hit
     public void Damage(int amount) {
@@ -1094,6 +1096,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     // Killed by another enemy, it still drops its coins but gives Freny no XP, score or Rage
     protected void Die(bool byPlayer) {
         isDead = true;
+        Died?.Invoke(this);
         LeaveChase();
         if (attackRoutine != null) {
             StopCoroutine(attackRoutine);

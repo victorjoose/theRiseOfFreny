@@ -24,6 +24,15 @@ public class HexballEffect : MonoBehaviour
     private const float LoseDistance = 25f;
     private const float MaxLifetime = 30f;
     private const float EnemyHitRadius = 0.15f;
+    // by day the purple ball got lost against the bright sky and walls (José, 2026-10-29): a dark
+    // copy of it, a bit bigger, sits behind it, fades in with the daylight and pulses (the ball and
+    // its hitbox keep their size)
+    private static readonly Color RimColor = new Color(0.1f, 0f, 0.16f);
+    private const float RimScale = 1.5f;
+    private const float RimAlpha = 0.9f;
+    private const float DayPulse = 0.15f;   // rim size swing by full day
+    private const float PulseSpeed = 12f;
+    private SpriteRenderer ball, rim;
     private static Transform playerT;
 
     public Vector3 Direction => direction;
@@ -54,6 +63,41 @@ public class HexballEffect : MonoBehaviour
     {
         bornAt = Time.time;
         Destroy(gameObject, MaxLifetime);
+        ball = GetComponent<SpriteRenderer>();
+        if (ball != null) {
+            GameObject rimObj = new GameObject("Day Rim");
+            rimObj.transform.SetParent(transform, false);
+            rimObj.transform.localScale = Vector3.one * RimScale;
+            rim = rimObj.AddComponent<SpriteRenderer>();
+            rim.sharedMaterial = ball.sharedMaterial;
+            rim.sortingLayerID = ball.sortingLayerID;
+            rim.sortingOrder = ball.sortingOrder - 1;
+            UpdateRim();
+        }
+    }
+
+    // the animator changes the ball's frame, so the rim copies it every frame
+    private void LateUpdate()
+    {
+        UpdateRim();
+    }
+
+    private void UpdateRim()
+    {
+        if (rim == null) {
+            return;
+        }
+        float day = ArenaDayNight.Daylight;
+        rim.enabled = day > 0.01f;
+        if (!rim.enabled) {
+            return;
+        }
+        rim.sprite = ball.sprite;
+        rim.flipX = ball.flipX;
+        rim.flipY = ball.flipY;
+        rim.color = new Color(RimColor.r, RimColor.g, RimColor.b, RimAlpha * day);
+        float pulse = 1f + DayPulse * day * (0.5f + 0.5f * Mathf.Sin((Time.time - bornAt) * PulseSpeed));
+        rim.transform.localScale = Vector3.one * (RimScale * pulse);
     }
 
     private void Update()
