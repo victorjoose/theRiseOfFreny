@@ -40,7 +40,8 @@ public class DamageNumbers : MonoBehaviour {
 
     private void OnGUI() {
         Camera cam = Camera.main;
-        if (cam == null || popups.Count == 0 || Event.current.type != EventType.Repaint) {
+        // IMGUI draws over every canvas: nothing while the pause menu is open
+        if (cam == null || popups.Count == 0 || Event.current.type != EventType.Repaint || GameMenus.Paused) {
             return;
         }
         if (style == null) {

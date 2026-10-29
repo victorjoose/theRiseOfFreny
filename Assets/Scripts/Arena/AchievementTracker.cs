@@ -92,6 +92,7 @@ public class AchievementTracker : MonoBehaviour {
     // ---- the banner: top of the screen, one achievement at a time ----
 
     private const float BannerSeconds = 4f;
+    private const float BannerY = -150f;   // under the score and combo at the top of the HUD
     private readonly Queue<Achievement> waiting = new Queue<Achievement>();
     private Canvas canvas;
     private Image icon;
@@ -103,11 +104,18 @@ public class AchievementTracker : MonoBehaviour {
     }
 
     private void UpdateBanner() {
+        if (canvas != null && GameMenus.Paused) {
+            // not behind the pause menu: it waits and shows its full time after
+            canvas.gameObject.SetActive(false);
+            if (shownUntil > Time.unscaledTime) shownUntil += Time.unscaledDeltaTime;
+            return;
+        }
         if (canvas != null && Time.unscaledTime < shownUntil) {
+            canvas.gameObject.SetActive(true);
             float t = shownUntil - Time.unscaledTime;
             // slides in from above and back up at the end
             float slide = Mathf.Clamp01(Mathf.Min(BannerSeconds - t, t) * 4f);
-            ((RectTransform)canvas.transform.GetChild(0)).anchoredPosition = new Vector2(0f, Mathf.Lerp(120f, -24f, slide));
+            ((RectTransform)canvas.transform.GetChild(0)).anchoredPosition = new Vector2(0f, Mathf.Lerp(120f, BannerY, slide));
             return;
         }
         if (waiting.Count == 0) {
@@ -128,7 +136,7 @@ public class AchievementTracker : MonoBehaviour {
         if (canvas != null) {
             return;
         }
-        canvas = MenuKit.CreateCanvas("Achievement Banner", 80, transform);
+        canvas = MenuKit.CreateCanvas("Achievement Banner", 25000, transform);
         Image panel = MenuKit.MakeImage("Panel", canvas.transform, MenuKit.PanelColor);
         RectTransform rect = panel.rectTransform;
         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 1f);
