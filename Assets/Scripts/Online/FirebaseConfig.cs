@@ -8,6 +8,9 @@ namespace Online {
     public class FirebaseConfig {
         public string apiKey;
         public string projectId;
+        // the ranking API (ScoreApi); empty = the live site. "http://localhost:3000" to test
+        // against freny-online's tools/api-server.js
+        public string apiUrl;
 
         private const string ResourceName = "FirebaseConfig";
 

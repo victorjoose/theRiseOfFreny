@@ -28,9 +28,12 @@ namespace Online {
 
         // score, isNewBest on its board, and why the run is off the ranking (null when it counts)
         public event Action<long, bool, string> RunReported;
+        // a new best the ranking API did not take, and why
+        public event Action<long, string> RankingRefused;
 
         private FirestoreClient _db;
         private LeaderboardService _leaderboard;
+        private ScoreApi _api;
         private readonly Dictionary<ArenaLevel, List<LeaderboardEntry>> _boards = new Dictionary<ArenaLevel, List<LeaderboardEntry>>();
         private CloudSaveService _saves;
 
@@ -46,6 +49,8 @@ namespace Online {
         private bool _arenaRun;
         private ArenaLevel _runLevel;
         private int _coinsAtStart;
+        private RunLog _runLog;      // the ranked run's kills, for the ranking API
+        private string _runToken;    // its ticket from the API (null until it answers)
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap() {
@@ -60,10 +65,16 @@ namespace Online {
             Instance = this;
             Save = LoadLocal();
             SceneManager.sceneLoaded += OnSceneLoaded;
+            UIManager.KillScored += OnKillScored;
         }
 
         private void OnDestroy() {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            UIManager.KillScored -= OnKillScored;
+        }
+
+        private void OnKillScored(Enemy enemy, float combo) {
+            if (_runLog != null && !_reported) _runLog.Add(enemy, combo);
         }
 
         private void Start() {
@@ -75,6 +86,7 @@ namespace Online {
             Auth = new FirebaseAuthService(config.apiKey);
             _db = new FirestoreClient(config.projectId, Auth);
             _leaderboard = new LeaderboardService(_db, Auth);
+            _api = new ScoreApi(config.apiUrl, Auth);
             _saves = new CloudSaveService(_db, Auth);
             StartCoroutine(Connect());
         }
@@ -190,10 +202,38 @@ namespace Online {
             }
         }
 
-        private IEnumerator PushRun(ArenaLevel level, bool newBest) {
+        // previousBest: the board's best before this run, put back if the API refuses the new one.
+        // log and token are the run's own: the next run may have started by the time this runs
+        private IEnumerator PushRun(ArenaLevel level, bool newBest, long score, long previousBest, RunLog log, string token) {
             yield return _saves.Save(Save, null);
-            if (newBest) yield return _leaderboard.SubmitBest(level, Save.playerName, BestFor(level), null);
+            if (newBest) {
+                string refused = null;
+                if (token == null || log == null) {
+                    refused = "a partida começou sem falar com o servidor";
+                } else {
+                    string sig = null;
+                    yield return _api.FinishRun(log.ToJson(token, LeaderboardService.Collection(level), score),
+                        (s, error) => { sig = s; refused = error; });
+                    if (sig != null) {
+                        bool written = false;
+                        yield return _leaderboard.SubmitBest(level, Save.playerName, score, sig, ok => written = ok);
+                        if (!written) refused = "o ranking não gravou a pontuação";
+                    }
+                }
+                if (refused != null) {
+                    Debug.LogWarning("[Online] Score " + score + " not ranked: " + refused);
+                    if (BestFor(level) == score) SetBest(level, previousBest);
+                    RankingRefused?.Invoke(score, refused);
+                }
+            }
             yield return RefreshLeaderboard();
+        }
+
+        private IEnumerator StartRankedRun(ArenaLevel level) {
+            RunLog log = _runLog;
+            yield return _api.StartRun(LeaderboardService.Collection(level), token => {
+                if (_runLog == log) _runToken = token;   // still the same run
+            });
         }
 
         private IEnumerator PushName() {
@@ -217,6 +257,8 @@ namespace Online {
             // only arena runs are ranked, on the board of the difficulty picked in the menu
             _arenaRun = scene.name == GameMenus.ArenaScene;
             _runLevel = ArenaDifficulty.Current;
+            _runLog = null;
+            _runToken = null;
         }
 
         private void Update() {
@@ -238,7 +280,8 @@ namespace Online {
                     _coinsAtStart = _player.coins;
                 }
                 if (!_sawAlive && _arenaRun && State == Status.Online) {
-                    StartCoroutine(_leaderboard.StartRun(_runLevel, null));
+                    _runLog = new RunLog(Time.time);
+                    StartCoroutine(StartRankedRun(_runLevel));
                 }
                 _sawAlive = true;
                 if (_input != null && _input.IsAutopilotDriving) {
@@ -265,6 +308,7 @@ namespace Online {
                 : assisted ? "corridas com o piloto automático não valem para o ranking"
                 : null;
             bool newBest = unranked == null && score > BestFor(_runLevel);
+            long previousBest = BestFor(_runLevel);
             Save.runsPlayed++;
             Save.totalCoins += coins;
             if (!assisted && score > Save.bestScore) Save.bestScore = score;
@@ -272,8 +316,25 @@ namespace Online {
             SaveLocal();
 
             RunReported?.Invoke(score, newBest, unranked);
-            if (State == Status.Online) StartCoroutine(PushRun(_runLevel, newBest));
+            if (State == Status.Online) StartCoroutine(PushRun(_runLevel, newBest, score, previousBest, _runLog, _runToken));
+#if UNITY_EDITOR
+            if (_arenaRun && _runLog != null) StartCoroutine(EditorCheckRun(score, _runLog, _runToken, newBest));
+#endif
         }
+
+#if UNITY_EDITOR
+        // In the editor every arena run (autopilot ones too) is written to Logs/arena-run.json and,
+        // unless it is going to the ranking anyway, checked by the ranking API without writing a
+        // score, so the API can be tested and tuned with autopilot runs.
+        private IEnumerator EditorCheckRun(long score, RunLog log, string token, bool ranked) {
+            string board = LeaderboardService.Collection(_runLevel);
+            System.IO.File.WriteAllText(System.IO.Path.Combine(Application.dataPath, "..", "Logs", "arena-run.json"),
+                log.ToJson(token ?? "", board, score));
+            if (ranked || token == null) yield break;
+            yield return _api.FinishRun(log.ToJson(token, board, score), (sig, error) =>
+                Debug.Log("[Online] API check of this run (" + score + " points): " + (sig != null ? "accepted" : "refused, " + error)));
+        }
+#endif
 
         private void SaveLocal() {
             PlayerPrefs.SetString(LocalSavePref, JsonUtility.ToJson(Save));
