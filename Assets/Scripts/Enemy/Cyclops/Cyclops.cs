@@ -279,8 +279,8 @@ public class Cyclops : Enemy {
     private GameObject bar;
     private const float BarSpacing = 95f;   // canvas units between two bars (each is 132 x 0.75 tall)
     private const float BarBottom = 12f;
-    // set by the ArenaDirector while it brings two in at once
-    public static bool Paired;
+    // set by the ArenaDirector right after it brings two in at once (Init and the bar come a frame later)
+    [System.NonSerialized] public bool Paired;
     private Slider life;
     private Slider trail;
 

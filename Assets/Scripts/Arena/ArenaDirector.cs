@@ -195,12 +195,14 @@ public class ArenaDirector : MonoBehaviour {
         yield return new WaitForSeconds(portalSeconds * 2f);
         // from TwoBossesAt points two come, one on each side of the middle
         int count = Score >= TwoBossesAt ? 2 : 1;
-        Cyclops.Paired = count == 2;
         for (int i = 0; i < count; i++) {
             Vector3 at = count == 1 ? floorPoint
                 : new Vector3(Mathf.Clamp(x + (i == 0 ? -TwinGap : TwinGap), left, right), floor.y, 0f);
             GameObject spawned = Instantiate(cyclopsTemplate, at, Quaternion.identity);
             Enemy boss = spawned.GetComponent<Enemy>();
+            if (boss is Cyclops cyclops) {
+                cyclops.Paired = count == 2;
+            }
             if (boss != null) {
                 Transform[] ends = PatrolFor(floor);
                 boss.pointA = ends[0];
@@ -209,7 +211,6 @@ public class ArenaDirector : MonoBehaviour {
                 boss.PlaceFeetAt(at);
             }
         }
-        Cyclops.Paired = false;
         bossPending = false;
     }
 
