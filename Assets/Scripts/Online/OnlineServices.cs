@@ -31,6 +31,25 @@ namespace Online {
         // a new best the ranking API did not take, and why
         public event Action<long, string> RankingRefused;
 
+        // The last arena run's record, for the "NOVO RECORDE" box of the end-of-run banner: a run
+        // that beats the board's best can be saved with "Salvar recorde" (and is saved anyway
+        // when the player moves on), or says why it can't (the autopilot played, no connection).
+        public enum RecordStatus { None, CanSave, Saving, Saved, CannotSave, Refused }
+        public RecordStatus Record { get; private set; }
+        public long RecordScore { get; private set; }
+        public ArenaLevel RecordLevel { get; private set; }
+        public string RecordNote { get; private set; }   // why it can't be / wasn't saved
+        public event Action RecordChanged;
+        private PendingRecord _pending;
+
+        private class PendingRecord {
+            public ArenaLevel level;
+            public long score;
+            public long previousBest;
+            public RunLog log;
+            public string token;
+        }
+
         private FirestoreClient _db;
         private LeaderboardService _leaderboard;
         private ScoreApi _api;
@@ -203,34 +222,48 @@ namespace Online {
             }
         }
 
-        // previousBest: the board's best before this run, put back if the API refuses the new one.
-        // log and token are the run's own: the next run may have started by the time this runs
-        private IEnumerator PushRun(ArenaLevel level, bool newBest, long score, long previousBest, RunLog log, string token) {
+        private IEnumerator PushRun() {
             yield return _saves.Save(Save, null);
-            if (newBest) {
-                string refused = null;
-                if (token == null || log == null) {
-                    refused = "a partida começou sem falar com o servidor";
-                } else {
-                    string sig = null;
-                    yield return _api.FinishRun(log.ToJson(token, LeaderboardService.Collection(level), score),
-                        (s, error) => { sig = s; refused = error; });
-                    if (sig != null) {
-                        bool written = false;
-                        yield return _leaderboard.SubmitBest(level, Save.playerName, score, sig, ok => written = ok);
-                        if (!written) {
-                            // once more, for a dropped connection (the rules take one write per 20 s)
-                            yield return new WaitForSecondsRealtime(21f);
-                            yield return _leaderboard.SubmitBest(level, Save.playerName, score, sig, ok => written = ok);
-                        }
-                        if (!written) refused = "o ranking não gravou a pontuação";
-                    }
+            yield return RefreshLeaderboard();
+        }
+
+        // "Salvar recorde" on the end-of-run banner
+        public void SaveRecord() {
+            if (Record == RecordStatus.CanSave && _pending != null) StartCoroutine(PushRecord(_pending));
+        }
+
+        private void SetRecord(RecordStatus status, string note = null) {
+            Record = status;
+            RecordNote = note;
+            RecordChanged?.Invoke();
+        }
+
+        // the API checks the run's log and signs the score, then it goes to the board
+        private IEnumerator PushRecord(PendingRecord run) {
+            if (_pending == run) _pending = null;
+            SetRecord(RecordStatus.Saving);
+            string sig = null, refused = null;
+            yield return _api.FinishRun(run.log.ToJson(run.token, LeaderboardService.Collection(run.level), run.score),
+                (s, error) => { sig = s; refused = error; });
+            if (sig != null) {
+                bool written = false;
+                yield return _leaderboard.SubmitBest(run.level, Save.playerName, run.score, sig, ok => written = ok);
+                if (!written) {
+                    // once more, for a dropped connection (the rules take one write per 20 s)
+                    yield return new WaitForSecondsRealtime(21f);
+                    yield return _leaderboard.SubmitBest(run.level, Save.playerName, run.score, sig, ok => written = ok);
                 }
-                if (refused != null) {
-                    Debug.LogWarning("[Online] Score " + score + " not ranked: " + refused);
-                    if (BestFor(level) == score) SetBest(level, previousBest);
-                    RankingRefused?.Invoke(score, refused);
-                }
+                if (!written) refused = "o ranking não gravou a pontuação";
+            }
+            // still the record the banner shows (no newer run ended since)
+            bool current = RecordScore == run.score && RecordLevel == run.level;
+            if (refused != null) {
+                Debug.LogWarning("[Online] Score " + run.score + " not ranked: " + refused);
+                if (BestFor(run.level) == run.score) SetBest(run.level, run.previousBest);
+                RankingRefused?.Invoke(run.score, refused);
+                if (current) SetRecord(RecordStatus.Refused, refused);
+            } else if (current) {
+                SetRecord(RecordStatus.Saved);
             }
             yield return RefreshLeaderboard();
         }
@@ -267,6 +300,8 @@ namespace Online {
             _runLog = null;
             _runToken = null;
             _tokenAsked = false;
+            // a record nobody clicked "Salvar recorde" for is saved anyway
+            if (_pending != null && Record == RecordStatus.CanSave) StartCoroutine(PushRecord(_pending));
         }
 
         private void Update() {
@@ -319,18 +354,39 @@ namespace Online {
             string unranked = !_arenaRun ? "só a Arena tem ranking"
                 : assisted ? "corridas com o piloto automático não valem para o ranking"
                 : null;
-            bool newBest = unranked == null && score > BestFor(_runLevel);
             long previousBest = BestFor(_runLevel);
+            // beats the board's best, even if it can't go there: the banner says so and why
+            bool record = _arenaRun && score > 0 && score > previousBest;
+            bool newBest = record && unranked == null;
             Save.runsPlayed++;
             Save.totalCoins += coins;
             if (!assisted && score > Save.bestScore) Save.bestScore = score;
             if (newBest) SetBest(_runLevel, score);
             SaveLocal();
 
-            RunReported?.Invoke(score, newBest, unranked);
-            if (State == Status.Online) StartCoroutine(PushRun(_runLevel, newBest, score, previousBest, _runLog, _runToken));
+            // an older record still waiting for its click goes now, before this one replaces it
+            if (_pending != null && Record == RecordStatus.CanSave) StartCoroutine(PushRecord(_pending));
+            _pending = null;
+            RecordScore = score;
+            RecordLevel = _runLevel;
+            if (!record) {
+                SetRecord(RecordStatus.None);
+            } else if (assisted) {
+                SetRecord(RecordStatus.CannotSave, "o piloto automático jogou nesta corrida");
+            } else if (State != Status.Online) {
+                SetRecord(RecordStatus.CannotSave, "sem conexão com o servidor");
+            } else if (_runLog == null || _runToken == null) {
+                SetRecord(RecordStatus.CannotSave, "a partida não conseguiu falar com o servidor no começo");
+            } else {
+                _pending = new PendingRecord { level = _runLevel, score = score, previousBest = previousBest, log = _runLog, token = _runToken };
+                SetRecord(RecordStatus.CanSave);
+            }
+            if (newBest && Record == RecordStatus.CannotSave) SetBest(_runLevel, previousBest);
+
+            RunReported?.Invoke(score, newBest && Record == RecordStatus.CanSave, unranked);
+            if (State == Status.Online) StartCoroutine(PushRun());
 #if UNITY_EDITOR
-            if (_arenaRun && _runLog != null) StartCoroutine(EditorCheckRun(score, _runLog, _runToken, newBest));
+            if (_arenaRun && _runLog != null) StartCoroutine(EditorCheckRun(score, _runLog, _runToken, Record == RecordStatus.CanSave));
 #endif
         }
 
