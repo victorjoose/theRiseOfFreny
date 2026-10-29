@@ -9,7 +9,9 @@ using UnityEngine;
 // as the next so the corners and the small ledges get their share, never close to him and away from
 // the enemies already there. Sorcerers take the towers first (ledges against the side walls, out of
 // his reach, so they leave after a few casts), one per tower so both sides get one; with both towers
-// taken they appear on the platforms like everyone else. The scene's EnemySpawners are only a fallback.
+// taken they appear on the platforms like everyone else. How many sorcerers (either kind) can be
+// around at once goes with the score: one up to 50 000 points, two past that, three past 100 000.
+// The scene's EnemySpawners are only a fallback.
 public class ArenaDirector : MonoBehaviour {
 
     [System.Serializable]
@@ -17,6 +19,7 @@ public class ArenaDirector : MonoBehaviour {
         public GameObject prefab;
         public float unlockAt = 0f;   // difficulty (0..1) at which this enemy starts appearing
         public float weight = 1f;     // relative chance once unlocked
+        public int unlockScore = 0;   // and not before the run has this many points (the red Golem: 50 000)
         public bool flying = false;   // spawns in the air above a spawner instead of on it
     }
 
@@ -37,6 +40,7 @@ public class ArenaDirector : MonoBehaviour {
     private float nextChestTime;
     private float nextVaseTime;
     private int pendingSpawns; // portals already open
+    private int pendingSorcerers; // the ones of those portals a sorcerer comes out of
     private readonly List<Vector3> pendingPoints = new List<Vector3>(); // where those portals are
     private readonly int[] pendingTower = new int[2];                  // tower portals open per side (0 left, 1 right)
     private Player hero;
@@ -133,15 +137,41 @@ public class ArenaDirector : MonoBehaviour {
         return alive;
     }
 
-    // the weakest enemies (unlockAt 0) are always there; the rest move with the arena difficulty
+    private static int Score => UIManager.Instance ? UIManager.Instance.Score : 0;
+
+    // sorcerers (plain and Supreme) at once, by score (José, 2026-10-29)
+    public static int SorcererLimit(int score) {
+        return score >= 100000 ? 3 : score >= 50000 ? 2 : 1;
+    }
+
+    private int Sorcerers() {
+        int count = pendingSorcerers;
+        foreach (Enemy enemy in Enemy.Active) {
+            if (enemy is Sorcerer && !enemy.IsDead) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static bool IsSorcerer(Entry entry) {
+        return entry.prefab != null && entry.prefab.GetComponent<Sorcerer>() != null;
+    }
+
+    // the weakest enemies (unlockAt 0) are always there; the rest move with the arena difficulty,
+    // and some also wait for a score
     private bool Unlocked(Entry entry) {
+        if (entry.unlockScore > 0 && Score < entry.unlockScore) {
+            return false;
+        }
         return entry.unlockAt <= 0f || Difficulty >= entry.unlockAt + ArenaDifficulty.UnlockShift;
     }
 
     private Entry Pick() {
+        bool sorcerersFull = Sorcerers() >= SorcererLimit(Score);
         float total = 0f;
         foreach (Entry entry in enemies) {
-            if (entry.prefab != null && Unlocked(entry)) {
+            if (entry.prefab != null && Unlocked(entry) && !(sorcerersFull && IsSorcerer(entry))) {
                 total += entry.weight;
             }
         }
@@ -150,7 +180,7 @@ public class ArenaDirector : MonoBehaviour {
         }
         float roll = Random.Range(0f, total);
         foreach (Entry entry in enemies) {
-            if (entry.prefab == null || !Unlocked(entry)) {
+            if (entry.prefab == null || !Unlocked(entry) || (sorcerersFull && IsSorcerer(entry))) {
                 continue;
             }
             roll -= entry.weight;
@@ -262,7 +292,7 @@ public class ArenaDirector : MonoBehaviour {
         return best;
     }
 
-    // where a tower sorcerer jumps to after a cast: the other tower when it has room, so Freny has
+    // where a tower sorcerer jumps to every few casts: the other tower when it has room, so Freny has
     // to keep turning round; otherwise another spot on its own tower
     private Vector3? TeleportSpot(Sorcerer caster) {
         ArenaMap map = Map;
@@ -398,6 +428,9 @@ public class ArenaDirector : MonoBehaviour {
 
         pendingSpawns++;
         pendingPoints.Add(floorPoint);
+        if (sorcerer) {
+            pendingSorcerers++;
+        }
         if (tower >= 0) {
             pendingTower[tower]++;
         }
@@ -405,6 +438,9 @@ public class ArenaDirector : MonoBehaviour {
         yield return new WaitForSeconds(portalSeconds);
         pendingSpawns--;
         pendingPoints.Remove(floorPoint);
+        if (sorcerer) {
+            pendingSorcerers--;
+        }
         if (tower >= 0) {
             pendingTower[tower]--;
         }
@@ -438,11 +474,18 @@ public class ArenaDirector : MonoBehaviour {
             position += Vector3.up * Random.Range(1.5f, 2.5f);
         }
 
+        bool sorcerer = IsSorcerer(entry);
         pendingSpawns++;
+        if (sorcerer) {
+            pendingSorcerers++;
+        }
         Fx.Portal(position, portalSeconds, PortalColor);
         Sfx.Play("portal", position);
         yield return new WaitForSeconds(portalSeconds);
         pendingSpawns--;
+        if (sorcerer) {
+            pendingSorcerers--;
+        }
 
         if (spawner == null) {
             yield break;

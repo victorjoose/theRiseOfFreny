@@ -4,42 +4,57 @@ using UnityEngine;
 
 // A clay vase standing on a platform. Any hit (sword, bullet, grenade) breaks it: it plays the
 // breaking frames of Items/Vase 100x100 and sometimes leaves an item (ItemPickup.RollVaseDrop).
-// Built at runtime by the ArenaDirector, so no prefab is needed; the frames come from ArenaAssets.
+// Built at runtime by the ArenaDirector, so no prefab is needed; the sprites come from ArenaAssets.
+// It stands as one of the tileset's whole vases (the ones painted on the stages, see Breakable):
+// the breaking frames start already cracked, and a vase spawned with the first of them looked
+// broken from the start (José, 2026-10-29).
 public class ArenaVase : MonoBehaviour, IDamageable {
 
-    private const float WorldHeight = 1.2f;    // the 100 px frame; the vase fills its lower 68 px
+    private const float TileSize = 1f;          // the 100 px tile; the vase stands at its bottom
+    private const float VaseFrameScale = 0.7f;  // the breaking vase is drawn bigger than the tileset's
     private const float FrameTime = 0.07f;
-    private const float Lifetime = 60f;        // goes away if nobody breaks it
+    private const float Lifetime = 60f;         // goes away if nobody breaks it
 
     public static readonly List<ArenaVase> Active = new List<ArenaVase>();
 
     public int Health { get; set; } = 1;
     private bool broken;
     private SpriteRenderer sprite;
+    private Vector3 floorPoint;
 
     public static ArenaVase Create(Vector3 floorPoint) {
         ArenaAssets assets = ArenaAssets.Instance;
-        if (assets == null || assets.vaseFrames == null || assets.vaseFrames.Length == 0 || assets.vaseFrames[0] == null) {
+        if (assets == null) {
+            return null;
+        }
+        Sprite standing = null;
+        if (assets.vaseTiles != null && assets.vaseTiles.Length > 0) {
+            standing = assets.vaseTiles[Random.Range(0, assets.vaseTiles.Length)];
+        }
+        if (standing == null) {
             return null;
         }
         GameObject obj = new GameObject("Vase");
         SpriteRenderer renderer = obj.AddComponent<SpriteRenderer>();
-        renderer.sprite = assets.vaseFrames[0];
+        renderer.sprite = standing;
         renderer.sortingOrder = 35;
-        float height = renderer.sprite.bounds.size.y;
-        obj.transform.localScale = Vector3.one * (height > 0.001f ? WorldHeight / height : 1f);
-        // the frame is centred and the vase sits at its bottom: lift it so it stands on the floor
-        obj.transform.position = floorPoint + Vector3.up * (WorldHeight * 0.5f - 0.02f);
+        float height = standing.bounds.size.y;
+        obj.transform.localScale = Vector3.one * (height > 0.001f ? TileSize / height : 1f);
+        // the tile is centred and the vase sits at its bottom: lift it so it stands on the floor
+        obj.transform.position = floorPoint + Vector3.up * (TileSize * 0.5f - 0.02f);
 
+        // the opaque part of the tile, like Breakable's
         BoxCollider2D box = obj.AddComponent<BoxCollider2D>();
         box.isTrigger = true;   // the sword, bullets and grenades find it; Freny walks through it
-        box.size = renderer.sprite.bounds.size * new Vector2(0.55f, 0.65f);
-        box.offset = new Vector2(0f, -renderer.sprite.bounds.size.y * 0.16f);
+        Vector2 full = standing.bounds.size;
+        box.size = new Vector2(full.x * 0.55f, full.y * 0.6f);
+        box.offset = new Vector2(0f, -full.y * 0.5f + box.size.y * 0.5f);
 
         HitBody.MakeHittable(obj);
 
         ArenaVase vase = obj.AddComponent<ArenaVase>();
         vase.sprite = renderer;
+        vase.floorPoint = floorPoint;
         Fx.Dust(floorPoint, 4);
         return vase;
     }
@@ -57,7 +72,7 @@ public class ArenaVase : MonoBehaviour, IDamageable {
     }
 
     // the middle of the vase (the autopilot walks to it and swings)
-    public Vector3 Center => transform.position + Vector3.down * (WorldHeight * 0.16f);
+    public Vector3 Center => floorPoint + Vector3.up * (TileSize * 0.3f);
 
     public void Damage() {
         if (broken) {
@@ -77,10 +92,14 @@ public class ArenaVase : MonoBehaviour, IDamageable {
 
     private IEnumerator Break() {
         Sprite[] frames = ArenaAssets.Instance ? ArenaAssets.Instance.vaseFrames : null;
-        if (frames != null) {
-            for (int i = 1; i < frames.Length; i++) {
-                if (frames[i] != null) {
-                    sprite.sprite = frames[i];
+        if (frames != null && frames.Length > 0 && frames[0] != null) {
+            // the breaking frames, standing where the whole vase stood
+            float height = frames[0].bounds.size.y;
+            transform.localScale = Vector3.one * (height > 0.001f ? TileSize * VaseFrameScale / height : 1f);
+            transform.position = floorPoint + Vector3.up * (TileSize * VaseFrameScale * 0.5f - 0.02f);
+            foreach (Sprite frame in frames) {
+                if (frame != null) {
+                    sprite.sprite = frame;
                 }
                 yield return new WaitForSeconds(FrameTime);
             }

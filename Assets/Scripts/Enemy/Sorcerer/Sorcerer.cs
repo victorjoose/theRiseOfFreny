@@ -16,8 +16,10 @@ public class Sorcerer : Enemy {
     // set by the arena director for a sorcerer on a tower, which Freny can't climb to: after this
     // many casts it vanishes in a portal (0 = stays until killed)
     [System.NonSerialized] public int castsBeforeLeaving;
-    // also set for a tower sorcerer: where to blink to after each cast (null = stay)
+    // also set for a tower sorcerer: where to blink to every few casts (null = stay)
     [System.NonSerialized] public System.Func<Vector3?> teleportTo;
+    // it used to blink after every cast and was too hard to hit (José, 2026-10-29)
+    private const int CastsPerTeleport = 3;
     [SerializeField] private float teleportDelay = 0.5f;  // after the hexball leaves
     [SerializeField] private float castAfterTeleport = 0.9f;
     private int casts;
@@ -110,7 +112,7 @@ public class Sorcerer : Enemy {
             Fx.Portal(Feet + Vector3.up * 0.6f, 0.6f, DeathColor);
             Sfx.Play("portal", Feet);
             Despawn();
-        } else if (teleportTo != null) {
+        } else if (teleportTo != null && casts % CastsPerTeleport == 0) {
             StartCoroutine(TeleportAfterCast());
         }
     }
