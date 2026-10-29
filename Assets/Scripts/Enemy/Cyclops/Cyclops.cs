@@ -257,22 +257,16 @@ public class Cyclops : Enemy {
         special = false;
     }
 
-    // in front of it; from a platform, with Freny below, it pours over the edge and falls to him
+    // a stream from the mouth that lands above Freny (or just in front) and, on a platform, keeps
+    // pouring straight down through it to the floor below (AcidPuddle.Pour)
     private void SpillVomit() {
         Vector3 feet = Feet;
-        float mouth = feet.x + Facing * (HalfWidth + 0.4f);
-        bool frenyBelow = player != null && player.Feet.y < feet.y - 1.5f;
-        if (frenyBelow) {
-            int ground = LayerMask.GetMask("Ground");
-            for (float step = 0f; step <= VomitReach; step += 0.25f) {
-                float x = mouth + Facing * step;
-                if (Physics2D.Raycast(new Vector2(x, feet.y + 0.3f), Vector2.down, 0.7f, ground).collider == null) {
-                    AcidPuddle.Spill(new Vector3(x + Facing * 0.5f, feet.y - 0.1f, 0f), 3f, 4f);   // over the edge
-                    return;
-                }
-            }
+        Vector3 mouth = Center + Vector3.up * (HalfHeight * 0.45f) + Vector3.right * (Facing * (HalfWidth * 0.8f));
+        float reach = 1.5f;
+        if (player != null && Mathf.Sign(player.Feet.x - mouth.x) == Facing) {
+            reach = Mathf.Abs(player.Feet.x - mouth.x);
         }
-        AcidPuddle.Spill(new Vector3(mouth + Facing * 1.2f, feet.y + 0.2f, 0f), 3f, 4f);
+        AcidPuddle.Pour(mouth, Facing, reach, feet.y, player, 3f, 4f);
     }
 
     // the game's boss bar (Prefabs/HUD/Resources/BossHealth, taken from stage 1-9): the Boss

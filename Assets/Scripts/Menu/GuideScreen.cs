@@ -155,7 +155,7 @@ public static class GuideScreen {
             "vida e barra de chefe. Pula pelas plataformas baixas. Soco: 1 coração e arremessa o Freny longe. " +
             "Pancada no chão: uma onda pelo piso, 2 corações e o mesmo arremesso (pule!). Bomba: de longe, uma mina " +
             "3 vezes maior jogada com força, 2 corações. Vômito: em 2 de 5 ataques de perto, ou quando o Freny está " +
-            "embaixo (escorre da plataforma); a poça verde queima e deixa o Freny lento. Depois de cada golpe ele descansa " +
+            "embaixo (um jato que atravessa a plataforma e cai no andar de baixo, onde se espalha); o jato e a poça verde queimam e deixa o Freny lento. Depois de cada golpe ele descansa " +
             "3 s: é a hora de bater. Acertar o olho tira o dobro. Vale 5 000 pontos, 30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",
             "Fica parado e lança uma bola a cada 5 segundos (o Supremo a cada 3,5); ela tira 2 e empurra, e abaixar desvia " +
