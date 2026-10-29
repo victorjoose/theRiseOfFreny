@@ -87,6 +87,7 @@ public class Player : MonoBehaviour, IDamageable {
 
     private bool isGrounded;
     private bool wasGrounded;
+    private int groundedChecks;         // CheckGround calls in a row that found the ground
     private bool isJumping;
     private bool stunned;
     private bool isDead;
@@ -217,7 +218,7 @@ public class Player : MonoBehaviour, IDamageable {
     // and the autopilot asks this on every decision)
     public bool HasPotion => _gameManager != null && _gameManager.HasPotion;
 
-    private Vector3 Feet => feetPos ? feetPos.position : transform.position;
+    public Vector3 Feet => feetPos ? feetPos.position : transform.position;
 
     private static PhysicsMaterial2D frictionless;
     private static PhysicsMaterial2D Frictionless =>
@@ -389,15 +390,24 @@ public class Player : MonoBehaviour, IDamageable {
             if (!wasGrounded && !justTookOff) {
                 Fx.Dust(Feet, 5); // landed
                 Sfx.Play("freny_land", Feet);
+            }
+            // the fall only ends once he has stood for two checks in a row: the wide feet circle
+            // grazed the platforms he fell past, and each graze used to restart the fall there, so
+            // a long drop through the arena never hurt (José, 2026-10-29)
+            groundedChecks++;
+            if (groundedChecks == 2 && !justTookOff) {
                 FallDamage(fallPeakY - transform.position.y);
             }
-            fallPeakY = transform.position.y;
+            if (groundedChecks >= 2) {
+                fallPeakY = transform.position.y;
+            }
             if (!justTookOff) {
                 isJumping = false;
             }
             airJumpsLeft = FrenyProgress.HasDoubleJump ? 1 : 0;
             lastGroundedTime = Time.time;
         } else {
+            groundedChecks = 0;
             fallPeakY = Mathf.Max(fallPeakY, transform.position.y);
         }
         wasGrounded = isGrounded;

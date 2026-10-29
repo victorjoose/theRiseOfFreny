@@ -137,10 +137,20 @@ public static class GuideScreen {
             "2 de vida.");
         Entry(parent, null, "Golem Vermelho",
             "Pedra vermelha e olhos acesos. Um tanque: 6 de vida (aguenta uma granada), quase não " +
-            "recua com os golpes e o soco tira 2 e derruba. Vale 500 pontos e 6 moedas. Na Arena, " +
-            "só depois de 50 mil pontos.");
+            "recua com os golpes e o soco tira 2 e derruba. De longe, joga uma mina que gruda no chão, " +
+            "pisca e explode como uma granada (tire o Freny de perto, ou acerte a mina antes). " +
+            "Vale 500 pontos e 6 moedas. Na Arena, só depois de 50 mil pontos.");
+        Entry(parent, null, "Escudeiro",
+            "Anda atrás de um escudo de espinhos virado para o Freny: golpe e tiro de frente batem " +
+            "no escudo. Acerte pelas costas, pule por cima, bata quando ele ataca ou use granada. " +
+            "3 golpes seguidos no escudo deixam ele tonto por um momento. 4 de vida, 300 pontos.");
+        Entry(parent, null, "Ciclope",
+            "O chefe gigante da Arena: chega a cada 25 mil pontos e, enquanto ele vive, ninguém " +
+            "mais aparece. 40 de vida, com a barra no topo da tela. O soco tira 2 e joga o Freny " +
+            "longe; a pancada no chão solta uma onda pelo piso (pule!); o vômito deixa uma poça que " +
+            "queima. Vale 5 000 pontos, 30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",
-            "Fica parado e lança uma bola a cada 10 segundos; ela tira 2 e empurra, e abaixar desvia " +
+            "Fica parado e lança uma bola a cada 5 segundos (o Supremo a cada 3,5); ela tira 2 e empurra, e abaixar desvia " +
             "de um tiro reto. " +
             "Nas torres, muda de lugar a cada 3 feitiços e some depois de 8. 2 de vida. Na Arena, " +
             "contando os dois tipos, há no máximo 1 feiticeiro até 50 mil pontos, 2 depois disso e " +

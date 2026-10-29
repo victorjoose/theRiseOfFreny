@@ -5,15 +5,17 @@ using UnityEngine;
 public class Sorcerer : Enemy {
     public GameObject hexballEffectPrefab;
     [SerializeField] private float castRange = 100f;  // the sorcerer always knows where Freny is and keeps casting
-    // one hexball, then 10 s before the next, at any difficulty (José, 2026-10-29: they were
-    // too strong at 1.6 s scaled by the difficulty)
-    private const float CastCooldown = 10f;
+    // seconds between hexballs, at any difficulty (shorter with the score, Enemy.ScoreCooldown). José, 2026-10-29: 1.6 s scaled by the
+    // difficulty was too strong, 10 s too weak; the Supreme casts more often
+    private const float CastCooldownPlain = 5f;
+    private const float CastCooldownSupreme = 3.5f;
     // past this score its hexballs home in on Freny (turning at most HomingTurn degrees a second);
     // José, 2026-10-29: only from 50k on (was 15k)
     private const int HomingScore = 50000;
     private const float HomingTurn = 70f;
     // "Sorcerer Supreme": aims where Freny will be when the hexball arrives, not where he is
     [SerializeField] private bool predictive = false;
+    private float CastCooldown => predictive ? CastCooldownSupreme : CastCooldownPlain;
     private float nextCastTime;
     private Rigidbody2D playerRb;
     // set by the arena director for a sorcerer on a tower, which Freny can't climb to: after this
@@ -67,7 +69,7 @@ public class Sorcerer : Enemy {
                 laughed = true; // the Sorcerer Supreme laughs at Freny when the fight starts
                 PlaySound("laugh");
             }
-            nextCastTime = Time.time + CastCooldown;
+            nextCastTime = Time.time + CastCooldown * ScoreCooldown;
         }
     }
 

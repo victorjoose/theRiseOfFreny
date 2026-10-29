@@ -162,7 +162,18 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     private float pushScale = 1f;            // set for one sword hit by Damage(amount, push)
     private const float PushDrag = 40f;
     // arena difficulty on attack rhythm (1 outside the arena)
-    protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp : 1f;
+    protected float DifficultyCooldown => ArenaBounds.Active ? ArenaDifficulty.CooldownFactor * ArenaDirector.CooldownRamp * ScoreCooldown : 1f;
+
+    // José, 2026-10-29: the more points, the shorter every enemy's cooldown, so the run keeps
+    // getting harder: 1x at 0, then down in a straight line to 0.5x at 150 000 points and no lower
+    public const int ScoreCooldownFloorAt = 150000;
+    public const float ScoreCooldownFloor = 0.5f;
+    public static float ScoreCooldown {
+        get {
+            int score = ArenaBounds.Active && UIManager.Instance ? UIManager.Instance.Score : 0;
+            return Mathf.Lerp(1f, ScoreCooldownFloor, (float)score / ScoreCooldownFloorAt);
+        }
+    }
 
     // colour of the particles when this enemy is hit or dies
     protected virtual Color DeathColor => new Color(0.55f, 0.5f, 0.45f);
@@ -1078,6 +1089,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // flinch, fight back, and bleed a few particles
     protected void TakeHit(bool byPlayer) {
+        LastHitTime = Time.time;
         if (byPlayer) {
             isHit = true;
         }

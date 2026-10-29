@@ -11,7 +11,8 @@ using UnityEngine;
 // his reach, so they leave after a few casts), one per tower so both sides get one; with both towers
 // taken they appear on the platforms like everyone else. How many sorcerers (either kind) can be
 // around at once goes with the score: one up to 50 000 points, two past that, three past 100 000.
-// The scene's EnemySpawners are only a fallback.
+// The scene's EnemySpawners are only a fallback. The Escudeiro joins the list at runtime, and every
+// BossEvery points the Ciclope is called onto the floor; while it lives nobody else comes.
 public class ArenaDirector : MonoBehaviour {
 
     [System.Serializable]
@@ -93,6 +94,75 @@ public class ArenaDirector : MonoBehaviour {
         if (enemy is Sorcerer) {
             sorcererDeaths.Add(Time.time);
         }
+        if (enemy is Cyclops && chestPrefab != null) {
+            // the boss leaves a chest where it fell
+            Instantiate(chestPrefab, enemy.Feet + Vector3.up * 0.3f, Quaternion.identity);
+        }
+    }
+
+    // ---- the Escudeiro and the Ciclope (EnemyTemplates) ----
+
+    public const int BossEvery = 25000;
+    private GameObject cyclopsTemplate;
+    private int nextBossScore = BossEvery;
+    private bool bossPending;
+
+    private void AddRuntimeEnemies() {
+        GameObject golem = null;
+        foreach (Entry entry in enemies) {
+            if (entry.prefab != null && entry.prefab.GetComponent<Golem>() != null && entry.unlockScore == 0) {
+                golem = entry.prefab;
+                break;
+            }
+        }
+        if (golem == null) {
+            return;
+        }
+        GameObject shielded = EnemyTemplates.Make<Shielded>(golem, "Shielded_Enemy", new Vector2(0.9f, 1.35f), new Vector2(0f, -0.33f));
+        if (shielded != null) {
+            List<Entry> list = new List<Entry>(enemies);
+            list.Add(new Entry { prefab = shielded, unlockAt = 0.4f, weight = 1f });
+            enemies = list.ToArray();
+        }
+        cyclopsTemplate = EnemyTemplates.Make<Cyclops>(golem, "Cyclops_Boss", new Vector2(1.9f, 2.45f), new Vector2(0f, -0.36f));
+    }
+
+    private bool BossAround => bossPending || Cyclops.Current != null;
+
+    private void UpdateBoss() {
+        if (cyclopsTemplate == null || BossAround || Score < nextBossScore) {
+            return;
+        }
+        nextBossScore += BossEvery;
+        StartCoroutine(SpawnBoss());
+    }
+
+    // on the floor, as far from Freny as it goes, through a bigger portal
+    private IEnumerator SpawnBoss() {
+        ArenaMap map = Map;
+        if (map == null || map.Floor == null) {
+            yield break;
+        }
+        bossPending = true;
+        ArenaMap.Platform floor = map.Floor;
+        float heroX = hero ? hero.transform.position.x : (floor.xMin + floor.xMax) * 0.5f;
+        float left = Mathf.Max(floor.xMin + 2f, ArenaBounds.Left + 2f);
+        float right = Mathf.Min(floor.xMax - 2f, ArenaBounds.Right - 2f);
+        float x = Mathf.Abs(heroX - left) > Mathf.Abs(heroX - right) ? left : right;
+        Vector3 floorPoint = new Vector3(x, floor.y, 0f);
+        Fx.Portal(floorPoint + Vector3.up * 1.2f, portalSeconds * 2f, new Color(0.75f, 0.2f, 0.85f));
+        Sfx.Play("portal", floorPoint, 1f, 0.6f);
+        yield return new WaitForSeconds(portalSeconds * 2f);
+        GameObject spawned = Instantiate(cyclopsTemplate, floorPoint, Quaternion.identity);
+        Enemy boss = spawned.GetComponent<Enemy>();
+        if (boss != null) {
+            Transform[] ends = PatrolFor(floor);
+            boss.pointA = ends[0];
+            boss.pointB = ends[1];
+            boss.currentTarget = ends[0].position;
+            boss.PlaceFeetAt(floorPoint);
+        }
+        bossPending = false;
     }
 
     private void Start() {
@@ -106,6 +176,7 @@ public class ArenaDirector : MonoBehaviour {
         nextSpawnTime = Time.time + firstSpawnDelay;
         nextChestTime = Time.time + chestInterval;
         nextVaseTime = Time.time + firstSpawnDelay;
+        AddRuntimeEnemies();
     }
 
     private void Update() {
@@ -115,8 +186,9 @@ public class ArenaDirector : MonoBehaviour {
             return;
         }
 
+        UpdateBoss();
         int present = AliveEnemies() + pendingSpawns;
-        if (Time.time >= nextSpawnTime && present < MaxAlive) {
+        if (Time.time >= nextSpawnTime && present < MaxAlive && !BossAround) {
             Entry pick = Pick();
             if (pick != null && pick.prefab != null) {
                 StartCoroutine(SpawnWithPortal(pick));

@@ -66,7 +66,7 @@ public class Grenade : MonoBehaviour {
             if (enemy == null || enemy.IsDead || !hit.Add(enemy)) {
                 continue;
             }
-            enemy.Damage(EnemyDamage);
+            enemy.BlastDamage(EnemyDamage);   // round the Escudeiro's shield too
         }
         // Freny caught in his own blast: hurt and thrown away from it
         if (freny != null && !freny.IsDead && freny.TryDamage(SelfDamage)) {
