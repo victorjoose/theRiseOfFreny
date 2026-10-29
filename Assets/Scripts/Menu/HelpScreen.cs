@@ -65,8 +65,8 @@ public static class HelpScreen {
         for (int i = lines.childCount - 1; i >= 0; i--) {
             Object.Destroy(lines.GetChild(i).gameObject);
         }
-        string move = device == Device.Keyboard ? "Setas ou A/D" : device == Device.Gamepad ? "Analógico" : "Arraste à esquerda";
-        string vertical = device == Device.Keyboard ? "Seta baixo / cima" : device == Device.Gamepad ? "Analógico" : "Stick baixo / cima";
+        string move = device == Device.Keyboard ? "Setas ou A/D" : device == Device.Gamepad ? "Analógico" : "Direcional (esquerda)";
+        string vertical = device == Device.Keyboard ? "Seta baixo / cima" : device == Device.Gamepad ? "Analógico" : "Direcional baixo / cima";
         Line(lines, "Andar", "Anda para os lados", move);
         Line(lines, "Agachar/Mirar", "Baixo agacha, cima mira", vertical);
 
@@ -124,13 +124,13 @@ public static class HelpScreen {
             case GameAction.Jump: return "Pular";
             case GameAction.Melee: return "Golpe";
             case GameAction.Ranged: return "Tiro";
-            case GameAction.Dash: return "Dash";
-            case GameAction.Run: return "Correr";
+            case GameAction.Dash: return "2 toques no direcional, no ar";
+            case GameAction.Run: return "2 toques no direcional e segure";
             case GameAction.Grenade: return "Gran.";
             case GameAction.Potion: return "Poção";
-            case GameAction.Pistol: return "1";
-            case GameAction.Shotgun: return "2";
-            case GameAction.Interact: return "Stick p/ cima";
+            case GameAction.Pistol: return "Arma (troca)";
+            case GameAction.Shotgun: return "Arma (troca)";
+            case GameAction.Interact: return "Direcional p/ cima";
             case GameAction.Pause: return "II no topo";
             default: return "-";
         }
