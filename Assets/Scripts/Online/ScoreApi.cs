@@ -100,9 +100,10 @@ namespace Online {
             public string sig;
             public string dailyBoard;
             public string dailySig;
+            public bool pending;   // 202: far above the board, it waits for José's review (admin.html)
         }
 
-        // done(signed, null) when the run is accepted, done(null, reason) when it isn't
+        // done(signed, null) when the run is accepted (or held for review), done(null, reason) when it isn't
         public IEnumerator FinishRun(string json, Action<Signed, string> done) {
             yield return Post("/api/run/finish", json, (code, body) => {
                 Reply reply = null;
@@ -112,6 +113,8 @@ namespace Online {
                 }
                 if (code == 200 && !string.IsNullOrEmpty(reply?.sig)) {
                     done?.Invoke(new Signed { sig = reply.sig, dailyBoard = reply.dailyBoard, dailySig = reply.dailySig }, null);
+                } else if (code == 202) {
+                    done?.Invoke(new Signed { pending = true }, null);
                 } else {
                     done?.Invoke(null, !string.IsNullOrEmpty(reply?.error) ? reply.error : "servidor fora do ar (" + code + ")");
                 }

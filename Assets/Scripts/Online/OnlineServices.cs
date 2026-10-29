@@ -35,7 +35,7 @@ namespace Online {
         // The last arena run's record, for the "NOVO RECORDE" box of the end-of-run banner: a run
         // that beats the board's best can be saved with "Salvar recorde" (and is saved anyway
         // when the player moves on), or says why it can't (the autopilot played, no connection).
-        public enum RecordStatus { None, CanSave, Saving, Saved, CannotSave, Refused }
+        public enum RecordStatus { None, CanSave, Saving, Saved, CannotSave, Refused, InReview }
         public RecordStatus Record { get; private set; }
         public bool RecordOnlyToday { get; private set; }   // beats today's best, not the all-time one
         public long RecordScore { get; private set; }
@@ -277,6 +277,13 @@ namespace Online {
             string refused = null;
             yield return _api.FinishRun(run.log.ToJson(run.token, LeaderboardService.Collection(run.level), run.score),
                 (s, error) => { signed = s; refused = error; });
+            if (signed != null && signed.pending) {
+                // the server holds it for review: it reaches the board (written by the server) if approved
+                if (BestFor(run.level) == run.score) SetBest(run.level, run.previousBest);
+                if (RecordScore == run.score && RecordLevel == run.level) SetRecord(RecordStatus.InReview);
+                yield return RefreshLeaderboard();
+                yield break;
+            }
             if (signed != null) {
                 if (run.allTime) {
                     bool written = false;
