@@ -14,6 +14,10 @@ public class Merchant : MonoBehaviour {
 
     private Player _player;
 
+    private void Awake() {
+        GameCursor.ShowWhile(this, () => shopPanel != null && shopPanel.activeSelf);
+    }
+
     public void Update() {
         // only close a store that is actually open (before, Escape anywhere threw a NullReferenceException)
         if (Input.GetKeyDown(KeyCode.Escape) && shopPanel.activeSelf) {

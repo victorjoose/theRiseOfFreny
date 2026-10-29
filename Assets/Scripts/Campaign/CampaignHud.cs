@@ -47,6 +47,7 @@ public class CampaignHud : MonoBehaviour {
     private void Start() {
         player = GetComponent<Player>();
         run = GetComponent<CampaignRun>();
+        GameCursor.ShowWhile(this, () => showStageList);
     }
 
     private void Update() {

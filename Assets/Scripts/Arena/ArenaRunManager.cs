@@ -32,6 +32,7 @@ public class ArenaRunManager : MonoBehaviour {
         player = GetComponent<Player>();
         input = GetComponent<FrenyInput>();
         runStart = Time.time;
+        GameCursor.ShowWhile(this, () => RunOver);   // "Jogar de novo" and "Menu" are clicked
     }
 
     private void Update() {
