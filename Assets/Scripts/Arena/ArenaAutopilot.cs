@@ -289,6 +289,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 action = "Saindo do alcance do Ciclope";
                 return frame;
             }
+            // waits just out of reach, so its rest leaves time to get to the eye (from far away he
+            // never got there in time)
+            if (Mathf.Abs(dx) > CyclopsSafeDistance + CyclopsWaitBand) {
+                frame.move = towardTarget;
+                frame.runHeld = Mathf.Abs(dx) > 6f && player.RunReady;
+                action = "Chegando perto do Ciclope";
+                return frame;
+            }
             if (player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && Shoot(ref frame, dx, facingTarget, towardTarget)) {
                 return frame;
             }
@@ -482,7 +490,8 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     // others only when they are right on him (the bat and bug that keep his combo alive)
     private const float BossFirst = 25f;
     private const float OthersDuringBoss = 15f;
-    private const float CloseEnough = 1.5f;
+    private const float CloseEnough = 3f;
+    private const float CyclopsWaitBand = 1f;         // waits between SafeDistance and this much farther
     private const float ShieldJumpDistance = 2.4f;    // close enough to jump over the Escudeiro
     private const float MineKeepOut = 0.8f;           // beyond the blast radius
     private const float WaveJumpAt = 3.2f;            // a shockwave this close: jump now

@@ -72,9 +72,12 @@ public class CombatHud : MonoBehaviour {
                 DrawAutoFrame(scale);
                 DrawAutoBadge(head, scale);
             }
-            // the weapons loose on the right of the hearts (and of the armor hearts' places)
+            // the weapons in a row under the Corrida and Fúria bars (José, 2026-10-29: beside the
+            // hearts they pushed the score onto the coins once he had bought hearts)
             float size = 84f * scale;   // the sword and gun sprites are small inside their frames
-            weaponsRight = DrawWeapons(rowRight + 28f * scale, rowMiddle - size / 2f, size, scale);
+            float barsBottom = head.yMax + 6f * scale + BarsHeight * scale;
+            DrawWeapons(head.xMin, barsBottom - size * 0.15f, size, scale);
+            weaponsRight = -1f;
         }
         DrawScore(scale);
     }
@@ -210,6 +213,8 @@ public class CombatHud : MonoBehaviour {
 
     // Corrida is an energy bar (yellow), always shown; Rage (red) under it,
     // filled by kills and drained over the 20 s of Rage
+    private const float BarsHeight = 32f;   // both bars and their gaps, at 1920 wide
+
     private void DrawBars(float x, float y, float width, float scale) {
         float height = 10f * scale;
         float run = player.RunMeter;
@@ -241,6 +246,30 @@ public class CombatHud : MonoBehaviour {
     private float weaponsRight = -1f;   // screen x where the weapon icons end
     private float heartsMiddle = -1f;   // screen y of the hearts row, to keep the score on that line
     private GUIStyle scoreStyle;
+
+    // screen x where the coin counter (icon and number) starts, or -1
+    private RectTransform coinIcon, coinText;
+    private bool coinsSearched;
+
+    private float CoinsLeft() {
+        if (!coinsSearched) {
+            coinsSearched = true;
+            foreach (RectTransform rect in FindCompat.All<RectTransform>(true)) {
+                if (rect.name == "CoinCountText") {
+                    coinText = rect;
+                } else if (rect.name == "Coins" && rect.GetComponentInParent<Canvas>() != null) {
+                    coinIcon = rect;
+                }
+            }
+        }
+        float left = float.MaxValue;
+        foreach (RectTransform rect in new[] { coinIcon, coinText }) {
+            if (rect != null && rect.gameObject.activeInHierarchy) {
+                left = Mathf.Min(left, ScreenRect(rect).xMin);
+            }
+        }
+        return left < float.MaxValue && left > Screen.width * 0.5f ? left : -1f;
+    }
 
     private void FindScoreTexts() {
         scoreSearched = true;
@@ -287,6 +316,11 @@ public class CombatHud : MonoBehaviour {
         float width = scoreStyle.CalcSize(new GUIContent(score)).x;
         // a bit right of the centre (José), and never over the last weapon icon
         float x = Mathf.Max(Screen.width * 0.58f - width / 2f, weaponsRight + 40f * scale);
+        // and never over the coin counter on its right
+        float coins = CoinsLeft();
+        if (coins > 0f) {
+            x = Mathf.Min(x, coins - width - 30f * scale);
+        }
         // on the line of the hearts and coins (the uGUI row moves with the screen's shape)
         float y = heartsMiddle > 0f ? heartsMiddle - scoreSize * 0.8f : 34f * scale;
         ShadowLabel(new Rect(x, y, width + 20f, scoreSize * 1.4f), score, scoreStyle);

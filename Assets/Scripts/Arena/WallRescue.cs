@@ -32,7 +32,15 @@ public static class WallRescue {
         return walls;
     }
 
+    // inside the wall's mass: its cell and the four around it are all tiles. A lone tile is not a
+    // wall: the decoration on the Ground layer (EXTRA Ground_Tilemap: tufts on the floor, ledge
+    // ends) has tiles where Freny walks, and he was lifted off them every 0.1 s
     public static bool Solid(Vector2 point) {
+        return Tiled(point) && Tiled(point + Vector2.left) && Tiled(point + Vector2.right)
+            && Tiled(point + Vector2.up) && Tiled(point + Vector2.down);
+    }
+
+    private static bool Tiled(Vector2 point) {
         foreach (Tilemap map in Walls()) {
             if (map.HasTile(map.WorldToCell(point))) {
                 return true;
@@ -72,7 +80,7 @@ public static class WallRescue {
 
     private static bool Roomy(Vector2 spot, float height) {
         float half = Mathf.Max(0.3f, height * 0.5f);
-        return !Solid(spot) && !Solid(spot + Vector2.up * half) && !Solid(spot + Vector2.down * (half - 0.1f))
+        return !Tiled(spot) && !Tiled(spot + Vector2.up * half) && !Tiled(spot + Vector2.down * (half - 0.1f))
             && spot.x > ArenaBounds.Left && spot.x < ArenaBounds.Right;
     }
 }
