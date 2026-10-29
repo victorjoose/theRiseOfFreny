@@ -1,21 +1,44 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// On-screen controls for phones and tablets (also the web build opened on a phone): a floating
-// stick on the left half (walk, crouch, aim up, push up at a door to enter) and action buttons
-// on the right. GameMenus shows them in gameplay scenes on touch screens. They feed the same
-// actions as the keyboard through InputBindings and KeyboardInputSource.
+// On-screen controls for phones and tablets (also the web build opened on a phone), laid out like a
+// Super Nintendo pad: a fixed directional pad in the bottom-left corner (walk, crouch, aim up, push
+// up at a door to enter; tap a direction twice and hold it to run, or to dash in the air) and four
+// face buttons in a diamond on the right (B jump, Y shoot, A sword, X grenade), with two small
+// shoulder buttons above them (swap weapon, potion). GameMenus shows them in gameplay scenes on
+// touch screens. They feed the same actions as the keyboard through InputBindings and
+// KeyboardInputSource. HelpScreen copies the labels.
 // Touches are read straight from Input.touches before anyone reads input this frame, so a tap
 // is never missed and several fingers work at once.
 [DefaultExecutionOrder(-100)]
 public class TouchControls : MonoBehaviour {
 
-    private const float StickRadius = 70f;      // canvas units (reference 1280x720)
-    private const float ButtonSize = 96f;
-    private const float SmallButtonSize = 72f;
-    private const float StickUpThreshold = 0.5f;
-    private static readonly Color ButtonColor = new Color(0.20f, 0.12f, 0.33f, 0.55f);
-    private static readonly Color PressedColor = new Color(0.68f, 0.24f, 0.82f, 0.75f);
+    // canvas units (reference 1280x720)
+    private const float StickRadius = 80f;
+    private static readonly Vector2 StickCenter = new Vector2(165f, 165f);   // from the bottom-left corner
+    private const float StickGrabRadius = StickRadius * 2.6f;                // a thumb that lands near the pad still grabs it
+    private const float StickDeadzone = 0.22f;
+    private const float WalkSlope = 0.38f;      // |x| of the direction needed to walk (up to about 67° off horizontal)
+    private const float VerticalSlope = 0.75f;  // |y| needed to crouch or aim up (steeper than 49°), so walking doesn't crouch
+    private const float DoubleTapSeconds = 0.4f;
+
+    private static readonly Vector2 DiamondCenter = new Vector2(-175f, 165f); // from the bottom-right corner
+    private const float DiamondSpread = 80f;
+    private const float FaceSize = 92f;
+    private const float HitScale = 1.35f;       // touch area beyond the drawn disc; neighbours overlap so one thumb can press two
+    private static readonly Vector2 ShoulderSize = new Vector2(118f, 54f);
+
+    private static readonly Color BaseColor = new Color(0.20f, 0.12f, 0.33f, 0.40f);
+    private static readonly Color KnobColor = new Color(0.68f, 0.24f, 0.82f, 0.65f);
+    private static readonly Color RunColor = new Color(0.95f, 0.55f, 0.25f, 0.80f);
+    private static readonly Color MarkColor = new Color(1f, 1f, 1f, 0.35f);
+    private static readonly Color ShoulderColor = new Color(0.20f, 0.12f, 0.33f, 0.55f);
+    private static readonly Color PressedColor = new Color(0.68f, 0.24f, 0.82f, 0.80f);
+    // muted Super Famicom colours
+    private static readonly Color JumpColor = new Color(0.85f, 0.70f, 0.15f, 0.55f);   // B yellow
+    private static readonly Color ShootColor = new Color(0.20f, 0.60f, 0.30f, 0.55f);  // Y green
+    private static readonly Color MeleeColor = new Color(0.80f, 0.20f, 0.20f, 0.55f);  // A red
+    private static readonly Color GrenadeColor = new Color(0.25f, 0.35f, 0.80f, 0.55f); // X blue
 
     private static TouchControls active;
 
@@ -23,6 +46,8 @@ public class TouchControls : MonoBehaviour {
         public GameAction action;
         public RectTransform rect;
         public Image image;
+        public Color color;
+        public float hitRadius;     // 0 for the pill-shaped shoulder buttons, which use their rectangle
         public bool held;
         public bool down;
         public bool up;
@@ -30,31 +55,53 @@ public class TouchControls : MonoBehaviour {
 
     private Canvas canvas;
     private Pad[] pads;
+    private Pad swap;
     private RectTransform stickBase;
     private RectTransform stickKnob;
+    private Image stickKnobImage;
     private int stickFinger = -1;
-    private Vector2 stickOrigin;
-    private Vector2 stick;
+    private Vector2 stick;          // quantized: each axis -1, 0 or 1
     private float stickUpBefore;
+    private float lastTapTime = float.NegativeInfinity;
+    private float lastTapDirection;
+    private bool running;
+    private bool runDown;
+    private bool runUp;
 
     public static bool Active => active != null && active.isActiveAndEnabled;
     public static float Horizontal => Active ? active.stick.x : 0f;
     public static float Vertical => Active ? active.stick.y : 0f;
 
     public static bool Get(GameAction action) {
+        if (action == GameAction.Run) {
+            return Active && active.running;
+        }
         Pad pad = Find(action);
         return pad != null && pad.held;
     }
 
     public static bool GetDown(GameAction action) {
-        if (action == GameAction.Interact && Active) {
-            return active.stick.y > StickUpThreshold && active.stickUpBefore <= StickUpThreshold;
+        if (!Active) {
+            return false;
+        }
+        switch (action) {
+            case GameAction.Interact:
+                return active.stick.y > 0.5f && active.stickUpBefore <= 0.5f;
+            case GameAction.Run:
+                return active.runDown;
+            // one button swaps: asking for both makes Player switch to whichever gun is not in hand
+            case GameAction.Pistol:
+            case GameAction.Shotgun:
+                return active.swap.down;
         }
         Pad pad = Find(action);
         return pad != null && pad.down;
     }
 
     public static bool GetUp(GameAction action) {
+        if (action == GameAction.Run) {
+            return Active && active.runUp;
+        }
         Pad pad = Find(action);
         return pad != null && pad.up;
     }
@@ -82,32 +129,49 @@ public class TouchControls : MonoBehaviour {
     private void Build() {
         Transform root = canvas.transform;
 
-        stickBase = MakeCircle("Stick", root, StickRadius * 2f, new Color(0.20f, 0.12f, 0.33f, 0.35f));
-        stickKnob = MakeCircle("Knob", stickBase, StickRadius, new Color(0.68f, 0.24f, 0.82f, 0.6f));
-        stickBase.gameObject.SetActive(false);
+        stickBase = MakeCircle("Stick", root, StickRadius * 2f, BaseColor);
+        stickBase.anchorMin = stickBase.anchorMax = Vector2.zero;
+        stickBase.anchoredPosition = StickCenter;
+        // a mark on each side, like the arms of a d-pad
+        for (int i = 0; i < 4; i++) {
+            Vector2 direction = Quaternion.Euler(0f, 0f, 90f * i) * Vector2.right;
+            RectTransform mark = MakeCircle("Mark", stickBase, 18f, MarkColor);
+            mark.anchoredPosition = direction * (StickRadius - 16f);
+        }
+        stickKnob = MakeCircle("Knob", stickBase, StickRadius, KnobColor);
+        stickKnobImage = stickKnob.GetComponent<Image>();
 
-        // right thumb: jump in the corner, attacks around it, the rest in a row above
+        Vector2 c = DiamondCenter;
+        float s = DiamondSpread;
         pads = new[] {
-            MakePad(root, GameAction.Jump, "Pular", new Vector2(-90f, 90f), ButtonSize),
-            MakePad(root, GameAction.Ranged, "Tiro", new Vector2(-200f, 70f), ButtonSize),
-            MakePad(root, GameAction.Melee, "Golpe", new Vector2(-150f, 185f), ButtonSize),
-            MakePad(root, GameAction.Dash, "Dash", new Vector2(-50f, 200f), SmallButtonSize),
-            MakePad(root, GameAction.Run, "Correr", new Vector2(-300f, 60f), SmallButtonSize),
-            MakePad(root, GameAction.Grenade, "Gran.", new Vector2(-260f, 160f), SmallButtonSize),
-            MakePad(root, GameAction.Potion, "Poção", new Vector2(-50f, 290f), SmallButtonSize),
-            MakePad(root, GameAction.Pistol, "1", new Vector2(-140f, 290f), SmallButtonSize),
-            MakePad(root, GameAction.Shotgun, "2", new Vector2(-230f, 290f), SmallButtonSize),
+            MakeFace(root, GameAction.Jump, "Pular", c + new Vector2(0f, -s), JumpColor),
+            MakeFace(root, GameAction.Ranged, "Tiro", c + new Vector2(-s, 0f), ShootColor),
+            MakeFace(root, GameAction.Melee, "Golpe", c + new Vector2(s, 0f), MeleeColor),
+            MakeFace(root, GameAction.Grenade, "Gran.", c + new Vector2(0f, s), GrenadeColor),
+            MakeShoulder(root, GameAction.Potion, "Poção", c + new Vector2(s, s * 2.25f)),
+            swap = MakeShoulder(root, GameAction.Shotgun, "Arma", c + new Vector2(-s, s * 2.25f)),
         };
     }
 
-    private Pad MakePad(Transform root, GameAction action, string label, Vector2 fromBottomRight, float size) {
-        RectTransform rect = MakeCircle(label, root, size, ButtonColor);
+    private Pad MakeFace(Transform root, GameAction action, string label, Vector2 fromBottomRight, Color color) {
+        Pad pad = MakePad(root, action, label, fromBottomRight, new Vector2(FaceSize, FaceSize), color);
+        pad.hitRadius = FaceSize * 0.5f * HitScale;
+        return pad;
+    }
+
+    private Pad MakeShoulder(Transform root, GameAction action, string label, Vector2 fromBottomRight) {
+        return MakePad(root, action, label, fromBottomRight, ShoulderSize, ShoulderColor);
+    }
+
+    private Pad MakePad(Transform root, GameAction action, string label, Vector2 fromBottomRight, Vector2 size, Color color) {
+        RectTransform rect = MakeCircle(label, root, size.x, color);
+        rect.sizeDelta = size;
         rect.anchorMin = rect.anchorMax = new Vector2(1f, 0f);
         rect.anchoredPosition = fromBottomRight;
         Text text = MenuKit.MakeText(rect, label, MenuKit.SmallTextSize, MenuKit.TextColor, TextAnchor.MiddleCenter);
         MenuKit.Stretch(text.rectTransform);
         text.raycastTarget = false;
-        return new Pad { action = action, rect = rect, image = rect.GetComponent<Image>() };
+        return new Pad { action = action, rect = rect, image = rect.GetComponent<Image>(), color = color };
     }
 
     private static RectTransform MakeCircle(string name, Transform parent, float size, Color color) {
@@ -149,24 +213,24 @@ public class TouchControls : MonoBehaviour {
 
     private void OnDisable() {
         Input.simulateMouseWithTouches = true;
-        stickFinger = -1;
-        stick = Vector2.zero;
+        ReleaseStick();
         stickUpBefore = 0f;
-        if (stickBase != null) {
-            stickBase.gameObject.SetActive(false);
-        }
+        running = runDown = runUp = false;
         if (pads != null) {
             foreach (Pad pad in pads) {
                 pad.held = pad.down = pad.up = false;
-                pad.image.color = ButtonColor;
+                pad.image.color = pad.color;
             }
         }
     }
 
     private void Update() {
         stickUpBefore = stick.y;
+        float horizontalBefore = stick.x;
         UpdateStick();
+        UpdateRun(horizontalBefore);
 
+        float scale = canvas.scaleFactor;
         foreach (Pad pad in pads) {
             bool held = false;
             for (int i = 0; i < Input.touchCount; i++) {
@@ -174,7 +238,7 @@ public class TouchControls : MonoBehaviour {
                 if (touch.fingerId == stickFinger || touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) {
                     continue;
                 }
-                if (RectTransformUtility.RectangleContainsScreenPoint(pad.rect, touch.position, null)) {
+                if (Hits(pad, touch.position, scale)) {
                     held = true;
                     break;
                 }
@@ -182,50 +246,94 @@ public class TouchControls : MonoBehaviour {
             pad.down = held && !pad.held;
             pad.up = !held && pad.held;
             pad.held = held;
-            pad.image.color = held ? PressedColor : ButtonColor;
+            pad.image.color = held ? PressedColor : pad.color;
         }
+    }
+
+    private static bool Hits(Pad pad, Vector2 position, float scale) {
+        if (pad.hitRadius > 0f) {
+            return Vector2.Distance(position, pad.rect.position) <= pad.hitRadius * scale;
+        }
+        return RectTransformUtility.RectangleContainsScreenPoint(pad.rect, position, null);
     }
 
     private void UpdateStick() {
         float scale = canvas.scaleFactor;
+        Vector2 center = stickBase.position;
         for (int i = 0; i < Input.touchCount; i++) {
             Touch touch = Input.GetTouch(i);
-            if (stickFinger < 0 && touch.phase == TouchPhase.Began && InStickZone(touch.position) && !OnPad(touch.position)) {
+            if (stickFinger < 0 && touch.phase == TouchPhase.Began && InStickZone(touch.position, center, scale) && !OnPad(touch.position, scale)) {
                 stickFinger = touch.fingerId;
-                stickOrigin = touch.position;
-                stickBase.gameObject.SetActive(true);
-                stickBase.position = stickOrigin;
             }
             if (touch.fingerId != stickFinger) {
                 continue;
             }
             if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) {
-                stickFinger = -1;
-                stick = Vector2.zero;
-                stickBase.gameObject.SetActive(false);
+                ReleaseStick();
                 return;
             }
-            Vector2 offset = Vector2.ClampMagnitude(touch.position - stickOrigin, StickRadius * scale);
-            stick = offset / (StickRadius * scale);
-            stickKnob.position = stickOrigin + offset;
+            // the pad stays put: the direction is from its centre, wherever the thumb wanders
+            Vector2 offset = Vector2.ClampMagnitude(touch.position - center, StickRadius * scale);
+            stickKnob.anchoredPosition = offset / scale;
+            stick = Quantize(offset / (StickRadius * scale));
             return;
         }
         // the finger left without an Ended phase (e.g. the app lost focus)
         if (stickFinger >= 0) {
-            stickFinger = -1;
-            stick = Vector2.zero;
-            stickBase.gameObject.SetActive(false);
+            ReleaseStick();
         }
     }
 
-    // left half of the screen, below the pause button at the top
-    private static bool InStickZone(Vector2 position) {
-        return position.x < Screen.width * 0.5f && position.y < Screen.height * 0.8f;
+    // like a d-pad: walking forgives a thumb that drifts up or down, crouch and aim need a clear push
+    private static Vector2 Quantize(Vector2 value) {
+        if (value.magnitude < StickDeadzone) {
+            return Vector2.zero;
+        }
+        Vector2 direction = value.normalized;
+        return new Vector2(
+            Mathf.Abs(direction.x) >= WalkSlope ? Mathf.Sign(direction.x) : 0f,
+            Mathf.Abs(direction.y) >= VerticalSlope ? Mathf.Sign(direction.y) : 0f);
     }
 
-    private bool OnPad(Vector2 position) {
+    private void ReleaseStick() {
+        stickFinger = -1;
+        stick = Vector2.zero;
+        if (stickKnob != null) {
+            stickKnob.anchoredPosition = Vector2.zero;
+        }
+    }
+
+    // tap a direction twice (lift the thumb or bring it back to the centre in between) and hold it to run
+    private void UpdateRun(float horizontalBefore) {
+        runDown = runUp = false;
+        float horizontal = stick.x;
+        if (horizontal != horizontalBefore) {
+            if (running) {
+                running = false;
+                runUp = true;
+            }
+            if (horizontal != 0f) {
+                if (horizontal == lastTapDirection && Time.unscaledTime - lastTapTime <= DoubleTapSeconds) {
+                    running = runDown = true;
+                    lastTapDirection = 0f; // a third tap starts a new pair
+                } else {
+                    lastTapDirection = horizontal;
+                    lastTapTime = Time.unscaledTime;
+                }
+            }
+        }
+        stickKnobImage.color = running ? RunColor : KnobColor;
+    }
+
+    // around the pad, on the left half and below the pause button at the top
+    private static bool InStickZone(Vector2 position, Vector2 center, float scale) {
+        return position.x < Screen.width * 0.5f && position.y < Screen.height * 0.8f &&
+               Vector2.Distance(position, center) <= StickGrabRadius * scale;
+    }
+
+    private bool OnPad(Vector2 position, float scale) {
         foreach (Pad pad in pads) {
-            if (RectTransformUtility.RectangleContainsScreenPoint(pad.rect, position, null)) {
+            if (Hits(pad, position, scale)) {
                 return true;
             }
         }
