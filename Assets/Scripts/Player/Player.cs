@@ -180,6 +180,7 @@ public class Player : MonoBehaviour, IDamageable {
     public int ComboStep { get; private set; }
     public int SwingCount { get; private set; }
     // a press now would chain the next combo hit (the autopilot uses it to keep the combo going)
+    public float AttackReadyIn => Mathf.Max(0f, attackReadyAt - Time.time);
     public bool ComboContinues => ComboStep > 0 && ComboStep < 3 && Time.time - attackReadyAt <= ComboWindow;
     // armor hearts (the Berserker helmet): each one takes a hit before the life hearts
     public int Armor { get; private set; }

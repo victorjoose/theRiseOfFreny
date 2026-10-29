@@ -1,0 +1,1103 @@
+fileFormatVersion: 2
+guid: e7be6c8d1180495c9aa449427da7f799
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -3279524257209834336
+    second: Freny blade_-90
+  - first:
+      213: 3692246722532040345
+    second: Freny blade_-75
+  - first:
+      213: 2373839268820784404
+    second: Freny blade_-60
+  - first:
+      213: 2207713036499891339
+    second: Freny blade_-45
+  - first:
+      213: 4154000073781003012
+    second: Freny blade_-30
+  - first:
+      213: 4489967058028260555
+    second: Freny blade_-15
+  - first:
+      213: 3590958667676843557
+    second: Freny blade_0
+  - first:
+      213: -1925061592572710336
+    second: Freny blade_15
+  - first:
+      213: 4583933636146636433
+    second: Freny blade_30
+  - first:
+      213: -2044412839840761583
+    second: Freny blade_45
+  - first:
+      213: -3842238445221257576
+    second: Freny blade_60
+  - first:
+      213: 4578568521365964965
+    second: Freny blade_75
+  - first:
+      213: -2441774442484376025
+    second: Freny blade_90
+  - first:
+      213: -4452943775535327894
+    second: Freny blade_105
+  - first:
+      213: 309085566823309201
+    second: Freny blade_120
+  - first:
+      213: 2310525889668449328
+    second: Freny blade_135
+  - first:
+      213: 4026091984917126032
+    second: Freny blade_150
+  - first:
+      213: 2335019074266009142
+    second: Freny blade_165
+  - first:
+      213: -809306840532562451
+    second: Freny blade_180
+  - first:
+      213: -3825842505797570268
+    second: Freny great blade_-90
+  - first:
+      213: -4220905320116770649
+    second: Freny great blade_-75
+  - first:
+      213: -3572572503653507812
+    second: Freny great blade_-60
+  - first:
+      213: -799770639942628906
+    second: Freny great blade_-45
+  - first:
+      213: -4037279162170122913
+    second: Freny great blade_-30
+  - first:
+      213: -3692699481834769123
+    second: Freny great blade_-15
+  - first:
+      213: -175727051611778315
+    second: Freny great blade_0
+  - first:
+      213: -646139451594344295
+    second: Freny great blade_15
+  - first:
+      213: 377581623797085267
+    second: Freny great blade_30
+  - first:
+      213: 1212909044641202180
+    second: Freny great blade_45
+  - first:
+      213: 1694274891744846
+    second: Freny great blade_60
+  - first:
+      213: -2932558675453197116
+    second: Freny great blade_75
+  - first:
+      213: -3413742662474177752
+    second: Freny great blade_90
+  - first:
+      213: -3531780357418048736
+    second: Freny great blade_105
+  - first:
+      213: -2382562307172684294
+    second: Freny great blade_120
+  - first:
+      213: -1637721964698525303
+    second: Freny great blade_135
+  - first:
+      213: 3284104130969760004
+    second: Freny great blade_150
+  - first:
+      213: -4556658161432557322
+    second: Freny great blade_165
+  - first:
+      213: -3078009272965147256
+    second: Freny great blade_180
+  externalObjects: {}
+  serializedVersion: 12
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 1
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Freny blade_-90
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 84de07e1e1c442719749293b3acc397f
+      internalID: -3279524257209834336
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_-75
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6c37d138ef4a48da8725e4386c1bca31
+      internalID: 3692246722532040345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_-60
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 03a16be9e6aa4008aef2ef98df450cc7
+      internalID: 2373839268820784404
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_-45
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 617a35b0ca4a4bf082ec462d7da082e2
+      internalID: 2207713036499891339
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_-30
+      rect:
+        serializedVersion: 2
+        x: 864
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6d352fe847dd436db4b6deb0233f62c3
+      internalID: 4154000073781003012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_-15
+      rect:
+        serializedVersion: 2
+        x: 1080
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 54c61a38a9324c9983607e0eefc61387
+      internalID: 4489967058028260555
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_0
+      rect:
+        serializedVersion: 2
+        x: 1296
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 59757e145c874239a7bb7a2ae98a8f42
+      internalID: 3590958667676843557
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_15
+      rect:
+        serializedVersion: 2
+        x: 1512
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7a11212f9177466baf483f025b7f2c47
+      internalID: -1925061592572710336
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_30
+      rect:
+        serializedVersion: 2
+        x: 1728
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b933a3b47b0447bf9148433cc23116e1
+      internalID: 4583933636146636433
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_45
+      rect:
+        serializedVersion: 2
+        x: 1944
+        y: 648
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0009e4faffaf4ccaa4b577865880639a
+      internalID: -2044412839840761583
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_60
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 13c73c194bdd4be5a6da2b3bcb746699
+      internalID: -3842238445221257576
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_75
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b72dc672c74649acb0267a872f243e7e
+      internalID: 4578568521365964965
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_90
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0c1bed4a96414f50ac586176a2427379
+      internalID: -2441774442484376025
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_105
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1973150382dd4cf4a0c9f8504fa29ba2
+      internalID: -4452943775535327894
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_120
+      rect:
+        serializedVersion: 2
+        x: 864
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 42ac30320e484a5e933ce48a67bf76e9
+      internalID: 309085566823309201
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_135
+      rect:
+        serializedVersion: 2
+        x: 1080
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d929db7341404b31bb9796b2e7d5c3b2
+      internalID: 2310525889668449328
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_150
+      rect:
+        serializedVersion: 2
+        x: 1296
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3ec4e41aa6f940f387f47098c6dc7cf2
+      internalID: 4026091984917126032
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_165
+      rect:
+        serializedVersion: 2
+        x: 1512
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 01b05eea0b0142aabb548ae56612ff00
+      internalID: 2335019074266009142
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny blade_180
+      rect:
+        serializedVersion: 2
+        x: 1728
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 943720c98baa4e368467e9b6477893ec
+      internalID: -809306840532562451
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_-90
+      rect:
+        serializedVersion: 2
+        x: 1944
+        y: 432
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 48537160f5b642d2845f1d1ae7982e03
+      internalID: -3825842505797570268
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_-75
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: afeb2e4b2a9c44459fb09f31a8df9d5f
+      internalID: -4220905320116770649
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_-60
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 211c55a1ecd54ed5ab661bb2ed93211a
+      internalID: -3572572503653507812
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_-45
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2113bdfab4f44212aecdf7c86e5f2bee
+      internalID: -799770639942628906
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_-30
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 578d516ed489473ca19711296ca028b6
+      internalID: -4037279162170122913
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_-15
+      rect:
+        serializedVersion: 2
+        x: 864
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8963c59456114a98a3566f23514ec58a
+      internalID: -3692699481834769123
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_0
+      rect:
+        serializedVersion: 2
+        x: 1080
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7b1b969a4f88459ea649576a3f905a1f
+      internalID: -175727051611778315
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_15
+      rect:
+        serializedVersion: 2
+        x: 1296
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c53432deca38471aa4b5ad0956003541
+      internalID: -646139451594344295
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_30
+      rect:
+        serializedVersion: 2
+        x: 1512
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 15a953e6213e43cabac532b51a758c94
+      internalID: 377581623797085267
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_45
+      rect:
+        serializedVersion: 2
+        x: 1728
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f5d755a03b0844e5bfc0e8159b45bc74
+      internalID: 1212909044641202180
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_60
+      rect:
+        serializedVersion: 2
+        x: 1944
+        y: 216
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 023c5531bca5499bb478f43cae260fce
+      internalID: 1694274891744846
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_75
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8d831f78765448008897f7561b70c4f7
+      internalID: -2932558675453197116
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_90
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f8b0fec6ca4d4759a67ae5eb4ba4fd92
+      internalID: -3413742662474177752
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_105
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5f281bf47e7445148d5f5c0627bc7d4d
+      internalID: -3531780357418048736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_120
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8332be73bf314e68b0e815ae3ef582e2
+      internalID: -2382562307172684294
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_135
+      rect:
+        serializedVersion: 2
+        x: 864
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 407652489fb0451eb49e22685631c358
+      internalID: -1637721964698525303
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_150
+      rect:
+        serializedVersion: 2
+        x: 1080
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f2fc6d3766794aff963307764c73e3fe
+      internalID: 3284104130969760004
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_165
+      rect:
+        serializedVersion: 2
+        x: 1296
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 23fb1d7ece8c45e1803dffd1b0912d18
+      internalID: -4556658161432557322
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Freny great blade_180
+      rect:
+        serializedVersion: 2
+        x: 1512
+        y: 0
+        width: 216
+        height: 216
+      alignment: 9
+      pivot: {x: 0.509259, y: 0.490741}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e4fcd7223127402191e237067903e733
+      internalID: -3078009272965147256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      Freny blade_-90: -3279524257209834336
+      Freny blade_-75: 3692246722532040345
+      Freny blade_-60: 2373839268820784404
+      Freny blade_-45: 2207713036499891339
+      Freny blade_-30: 4154000073781003012
+      Freny blade_-15: 4489967058028260555
+      Freny blade_0: 3590958667676843557
+      Freny blade_15: -1925061592572710336
+      Freny blade_30: 4583933636146636433
+      Freny blade_45: -2044412839840761583
+      Freny blade_60: -3842238445221257576
+      Freny blade_75: 4578568521365964965
+      Freny blade_90: -2441774442484376025
+      Freny blade_105: -4452943775535327894
+      Freny blade_120: 309085566823309201
+      Freny blade_135: 2310525889668449328
+      Freny blade_150: 4026091984917126032
+      Freny blade_165: 2335019074266009142
+      Freny blade_180: -809306840532562451
+      Freny great blade_-90: -3825842505797570268
+      Freny great blade_-75: -4220905320116770649
+      Freny great blade_-60: -3572572503653507812
+      Freny great blade_-45: -799770639942628906
+      Freny great blade_-30: -4037279162170122913
+      Freny great blade_-15: -3692699481834769123
+      Freny great blade_0: -175727051611778315
+      Freny great blade_15: -646139451594344295
+      Freny great blade_30: 377581623797085267
+      Freny great blade_45: 1212909044641202180
+      Freny great blade_60: 1694274891744846
+      Freny great blade_75: -2932558675453197116
+      Freny great blade_90: -3413742662474177752
+      Freny great blade_105: -3531780357418048736
+      Freny great blade_120: -2382562307172684294
+      Freny great blade_135: -1637721964698525303
+      Freny great blade_150: 3284104130969760004
+      Freny great blade_165: -4556658161432557322
+      Freny great blade_180: -3078009272965147256
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
