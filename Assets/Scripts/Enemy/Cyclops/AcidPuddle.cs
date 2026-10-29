@@ -4,6 +4,7 @@ using UnityEngine;
 // (1 heart, then his usual blink) until it dries up.
 public class AcidPuddle : MonoBehaviour {
     private const int Damage = 1;
+    private const float SlowFactor = 0.45f;
     private static readonly Color Colour = new Color(0.45f, 0.85f, 0.2f, 0.85f);   // green (José, 2026-10-29)
     private static Sprite pixel;
     private static Player freny;
@@ -24,6 +25,23 @@ public class AcidPuddle : MonoBehaviour {
 
     private void OnDisable() {
         Active.Remove(this);
+    }
+
+    // thrown up from a platform: it falls as a blob to the floor below, then spreads there
+    public static void Spill(Vector3 from, float width, float seconds) {
+        RaycastHit2D hit = Physics2D.Raycast(from + Vector3.up * 0.5f, Vector2.down, 30f, LayerMask.GetMask("Ground"));
+        if (hit.collider == null) {
+            return;   // over the void: it's gone
+        }
+        Vector3 floor = new Vector3(from.x, hit.point.y, 0f);
+        if (from.y - floor.y < 0.6f) {
+            Create(floor, width, seconds);
+            return;
+        }
+        GameObject blob = new GameObject("Vomit Drop");
+        blob.transform.position = from;
+        VomitDrop drop = blob.AddComponent<VomitDrop>();
+        drop.Setup(floor, width, seconds);
     }
 
     public static void Create(Vector3 floorPoint, float width, float seconds) {
@@ -70,7 +88,8 @@ public class AcidPuddle : MonoBehaviour {
             Vector3 feet = freny.Feet;
             Vector3 at = transform.position;
             if (Mathf.Abs(feet.x - at.x) < width / 2f && feet.y >= at.y - 0.3f && feet.y <= at.y + 0.35f) {
-                freny.TryDamage(Damage);
+                freny.Slow(SlowFactor, 0.3f);   // wading through it: slow while in it and a moment after
+                freny.TryDamage(Damage);        // and it burns (his blink after a hit sets the pace)
             }
         }
     }
@@ -103,5 +122,34 @@ public class AcidPuddle : MonoBehaviour {
             pixel = Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
         }
         return pixel;
+    }
+}
+
+// the vomit falling from a platform: a green blob with a dripping trail, a puddle where it lands
+public class VomitDrop : MonoBehaviour {
+    private const float Gravity = 30f;
+    private Vector3 floor;
+    private float width;
+    private float seconds;
+    private float speed;
+    private float nextDrip;
+
+    public void Setup(Vector3 floorPoint, float puddleWidth, float puddleSeconds) {
+        floor = floorPoint;
+        width = puddleWidth;
+        seconds = puddleSeconds;
+    }
+
+    private void Update() {
+        speed += Gravity * Time.deltaTime;
+        transform.position += Vector3.down * (speed * Time.deltaTime);
+        if (Time.time >= nextDrip) {
+            nextDrip = Time.time + 0.03f;
+            Fx.Burst(transform.position, new Color(0.45f, 0.85f, 0.2f, 0.9f), 4, 0.6f, 0.12f, 0.35f);
+        }
+        if (transform.position.y <= floor.y) {
+            AcidPuddle.Create(floor, width, seconds);
+            Destroy(gameObject);
+        }
     }
 }

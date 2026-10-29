@@ -17,12 +17,12 @@ public class Cyclops : Enemy {
     private const string Sheets = "Cyclops/Cyclops ";
     // the red Golem's mine, thrown much harder: fast and flat, hard to dodge
     private const float BombCooldown = 8f;
-    private const float BombMinDistance = 3.5f;
+    private const float BombMinDistance = 7f;   // only when Freny is far: thrown hard across the arena
     private const float BombMaxDistance = 14f;
     private const float BombAngle = 28f;
     private const float BombGravity = 4.5f;
     private const float BombMaxSpeed = 26f;
-    private const float BombSize = 4f;   // 4 times the red Golem's mine (José, 2026-10-29)
+    private const float BombSize = 3f;   // 3 times the red Golem's mine (José, 2026-10-29: 4 was too much)
     private float nextBomb;
 
     private FrameAnimator frames;
@@ -33,7 +33,6 @@ public class Cyclops : Enemy {
     private const float AfterBlowRest = 3f;   // seconds of calm after any of its blows
     private float quietUntil;
     private bool punching;
-    protected override bool CanStartAttack => Time.time >= quietUntil;
 
     // the eye (in the Idle frame, 0.88 forward and 0.73 up from the sprite's middle): hits there
     // take double (José, 2026-10-29)
@@ -164,8 +163,24 @@ public class Cyclops : Enemy {
             ThrowBomb();
         } else if (Time.time >= nextSmash && dx < SmashReach && Mathf.Abs(dy) < 2.5f) {
             StartCoroutine(Smash());
-        } else if (Time.time >= nextVomit && dx < VomitReach && Mathf.Abs(dy) < 2f) {
-            StartCoroutine(Vomit());
+        } else if (Time.time >= nextVomit && dx < VomitReach && dy < -1.5f) {
+            StartCoroutine(Vomit());   // Freny down below, near: it throws up on him
+        }
+    }
+
+    // up close it punches; 2 times in 5 it throws up instead (José, 2026-10-29)
+    private const float VomitShare = 0.4f;
+
+    protected override bool CanStartAttack {
+        get {
+            if (Time.time < quietUntil || special) {
+                return false;
+            }
+            if (Time.time >= nextVomit && Random.value < VomitShare) {
+                StartCoroutine(Vomit());
+                return false;
+            }
+            return true;
         }
     }
 
@@ -212,8 +227,7 @@ public class Cyclops : Enemy {
         Sfx.Play("potion", Center, 1f, 0.5f);   // a deep, slow gurgle
         yield return new WaitForSeconds(length * 0.5f);
         if (!isDead) {
-            Vector3 at = Feet + Vector3.right * (Facing * (HalfWidth + 1.6f));
-            AcidPuddle.Create(at, 3f, 4f);
+            SpillVomit();
         }
         yield return new WaitForSeconds(length * 0.5f);
         nextVomit = Time.time + VomitCooldown * ScoreCooldown;
@@ -221,7 +235,24 @@ public class Cyclops : Enemy {
         special = false;
     }
 
-    // the boss bar, top centre
+    // in front of it; from a platform, with Freny below, it pours over the edge and falls to him
+    private void SpillVomit() {
+        Vector3 feet = Feet;
+        float mouth = feet.x + Facing * (HalfWidth + 0.4f);
+        bool frenyBelow = player != null && player.Feet.y < feet.y - 1.5f;
+        if (frenyBelow) {
+            int ground = LayerMask.GetMask("Ground");
+            for (float step = 0f; step <= VomitReach; step += 0.25f) {
+                float x = mouth + Facing * step;
+                if (Physics2D.Raycast(new Vector2(x, feet.y + 0.3f), Vector2.down, 0.7f, ground).collider == null) {
+                    AcidPuddle.Spill(new Vector3(x + Facing * 0.5f, feet.y - 0.1f, 0f), 3f, 4f);   // over the edge
+                    return;
+                }
+            }
+        }
+        AcidPuddle.Spill(new Vector3(mouth + Facing * 1.2f, feet.y + 0.2f, 0f), 3f, 4f);
+    }
+
     // the game's boss bar (Prefabs/HUD/Resources/BossHealth, taken from stage 1-9): the Boss
     // Health frame with two sliders, the life and a darker trail that follows it down
     private GameObject bar;
