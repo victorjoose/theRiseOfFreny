@@ -117,11 +117,11 @@ public static class FrenyProgress {
             return 1;
         }
         switch (upgrade) {
-            case FrenyUpgrade.DoubleJump: return 150;
-            case FrenyUpgrade.Shotgun: return 300;
-            case FrenyUpgrade.GreatSword: return 250;
-            case FrenyUpgrade.Grenade: return 200;
-            default: return 100 + 50 * GetLevel(upgrade);
+            case FrenyUpgrade.DoubleJump: return 600;
+            case FrenyUpgrade.Shotgun: return 1200;
+            case FrenyUpgrade.GreatSword: return 1000;
+            case FrenyUpgrade.Grenade: return 800;
+            default: return 400 + 200 * GetLevel(upgrade);
         }
     }
 
