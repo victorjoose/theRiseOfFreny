@@ -42,6 +42,7 @@ public class Cyclops : Enemy {
     private static readonly Vector2 EyeOffset = new Vector2(0.88f, 0.73f);
     private const float EyeRadius = 0.45f;
 
+    public Vector3 EyePoint => Eye;   // the autopilot aims its sword there
     private Vector3 Eye => sprite.bounds.center + new Vector3((FacingRight ? 1f : -1f) * EyeOffset.x, EyeOffset.y, 0f);
 
     protected override float HitScale(Vector3 from, bool shot) {

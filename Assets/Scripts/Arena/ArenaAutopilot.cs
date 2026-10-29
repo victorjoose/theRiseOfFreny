@@ -296,6 +296,34 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             return frame;
         }
 
+        // 1c'. it rests: jump at its eye and swing up there (double damage, José: "porrada no olho")
+        if (target is Cyclops resting && sameFloor && Mathf.Abs(dx) <= meleeRange + EyeJumpReach) {
+            float eyeY = resting.EyePoint.y;
+            float bladeY = player.BodyCenter.y;
+            if (player.IsGrounded && eyeY - bladeY > EyeTolerance && player.AttackReady && Time.time >= nextJumpTime) {
+                frame.jumpPressed = true;
+                frame.jumpHeld = true;
+                frame.move = towardTarget;
+                nextJumpTime = Time.time + jumpCooldown;
+                action = "Pulando no olho do Ciclope";
+                return frame;
+            }
+            if (!player.IsGrounded) {
+                frame.jumpHeld = bladeY < eyeY;
+                if (!facingTarget) {
+                    Turn(ref frame, towardTarget);
+                } else if (Mathf.Abs(bladeY - eyeY) <= EyeTolerance && Mathf.Abs(dx) <= meleeRange + 0.3f
+                           && (player.AttackReady || player.ComboContinues)) {
+                    frame.meleePressed = true;
+                    action = "Espada no olho do Ciclope";
+                } else {
+                    frame.move = Mathf.Abs(dx) > meleeRange * 0.7f ? towardTarget : 0f;
+                    action = "No ar, mirando o olho";
+                }
+                return frame;
+            }
+        }
+
         // 1d. the Escudeiro's shield faces him: jump over it to hit its back (from above counts too)
         if (target is Shielded shield && sameFloor && Mathf.Abs(dx) <= ShieldJumpDistance
             && shield.Guards(player.Feet) && player.IsGrounded && Time.time >= nextJumpTime) {
@@ -448,6 +476,13 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private const float CyclopsSafeDistance = 3.2f;   // its punch and the start of the smash
     private const float CyclopsEngageTime = 0.9f;     // its rest must last this long to go in
+    private const float EyeJumpReach = 1.2f;          // how far out he jumps for the eye
+    private const float EyeTolerance = 0.45f;         // the eye's radius: the blade must be about there
+    // while a Ciclope is out it comes first (José, 2026-10-29: he went after everything else); the
+    // others only when they are right on him (the bat and bug that keep his combo alive)
+    private const float BossFirst = 25f;
+    private const float OthersDuringBoss = 15f;
+    private const float CloseEnough = 1.5f;
     private const float ShieldJumpDistance = 2.4f;    // close enough to jump over the Escudeiro
     private const float MineKeepOut = 0.8f;           // beyond the blast radius
     private const float WaveJumpAt = 3.2f;            // a shockwave this close: jump now
@@ -1053,8 +1088,15 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 score += hopCount == int.MaxValue ? 50f : routeHopCost * hopCount;
             }
 
-            if (FrenyProgress.HasSmartTarget) {
+            if (FrenyProgress.HasSmartTarget && !(enemy is Cyclops)) {
                 score += 1.5f * enemy.Health; // prefers the ones that die fastest
+            }
+            if (Cyclops.Current != null) {
+                if (enemy is Cyclops) {
+                    score -= BossFirst;
+                } else if (offset.magnitude > CloseEnough) {
+                    score += OthersDuringBoss;
+                }
             }
 
             if (enemy == currentTarget) {
