@@ -43,22 +43,29 @@ Os passos abaixo servem para recriar tudo em outro projeto.
 
 1. Crie a pasta `Assets/Resources/` se ela não existir.
 2. Copie [`FirebaseConfig.example.json`](FirebaseConfig.example.json) para `Assets/Resources/FirebaseConfig.json`.
-3. Preencha com o `apiKey` e o `projectId` do passo 1.
+3. Preencha com o `apiKey` e o `projectId` do passo 1. O `apiUrl` é opcional: vazio usa a API do site (`https://freny-online.vercel.app`).
 
 Esse arquivo está no `.gitignore`. A `apiKey` do Firebase não é um segredo de verdade (ela vai dentro de qualquer build do jogo), quem protege os dados são as regras do Firestore. Mesmo assim, fora do repositório fica mais fácil trocar de projeto.
 
 ### 5. Chave de assinatura do ranking
 
-O jogo assina cada pontuação (`ScoreSignature.cs`) e as regras só aceitam pontuações com a assinatura certa. A chave não pode ir para o repositório, que é público:
+Quem decide se uma pontuação entra no ranking é a nossa API (repositório `freny-online`, funções da Vercel em `api/run/`), não o jogo:
+
+1. Quando uma corrida da Arena começa, o jogo chama `POST /api/run/start` com o login do Firebase e recebe um ticket assinado com a hora do servidor.
+2. Ao morrer com um recorde novo, o jogo manda `POST /api/run/finish` com o ticket e o registro da partida: cada abate, com o tempo, o inimigo e o passo do combo (`RunLog` em `ScoreApi.cs`).
+3. A API confere que os abates somam exatamente a pontuação (pontos do inimigo × combo, igual ao jogo), que o combo sobe e zera como no jogo, que cada inimigo só aparece depois do ponto em que a Arena o libera, que não há abates demais em 10 s e que o tempo de jogo cabe no tempo real desde o ticket. Os números ficam em `api/_lib/rules.js` do `freny-online`: ao mudar pontos de inimigo, combo ou desbloqueios no jogo, mude lá também.
+4. Se a partida bate, a API devolve `sig = sha256("<chave>|uid|board|score")` e o jogo grava a pontuação no Firestore. As regras só aceitam a pontuação com essa assinatura.
+
+A chave fica só no servidor (variável `SCORE_KEY` na Vercel) e nas regras publicadas. Para gerar as regras com a chave:
 
 ```bash
-python Tools/ScoreKey/make_score_key.py caminho/da/score.key          # chave que já existe
-python Tools/ScoreKey/make_score_key.py --new caminho/da/score.key    # chave nova
+python Tools/ScoreKey/make_score_key.py caminho/da/api-score.key          # chave que já existe
+python Tools/ScoreKey/make_score_key.py --new caminho/da/api-score.key    # chave nova
 ```
 
-Isso escreve `Assets/Scripts/Online/ScoreKey.cs` (o jogo) e `Tools/ScoreKey/firestore.rules.publish` (as regras com a chave), os dois no `.gitignore`. A chave atual fica nos arquivos do projeto no Claude (`firebase/score.key`). Trocar a chave exige publicar as regras novas e soltar um build novo juntos. Um build sem `ScoreKey.cs` roda normal, mas não manda pontuação para o ranking.
+Isso escreve `Tools/ScoreKey/firestore.rules.publish` (no `.gitignore`). Trocar a chave exige publicar as regras novas e mudar a `SCORE_KEY` na Vercel juntos.
 
-As regras também exigem o "ticket" da corrida (`runs/{uid}`, gravado com a hora do servidor quando uma corrida da Arena começa) e só aceitam uma pontuação que caiba no tempo real da corrida (`maxScoreAfter`).
+Para testar no editor, rode a API local no `freny-online` (`SCORE_KEY=... npm run api`, ou com a chave no `.env.local`) e ponha `"apiUrl": "http://localhost:3000"` no `FirebaseConfig.json`. No editor toda corrida da Arena vai para `Logs/arena-run.json`, e as do piloto automático são conferidas pela API sem gravar nada (o resultado aparece no Console).
 
 Sem o `FirebaseConfig.json` o jogo funciona normal, só que offline, e o painel do Tab avisa que os recursos online estão desligados.
 

@@ -13,8 +13,8 @@ namespace Online {
 
     // One board per arena difficulty ("leaderboard_hard", "leaderboard_freny", "_medium", "_easy"), with
     // one document per player keyed by user id holding that player's best score there.
-    // firestore.rules only lets a score go up, and only as far as the run ticket (StartRun)
-    // allows for the time the run has lasted. The old mixed "leaderboard" is no longer used.
+    // firestore.rules only lets a score go up, and only with the signature the ranking API (ScoreApi)
+    // gives a run it checked. The old mixed "leaderboard" is no longer used.
     public class LeaderboardService {
         public static string Collection(ArenaLevel level) => "leaderboard_" + level.ToString().ToLowerInvariant();
 
@@ -26,27 +26,14 @@ namespace Online {
             _auth = auth;
         }
 
-        public IEnumerator SubmitBest(ArenaLevel level, string playerName, long score, Action<bool> done) {
-            string sig = ScoreSignature.Sign(_auth.UserId, Collection(level), score);
-            if (sig == null) {
-                Debug.LogWarning("[Online] No ScoreKey.cs in this build, the score is not sent (see ScoreSignature.cs).");
-                done?.Invoke(false);
-                yield break;
-            }
+        // sig: what ScoreApi.FinishRun returned for this score
+        public IEnumerator SubmitBest(ArenaLevel level, string playerName, long score, string sig, Action<bool> done) {
             FirestoreFields fields = new FirestoreFields()
                 .Set("name", playerName)
                 .Set("score", score)
                 .Set("sig", sig)
                 .SetServerTime("updatedAt");
             yield return _db.Patch(Collection(level) + "/" + _auth.UserId, fields, done);
-        }
-
-        // The run ticket: marks, with the server's clock, that a run on this board starts now.
-        public IEnumerator StartRun(ArenaLevel level, Action<bool> done) {
-            FirestoreFields fields = new FirestoreFields()
-                .Set("board", Collection(level))
-                .SetServerTime("startedAt");
-            yield return _db.Patch("runs/" + _auth.UserId, fields, done);
         }
 
         // The player's own score on a board, 0 when they have none. done(null) on a network error.
