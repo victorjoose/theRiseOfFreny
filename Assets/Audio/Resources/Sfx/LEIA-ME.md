@@ -20,6 +20,9 @@ atribuição obrigatória), cortados, convertidos para mono 44,1 kHz e normaliza
 | `sword_swing_1` | Timothy McHugh - Gorification [HD] / gore - metal knife swing - 4.wav (0.15–0.45 s) |
 | `sword_swing_2` | Timothy McHugh - Gorification [HD] / gore - metal knife swing - 5.wav (0.22–0.62 s) |
 | `sword_swing_3` | Timothy McHugh - Gorification [HD] / gore - metal knife swing - 17.wav (0–0.33 s) |
+| `sword_combo1` | `sword_swing_1` com tom 12% mais agudo (1º golpe do combo) |
+| `sword_combo2` | `sword_swing_3` com tom 25% mais agudo (2º golpe do combo) |
+| `sword_combo3` | `sword_swing_2` 18% mais grave + `sword_swing_1` 32% mais grave por baixo, graves reforçados (3º golpe, o forte) |
 | `sword_hit_1` | Timothy McHugh - Gorification [HD] / gore - medium metal blade wet impact in to flesh and removed - 6.wav (0–0.6 s) |
 | `sword_hit_2` | Timothy McHugh - Gorification [HD] / gore - crunchy flesh impact and blood squirt - hard -  8.wav (0–0.46 s) |
 | `pistol_shot_1` | Coll Anderson - Guns / EFX EXT .38 Plus Power Shots 04 B.wav (1–2 s) |

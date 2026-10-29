@@ -44,6 +44,11 @@ public class Player : MonoBehaviour, IDamageable {
     [Header("Combat")]
     public int MaxHealth = 4;
     [SerializeField] private float attackCooldown = 0.5f;  // the sword; the guns have their own
+    // the sword is a 3-hit combo: hits 1 and 2 are quick, the third pushes harder and has the long
+    // recovery. A press later than ComboWindow after the swing was ready starts over at hit 1.
+    private const float ComboGapFactor = 0.5f;      // cooldown after hits 1 and 2 (x attackCooldown)
+    private const float FinisherRecovery = 1.3f;    // cooldown after hit 3 (x attackCooldown)
+    private const float ComboWindow = 0.4f;
     [SerializeField] private float pistolCooldown = 0.2f;  // between revolver shots
     [SerializeField] private float shotgunCooldown = 0.6f;
     // blinking after a hit: nothing can hurt him meanwhile, so enemies around him can't chain their hits
@@ -91,6 +96,7 @@ public class Player : MonoBehaviour, IDamageable {
     private float jumpPressedTime = -10f;
     private float jumpStartTime = -10f;
     private float attackReadyAt;
+    private float swingCooldown = 0.5f;   // the cooldown the last swing started (the HUD's sword meter)
     private float gunReadyAt;
     private float meleePressedTime = -10f;  // a swing pressed while knocked down happens when he gets up
     private float rangedPressedTime = -10f;
@@ -104,7 +110,7 @@ public class Player : MonoBehaviour, IDamageable {
 
     // drops and buffs (see GiveGreatSword, GiveArmor, OnEnemyKilled)
     public const int ArmorMax = 3;
-    private const int GreatSwordDropSwings = 3;
+    private const int GreatSwordDropSwings = 6;     // two combos
     private const float GreatSwordGrace = 0.45f;   // the last dropped swing keeps the big hitbox
     // Rage rises with action and drains when nothing happens (fractions of the full meter)
     private const float RagePerKill = 0.12f;
@@ -169,6 +175,10 @@ public class Player : MonoBehaviour, IDamageable {
     // and the hitbox bigger. It stays on briefly after the last dropped swing so that swing is big too.
     public bool GreatSwordActive => FrenyProgress.HasGreatSword || GreatSwordSwings > 0 || Time.time < greatSwordGraceUntil;
     public int GreatSwordSwings { get; private set; }
+    // the combo hit of the last swing (1, 2 or 3) and a count of swings, so the sword can hit the
+    // same enemy once per swing (MeleeAttack) and FrenyMotion can draw each hit its own way
+    public int ComboStep { get; private set; }
+    public int SwingCount { get; private set; }
     // armor hearts (the Berserker helmet): each one takes a hit before the life hearts
     public int Armor { get; private set; }
     // kills, sword hits and hits taken fill the Rage meter, calm drains it; full, it gives
@@ -198,7 +208,7 @@ public class Player : MonoBehaviour, IDamageable {
         }
     }
     // meters for the HUD: 1 = ready / full, 0 = just used / empty
-    public float AttackReadiness => attackCooldown > 0f ? 1f - Mathf.Clamp01((attackReadyAt - Time.time) / attackCooldown) : 1f;
+    public float AttackReadiness => swingCooldown > 0f ? 1f - Mathf.Clamp01((attackReadyAt - Time.time) / swingCooldown) : 1f;
     public float RunMeter => runStamina;
     // the GameManager is looked up once in Start (FindObjectOfType walks the whole scene,
     // and the autopilot asks this on every decision)
@@ -605,9 +615,13 @@ public class Player : MonoBehaviour, IDamageable {
             return;
         }
         meleePressedTime = -10f;
-        _playerAnim.Melee();
-        Sfx.Play("sword_swing", transform.position);
-        attackReadyAt = Time.time + attackCooldown;
+        bool chained = ComboStep > 0 && ComboStep < 3 && Time.time - attackReadyAt <= ComboWindow;
+        ComboStep = chained ? ComboStep + 1 : 1;
+        SwingCount++;
+        _playerAnim.Melee(ComboStep);
+        Sfx.Play("sword_combo" + ComboStep, transform.position);
+        swingCooldown = attackCooldown * (ComboStep == 3 ? FinisherRecovery : ComboGapFactor);
+        attackReadyAt = Time.time + swingCooldown;
         if (GreatSwordSwings > 0 && !FrenyProgress.HasGreatSword) {
             GreatSwordSwings--;
             greatSwordGraceUntil = Time.time + GreatSwordGrace;
