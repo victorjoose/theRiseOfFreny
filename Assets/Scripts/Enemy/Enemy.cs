@@ -206,6 +206,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             }
         }
         Health = Small ? 1 : health; // the inspector value
+        EnemyHealthBar.Attach(this);
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
         hasMovingParam = anim && HasParameter(anim, "Moving");
         hasInCombatParam = anim && HasParameter(anim, "InCombat");

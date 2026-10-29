@@ -9,6 +9,11 @@ namespace Online {
     // follows the account to another PC, the phone or the browser. When the player signs in,
     // each slot keeps the newer copy (a slot with progress always beats an empty one); after
     // that, saves are uploaded at most every UploadDelay seconds. Lives on the GameMenus object.
+    // The local copy is judged by its stamp from when it last matched the cloud (SaveSystem.SyncedTicks):
+    // its live stamp is "now" after any scene load, which made an old copy on this PC beat newer
+    // progress in the cloud and then overwrite it there. When the cloud wins for the slot being
+    // played, it is put into play at the next scene load (the next run), before the Player
+    // reads his coins, and nothing is uploaded until then.
     public class CloudProgressSync : MonoBehaviour {
         private const string Collection = "progress";
         private const float UploadDelay = 20f;
@@ -22,13 +27,31 @@ namespace Online {
         private bool _dirty;
         private float _uploadAt;
         private float _pullAt;
+        private string _pendingUser;
+        private SaveData _pendingActive;
 
         private void OnEnable() {
             SaveSystem.Saved += OnSaved;
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnDisable() {
             SaveSystem.Saved -= OnSaved;
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        // after GameMenus' own save on load, before the scene's Start (the Player reads the coins there)
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode) {
+            if (_pendingActive == null || mode != LoadSceneMode.Single) {
+                return;
+            }
+            SaveSystem.Replace(SaveSystem.ActiveSlot, _pendingActive, true);
+            SaveSystem.MarkSynced(SaveSystem.ActiveSlot);
+            _pendingActive = null;
+            _syncedUser = _pendingUser;
+            _pendingUser = null;
+            Debug.Log("[Online] Active save slot updated from the cloud");
+            Pulled?.Invoke();
         }
 
         private void OnSaved(int slot) {
@@ -40,7 +63,7 @@ namespace Online {
 
         private void Update() {
             OnlineServices online = OnlineServices.Instance;
-            if (_busy || online == null || online.State != OnlineServices.Status.Online || online.Db == null) {
+            if (_busy || _pendingActive != null || online == null || online.State != OnlineServices.Status.Online || online.Db == null) {
                 return;
             }
             string user = online.Auth.UserId;
@@ -71,8 +94,6 @@ namespace Online {
                 _pullAt = Time.unscaledTime + RetryDelay;
                 yield break;
             }
-            _syncedUser = user;
-
             List<string> cloud = ReadSlots(body);
             bool pulled = false;
             bool localAhead = false;
@@ -82,16 +103,23 @@ namespace Online {
                 SaveData local = SaveSystem.Load(slot);
                 SaveData remote = slot < cloud.Count && !string.IsNullOrEmpty(cloud[slot])
                     ? JsonUtility.FromJson<SaveData>(cloud[slot]) : null;
-                if (slot == SaveSystem.ActiveSlot && !canApplyLive) {
-                    localAhead |= Newer(local, remote);
-                    continue;
-                }
-                if (Newer(remote, local)) {
+                long localTicks = SaveSystem.SyncedTicks(slot);
+                if (Newer(remote, local, localTicks)) {
+                    if (slot == SaveSystem.ActiveSlot && !canApplyLive) {
+                        _pendingActive = remote;
+                        continue;
+                    }
                     SaveSystem.Replace(slot, remote, canApplyLive);
+                    SaveSystem.MarkSynced(slot);
                     pulled = true;
-                } else if (Newer(local, remote)) {
+                } else if (local != null && local.HasProgress) {
                     localAhead = true;
                 }
+            }
+            if (_pendingActive != null) {
+                _pendingUser = user;
+            } else {
+                _syncedUser = user;
             }
             if (localAhead) {
                 _dirty = true;
@@ -118,19 +146,26 @@ namespace Online {
             if (!ok) {
                 _dirty = true;
                 _uploadAt = Time.unscaledTime + RetryDelay;
+            } else {
+                for (int slot = 0; slot < SaveSystem.SlotCount; slot++) {
+                    if (bundle.slots[slot] == SaveSystem.LoadJson(slot)) {
+                        SaveSystem.MarkSynced(slot);   // unless it was saved again meanwhile
+                    }
+                }
             }
             _busy = false;
         }
 
-        // a copy with progress beats an empty one; between two with progress the newer wins
-        private static bool Newer(SaveData a, SaveData b) {
-            if (a == null || !a.HasProgress) {
+        // the cloud copy wins when it has progress and the local one has none, or the cloud's
+        // was saved after the local one as it was when the game started (localTicks)
+        private static bool Newer(SaveData remote, SaveData local, long localTicks) {
+            if (remote == null || !remote.HasProgress) {
                 return false;
             }
-            if (b == null || !b.HasProgress) {
+            if (local == null || !local.HasProgress) {
                 return true;
             }
-            return a.savedAtTicks > b.savedAtTicks;
+            return remote.savedAtTicks > localTicks;
         }
 
         private static List<string> ReadSlots(string body) {
