@@ -144,7 +144,8 @@ public static class GuideScreen {
             "de um tiro reto. " +
             "Nas torres, muda de lugar a cada 3 feitiços e some depois de 8. 2 de vida. Na Arena, " +
             "contando os dois tipos, há no máximo 1 feiticeiro até 50 mil pontos, 2 depois disso e " +
-            "3 depois de 100 mil. Depois de 50 mil pontos, as bolas seguem o Freny por 2,5 s " +
+            "3 depois de 100 mil; quando um morre, outro só aparece no lugar dele 15 s depois. " +
+            "Depois de 50 mil pontos, as bolas seguem o Freny por 2,5 s " +
             "(fazem curva, mas pular ou abaixar na hora certa ainda desvia). De dia, as bolas " +
             "ganham uma borda escura para aparecer no céu claro.");
         Entry(parent, null, "Feiticeiro Supremo",
