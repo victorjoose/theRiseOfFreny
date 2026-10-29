@@ -1,13 +1,13 @@
 using UnityEngine;
 
 // A short shake of the main camera, for heavy hits (the third hit of Freny's sword combo):
-// CameraShake.Kick(amount, time). The offset is added after everything else has moved the camera
+// ScreenKick.Kick(amount, time). The offset is added after everything else has moved the camera
 // (LateUpdate, late execution order) and taken back off at the start of the next frame, so a
 // camera that follows Freny or stands still keeps its own position.
 [DefaultExecutionOrder(10000)]
-public class CameraShake : MonoBehaviour {
+public class ScreenKick : MonoBehaviour {
 
-    private static CameraShake instance;
+    private static ScreenKick instance;
     private float amount;
     private float duration = 1f;
     private float until;
@@ -19,9 +19,9 @@ public class CameraShake : MonoBehaviour {
             return;
         }
         if (instance == null || instance.gameObject != cam.gameObject) {
-            instance = cam.GetComponent<CameraShake>();
+            instance = cam.GetComponent<ScreenKick>();
             if (instance == null) {
-                instance = cam.gameObject.AddComponent<CameraShake>();
+                instance = cam.gameObject.AddComponent<ScreenKick>();
             }
         }
         // a stronger kick takes over; a weaker one during a shake doesn't cut it short

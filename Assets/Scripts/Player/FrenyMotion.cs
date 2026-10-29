@@ -246,7 +246,7 @@ public class FrenyMotion : MonoBehaviour {
             default:
                 lunge.v += 5.5f;
                 squash.v -= 3.5f;
-                CameraShake.Kick(0.07f, 0.16f);
+                ScreenKick.Kick(0.07f, 0.16f);
                 if (player && player.IsGrounded) {
                     Vector3 feet = player.feetPos ? player.feetPos.position : transform.position;
                     Fx.Dust(feet + Vector3.right * (0.4f * Mathf.Sign(transform.localScale.x)), 6);
