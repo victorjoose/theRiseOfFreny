@@ -152,7 +152,7 @@ public static class GuideScreen {
         Entry(parent, null, "Ciclope",
             "O chefe gigante da Arena: chega no centro do chão a cada 50 mil pontos e, enquanto ele vive, " +
             "ninguém mais aparece. 100 de vida, com a barra de chefe no topo. O soco tira 2 e joga o Freny " +
-            "longe; a pancada no chão solta uma onda pelo piso (pule!); o vômito deixa uma poça que " +
+            "longe; a pancada no chão solta uma onda pelo piso (pule!); o vômito deixa uma poça verde que " +
             "queima. Depois de cada golpe ele descansa um pouco: é a hora de bater. Vale 5 000 pontos, " +
             "30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",
