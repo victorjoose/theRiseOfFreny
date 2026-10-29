@@ -83,9 +83,12 @@ public class CombatHud : MonoBehaviour {
         if (badgeStyle == null) {
             badgeStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.MiddleCenter };
         }
-        badgeStyle.fontSize = Mathf.Max(7, Mathf.RoundToInt(13f * scale));
-        float w = 62f * scale, h = 30f * scale;
-        Rect badge = new Rect(head.xMin - w - 6f * scale, head.center.y - h / 2f, w, h);
+        badgeStyle.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * scale));
+        float w = 54f * scale, h = 26f * scale;
+        // the portrait sits close to the left edge: when there is no room beside it, the badge
+        // overlaps its corner instead of being cut by the screen edge
+        float x = Mathf.Max(4f, head.xMin - w - 4f * scale);
+        Rect badge = new Rect(x, head.center.y - h / 2f, w, h);
         float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 4f);
         Fill(badge, new Color(MenuKit.TitleColor.r, MenuKit.TitleColor.g, MenuKit.TitleColor.b, pulse));
         float edge = Mathf.Max(1f, 2f * scale);

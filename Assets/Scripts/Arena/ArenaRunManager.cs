@@ -80,7 +80,7 @@ public class ArenaRunManager : MonoBehaviour {
             RectTransform rect = panel.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = new Vector2(0f, AutoRun ? 70f : 40f);
-            rect.sizeDelta = new Vector2(640f, AutoRun ? 190f : 130f);
+            rect.sizeDelta = new Vector2(AutoRun ? 760f : 640f, AutoRun ? 190f : 130f);
             Outline edge = panel.gameObject.AddComponent<Outline>();
             edge.effectColor = MenuKit.ButtonColor;
             edge.effectDistance = new Vector2(3f, -3f);
@@ -98,7 +98,7 @@ public class ArenaRunManager : MonoBehaviour {
             banner.text = "<color=#EE8FFC>AUTOPILOTO - PONTUAÇÃO NÃO RANKEADA</color>\n" +
                           "<size=12>" + score + " pontos · Freny caiu após " + RunSeconds.ToString("0") + "s\n" +
                           "(Autopiloto: habilitado)</size>\n" +
-                          "Desabilite o autopiloto para ter ranking" +
+                          "<size=12>Desabilite o autopiloto para ter ranking</size>" +
                           (asking ? "" : "\n<size=12>Nova corrida em " + Mathf.CeilToInt(SecondsUntilRestart) + "s</size>");
             return;
         }
@@ -115,7 +115,7 @@ public class ArenaRunManager : MonoBehaviour {
         RectTransform row = MenuKit.MakeRect("Choices", canvas);
         row.anchorMin = row.anchorMax = row.pivot = new Vector2(0.5f, 0.5f);
         row.anchoredPosition = new Vector2(0f, -60f);   // under the 190-high auto panel
-        row.sizeDelta = new Vector2(460f, 44f);
+        row.sizeDelta = new Vector2(600f, 44f);
         HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 20f;
         layout.childForceExpandWidth = true;
