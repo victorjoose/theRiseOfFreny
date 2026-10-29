@@ -141,7 +141,7 @@ public static class GuideScreen {
             "2 de vida.");
         Entry(parent, null, "Golem Vermelho",
             "Pedra vermelha e olhos acesos. Um tanque: 6 de vida (aguenta uma granada), quase não " +
-            "recua com os golpes e o soco tira 2 e derruba. De longe, joga uma mina que gruda no chão, " +
+            "recua com os golpes, e o soco tira 2 e derruba: ele carrega o soco e avança num dash junto. De longe, joga uma mina que gruda no chão, " +
             "pisca e explode como uma granada (tire o Freny de perto, ou acerte a mina antes). " +
             "Vale 500 pontos e 6 moedas. Na Arena, só depois de 50 mil pontos.");
         Entry(parent, null, "Escudeiro",

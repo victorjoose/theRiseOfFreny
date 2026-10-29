@@ -11,6 +11,9 @@ public class Golem : Enemy {
     protected override float HitPush => armored ? 1f : 3f; // heavy: Freny's hits barely move it
     protected override Color DeathColor => armored ? new Color(0.8f, 0.25f, 0.2f) : new Color(0.6f, 0.55f, 0.5f);
     protected override string SoundName => "golem";
+    // the red Golem charges its punch and dashes forward with it (José, 2026-10-29: Freny is too
+    // quick for a punch that stays put)
+    protected override float LungeDistance => armored ? 2.2f : 0f;
 
     // the red Golem also lobs a mine (GolemMine) at Freny when he keeps his distance
     private const float ThrowCooldown = 6f;
@@ -24,6 +27,9 @@ public class Golem : Enemy {
     public override void Init() {
         base.Init();
         nextThrow = Time.time + FirstThrowDelay;
+        if (armored) {
+            attackWindup = 0.6f;   // a longer charge, the dash comes in its last third
+        }
     }
 
     public override void Update() {

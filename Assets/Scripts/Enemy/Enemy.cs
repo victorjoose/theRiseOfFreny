@@ -605,7 +605,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
         FaceTarget();
 
-        if (InAttackReach()) {
+        if (InAttackReach(LungeDistance)) {
             // close enough: wind up, then hit; the cooldown starts after the hit, so the rhythm is steady
             if (Time.time >= nextAttackTime) {
                 attackRoutine = StartCoroutine(AttackRoutine());
@@ -665,16 +665,36 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // true when the colliders are within attackDistance of touching and roughly at the same height.
     // Falls back to centre distance when a collider is missing (e.g. the player died and lost its collider).
-    protected bool InAttackReach() {
+    protected bool InAttackReach(float extra = 0f) {
         if (col == null || (rival == null && playerCol == null)) {
-            return distance <= attackDistance + 1f;
+            return distance <= attackDistance + extra + 1f;
         }
 
         Bounds mine = col.bounds;
         Bounds theirs = rival != null ? rival.BodyBounds : playerCol.bounds;
         float gapX = Mathf.Max(0f, Mathf.Max(theirs.min.x - mine.max.x, mine.min.x - theirs.max.x));
         bool sameHeight = theirs.max.y > mine.min.y && theirs.min.y < mine.max.y;
-        return sameHeight && gapX <= attackDistance;
+        return sameHeight && gapX <= attackDistance + extra;
+    }
+
+    // a dash forward at the end of the wind-up (the red Golem): it starts its punch from this much
+    // farther away and closes the gap as it swings
+    protected virtual float LungeDistance => 0f;
+    private const float LungePart = 0.35f;   // the last part of the wind-up is the dash
+
+    private IEnumerator Lunge(float seconds) {
+        float dir = FacingRight ? 1f : -1f;
+        float speed = LungeDistance / Mathf.Max(0.05f, seconds);
+        float end = Time.time + seconds;
+        Fx.Dust(Feet, 6);
+        while (Time.time < end && !isDead) {
+            // stops at Freny (in reach), at a wall, spikes or the platform's edge
+            if (InAttackReach(-attackDistance * 0.5f) || Blocked(dir) || !GroundAhead(dir)) {
+                yield break;
+            }
+            transform.position += Vector3.right * (dir * speed * Time.deltaTime);
+            yield return null;
+        }
     }
 
     private IEnumerator AttackRoutine() {
@@ -682,7 +702,14 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             anim.SetTrigger("Attack");
         }
         PlaySound("windup");
-        yield return new WaitForSeconds(attackWindup * Tuning.EnemyWindup.Value);
+        float windup = attackWindup * Tuning.EnemyWindup.Value;
+        if (LungeDistance > 0f) {
+            // charge the punch, then dash in with it
+            yield return new WaitForSeconds(windup * (1f - LungePart));
+            yield return Lunge(windup * LungePart);
+        } else {
+            yield return new WaitForSeconds(windup);
+        }
         if (!isDead) {
             PlaySound("attack");
         }
