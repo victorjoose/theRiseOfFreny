@@ -5,7 +5,11 @@ using UnityEngine;
 public class AcidPuddle : MonoBehaviour {
     private const int Damage = 1;
     private const float SlowFactor = 0.45f;
-    private static readonly Color Colour = new Color(0.45f, 0.85f, 0.2f, 0.85f);   // green (José, 2026-10-29)
+    private static readonly Color Green = new Color(0.45f, 0.85f, 0.2f, 0.85f);   // green (José, 2026-10-29)
+    // the Ciclope's own vomit is purple, like in its Vomit sheet (José, 2026-10-30); the green one
+    // is kept for an enemy of phase 2
+    public static readonly Color Purple = new Color(0.31f, 0.25f, 0.62f, 0.9f);
+    private Color colour = Green;
     private static Sprite pixel;
     private static Player freny;
 
@@ -27,7 +31,16 @@ public class AcidPuddle : MonoBehaviour {
         Active.Remove(this);
     }
 
-    // thrown up high from the mouth: a jet that comes down on targetX from above, through every
+    // the Ciclope, up on a platform, throws up straight down over its edge: a purple waterfall to the
+    // floor, where it spreads (VomitFall)
+    public static void Fall(Vector3 mouth, float floorY, float pourSeconds, Player player, float width, float seconds) {
+        GameObject go = new GameObject("Vomit Fall");
+        go.transform.position = mouth;
+        go.AddComponent<VomitFall>().Setup(mouth, floorY, pourSeconds, player, width, seconds);
+    }
+
+    // kept for an enemy of phase 2 (José, 2026-10-30), the Ciclope no longer uses it.
+    // Thrown up high from the mouth: a jet that comes down on targetX from above, through every
     // platform on the way, to the arena floor, where it spreads (VomitStream)
     public static void Pour(Vector3 mouth, float targetX, float standingY, Player player, float width, float seconds) {
         GameObject go = new GameObject("Vomit Stream");
@@ -35,13 +48,14 @@ public class AcidPuddle : MonoBehaviour {
         go.AddComponent<VomitStream>().Setup(mouth, targetX, standingY, player, width, seconds);
     }
 
-    public static AcidPuddle Create(Vector3 floorPoint, float width, float seconds, float spread = 0f) {
+    public static AcidPuddle Create(Vector3 floorPoint, float width, float seconds, float spread = 0f, bool purple = false) {
         GameObject go = new GameObject("Acid Puddle");
         go.transform.position = floorPoint + Vector3.up * 0.06f;
-        Sprite[] art = Frames();
+        Sprite[] art = Frames(purple);
         // the drawn puddle is ArtWidth wide; a flat strip when the art is missing
         go.transform.localScale = art != null ? new Vector3(width / ArtWidth, 1f, 1f) : new Vector3(width, 0.14f, 1f);
         AcidPuddle puddle = go.AddComponent<AcidPuddle>();
+        puddle.colour = purple ? Purple : Green;
         puddle.fullWidth = width;
         puddle.width = spread > 0f ? Mathf.Min(0.4f, width) : width;   // it lands as a splash and runs out sideways
         puddle.spreadSpeed = spread > 0f ? (width - puddle.width) / spread : 0f;
@@ -52,13 +66,13 @@ public class AcidPuddle : MonoBehaviour {
         puddle.until = Time.time + seconds;
         puddle.renderer2d = go.AddComponent<SpriteRenderer>();
         puddle.renderer2d.sprite = art != null ? art[0] : Pixel();
-        puddle.renderer2d.color = art != null ? Color.white : Colour;
+        puddle.renderer2d.color = art != null ? Color.white : puddle.colour;
         puddle.frames = art;
         puddle.renderer2d.sortingOrder = 44;
         if (ItemPickup.UnlitMaterial != null) {
             puddle.renderer2d.sharedMaterial = ItemPickup.UnlitMaterial;
         }
-        Fx.Burst(floorPoint, Colour, 30, 3f, 0.1f, 0.5f);
+        Fx.Burst(floorPoint, puddle.colour, 30, 3f, 0.1f, 0.5f);
         return puddle;
     }
 
@@ -86,7 +100,7 @@ public class AcidPuddle : MonoBehaviour {
             width = Mathf.Min(fullWidth, width + spreadSpeed * Time.deltaTime);
             Resize();
         }
-        Color c = frames != null ? Color.white : Colour;
+        Color c = frames != null ? Color.white : colour;
         c.a *= Mathf.Clamp01(left / Mathf.Min(1f, life));
         renderer2d.color = c;
         if (frames != null) {
@@ -94,7 +108,7 @@ public class AcidPuddle : MonoBehaviour {
         }
         if (Time.time >= nextBubble) {
             nextBubble = Time.time + 0.15f;
-            Fx.Burst(transform.position + Vector3.right * Random.Range(-width / 2f, width / 2f), Colour, 2, 1f, 0.05f, 0.4f);
+            Fx.Burst(transform.position + Vector3.right * Random.Range(-width / 2f, width / 2f), colour, 2, 1f, 0.05f, 0.4f);
         }
         if (freny == null) {
             freny = FindAnyObjectByType<Player>();
@@ -109,24 +123,31 @@ public class AcidPuddle : MonoBehaviour {
         }
     }
 
-    // Cyclops/Vomit Puddle_0.._2: pixel art, 96x20 at 32 px a unit (Tools/ArtGen/vomit_puddle.py)
+    // Cyclops/Vomit Puddle_0.._2: pixel art, 96x20 at 32 px a unit (Tools/ArtGen/vomit_puddle.py);
+    // "Vomit Puddle Purple" is the same art recoloured with the Vomit sheet's purples
     private const float ArtWidth = 3f;
     private const float FrameRate = 6f;
-    private static Sprite[] artFrames;
+    private static Sprite[] greenFrames, purpleFrames;
     private Sprite[] frames;
 
-    private static Sprite[] Frames() {
-        if (artFrames == null) {
+    private static Sprite[] Frames(bool purple) {
+        Sprite[] cached = purple ? purpleFrames : greenFrames;
+        if (cached == null) {
             Sprite[] loaded = new Sprite[3];
             for (int i = 0; i < loaded.Length; i++) {
-                loaded[i] = Resources.Load<Sprite>("Cyclops/Vomit Puddle_" + i);
+                loaded[i] = Resources.Load<Sprite>((purple ? "Cyclops/Vomit Puddle Purple_" : "Cyclops/Vomit Puddle_") + i);
                 if (loaded[i] == null) {
                     return null;
                 }
             }
-            artFrames = loaded;
+            cached = loaded;
+            if (purple) {
+                purpleFrames = loaded;
+            } else {
+                greenFrames = loaded;
+            }
         }
-        return artFrames;
+        return cached;
     }
 
     private static Sprite Pixel() {
@@ -303,6 +324,120 @@ public class VomitStream : MonoBehaviour {
                 freny.TryDamage(1);
                 return;
             }
+        }
+    }
+
+    private static Material Material() {
+        if (material == null) {
+            Material unlit = ItemPickup.UnlitMaterial;
+            material = unlit != null ? new Material(unlit) : new Material(Shader.Find("Sprites/Default"));
+            material.mainTexture = Texture2D.whiteTexture;
+        }
+        return material;
+    }
+}
+
+// the Ciclope's purple waterfall: from its mouth straight down to the floor. The front falls with
+// gravity while it pours, then the top lets go and falls after it. Whoever is under it gets
+// burned; at the bottom it runs out into a purple puddle
+public class VomitFall : MonoBehaviour {
+    private const float Gravity = 25f;
+    private const float StartSpeed = 2f;
+    private const float Thickness = 0.42f;
+    private const float SpreadSeconds = 0.5f;
+    private static readonly Color Light = new Color(0.47f, 0.39f, 0.78f, 1f);
+    private static readonly Color Crimson = new Color(0.39f, 0.05f, 0.15f, 1f);
+    private static Material material;
+
+    private Vector3 mouth;
+    private float floorY;
+    private float pour;
+    private float width;
+    private float seconds;
+    private float started;
+    private float head, headSpeed = StartSpeed;   // how far down from the mouth the front is
+    private float tail, tailSpeed = StartSpeed;
+    private float nextSplash;
+    private Player freny;
+    private AcidPuddle puddle;
+    private LineRenderer line;
+
+    private float Length => mouth.y - floorY;
+
+    public void Setup(Vector3 from, float floor, float pourSeconds, Player player, float puddleWidth, float puddleSeconds) {
+        mouth = from;
+        floorY = floor;
+        pour = pourSeconds;
+        freny = player;
+        width = puddleWidth;
+        seconds = puddleSeconds;
+        started = Time.time;
+        line = gameObject.AddComponent<LineRenderer>();
+        line.useWorldSpace = true;
+        line.numCapVertices = 3;
+        line.sortingOrder = 45;
+        line.sharedMaterial = Material();
+        line.startColor = Light;
+        line.endColor = AcidPuddle.Purple;
+        line.widthCurve = new AnimationCurve(new Keyframe(0f, 0.6f), new Keyframe(0.15f, 1f), new Keyframe(1f, 1.3f));
+        line.widthMultiplier = Thickness;
+        line.positionCount = 0;
+    }
+
+    private void Update() {
+        float dt = Time.deltaTime;
+        headSpeed += Gravity * dt;
+        head = Mathf.Min(Length, head + headSpeed * dt);
+        if (Time.time - started > pour) {
+            tailSpeed += Gravity * dt;
+            tail = Mathf.Min(head, tail + tailSpeed * dt);
+        }
+        Draw();
+        Splash();
+        Burn();
+        if (tail >= Length - 0.01f) {
+            Destroy(gameObject);
+        }
+    }
+
+    private void Draw() {
+        int count = Mathf.Clamp(Mathf.CeilToInt((head - tail) / 0.15f) + 1, 2, 120);
+        line.positionCount = count;
+        for (int i = 0; i < count; i++) {
+            float d = Mathf.Lerp(tail, head, i / (float)(count - 1));
+            float wobble = Mathf.Sin(Time.time * 18f + d * 3f) * 0.05f;
+            line.SetPosition(i, new Vector3(mouth.x + wobble, mouth.y - d, 0f));
+        }
+    }
+
+    private void Splash() {
+        if (tail >= head || Time.time < nextSplash) {
+            return;
+        }
+        nextSplash = Time.time + 0.06f;
+        if (Random.value < 0.5f) {
+            Fx.Burst(new Vector3(mouth.x, mouth.y - Random.Range(tail, head), 0f), Crimson, 1, 1.2f, 0.08f, 0.25f);
+        }
+        if (head >= Length - 0.01f) {
+            Vector3 bottom = new Vector3(mouth.x, floorY, 0f);
+            Fx.Burst(bottom, Light, 5, 2.4f, 0.1f, 0.35f);
+            if (puddle == null) {
+                puddle = AcidPuddle.Create(bottom, width, seconds, SpreadSeconds, true);
+            } else {
+                puddle.Feed();
+            }
+        }
+    }
+
+    // standing under it burns
+    private void Burn() {
+        if (freny == null || freny.IsDead || tail >= head) {
+            return;
+        }
+        Vector3 body = freny.BodyCenter;
+        float top = mouth.y - tail, bottom = mouth.y - head;
+        if (Mathf.Abs(body.x - mouth.x) < 0.5f && body.y <= top + 0.6f && body.y >= bottom - 0.6f) {
+            freny.TryDamage(1);
         }
     }
 
