@@ -12,7 +12,7 @@ using UnityEngine;
 // taken they appear on the platforms like everyone else. How many sorcerers (either kind) can be
 // around at once goes with the score: one up to 50 000 points, two past that, three past 100 000.
 // The scene's EnemySpawners are only a fallback. The Escudeiro joins the list at runtime, and every
-// BossEvery points the Ciclope is called onto the floor; while it lives nobody else comes.
+// FirstBossAt points (then AfterBossKill points after each one falls) the Ciclope is called onto the floor; while it lives nobody else comes.
 public class ArenaDirector : MonoBehaviour {
 
     [System.Serializable]
@@ -108,10 +108,10 @@ public class ArenaDirector : MonoBehaviour {
 
     // ---- the Escudeiro and the Ciclope (EnemyTemplates) ----
 
-    // José, 2026-10-29: the first Ciclope at 50k, then one every 100k (150k, 250k...); two at once
-    // only from a million. Each one brings more enemies with it (BossHelpers, BossCompany)
+    // José: the first Ciclope at 50k, then each one AfterBossKill points after the last one fell
+    // (2026-10-30; it was every 100k); two at once only from a million. Each one brings more enemies with it (BossHelpers, BossCompany)
     public const int FirstBossAt = 50000;
-    public const int BossEvery = 100000;
+    public const int AfterBossKill = 150000;   // José, 2026-10-30: the next one comes this many points after the last one falls
     public const int TwoBossesAt = 1000000;
     private const float TwinGap = 4f;
     private GameObject cyclopsTemplate;
@@ -149,7 +149,7 @@ public class ArenaDirector : MonoBehaviour {
         if (cyclopsTemplate == null || BossAround || Score < nextBossScore) {
             return;
         }
-        nextBossScore += BossEvery;
+        nextBossScore = int.MaxValue;   // set again when it falls: AfterBossKill points later
         bossesCalled++;
         StartCoroutine(SpawnBoss());
     }
@@ -254,6 +254,7 @@ public class ArenaDirector : MonoBehaviour {
         int present = AliveEnemies() + pendingSpawns;
         if (bossWasAround && !BossAround) {
             calmUntil = Time.time + AfterBossCalm;
+            nextBossScore = Score + AfterBossKill;
         }
         bossWasAround = BossAround;
         bool spawnNow = BossAround ? Company() < BossCompany && !bossPending : present < MaxAlive;
@@ -375,6 +376,9 @@ public class ArenaDirector : MonoBehaviour {
     private bool Unlocked(Entry entry) {
         if (entry.unlockScore > 0 && Score < entry.unlockScore) {
             return false;
+        }
+        if (entry.prefab != null && entry.prefab.GetComponent<Golem>() is Golem golem && golem.Armored && Golem.RedAlive >= Golem.MaxRed) {
+            return false;   // José, 2026-10-30: at most 3 red Golems at once
         }
         if (Score < SupremeAt && entry.prefab != null && entry.prefab.GetComponent<Sorcerer>() is Sorcerer sorcerer && sorcerer.IsSupreme) {
             return false;   // José, 2026-10-29: the Feiticeiro Supremo only from 100k

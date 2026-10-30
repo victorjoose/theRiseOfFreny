@@ -231,6 +231,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             }
         }
         Health = Small ? 1 : health; // the inspector value
+        fullHealth = Health;
         EnemyHealthBar.Attach(this);
         hasAttackTrigger = anim && HasParameter(anim, "Attack");
         hasMovingParam = anim && HasParameter(anim, "Moving");
@@ -596,7 +597,86 @@ public abstract class Enemy : MonoBehaviour, IDamageable
 
     // a little faster or slower than its whole-number speed
     protected virtual float SpeedFactor => 1f;
-    protected float MoveSpeed => speed * SpeedFactor * Tuning.EnemySpeed.Value * (ArenaBounds.Active ? ArenaDifficulty.SpeedFactor(Small) * ArenaDirector.SpeedRamp : 1f);
+    protected float MoveSpeed => speed * SpeedFactor * Tuning.EnemySpeed.Value * (ArenaBounds.Active ? ArenaDifficulty.SpeedFactor(Small) * ArenaDirector.SpeedRamp * (1f + BloodSpeed * BloodMoon) : 1f);
+
+    // ---- the Lua de Sangue (ArenaDayNight.Blood): faster, +1 heart a hit, heals, red eyes ----
+    public static float BloodMoon => ArenaBounds.Active ? ArenaDayNight.Blood : 0f;
+    public static int BloodDamage => BloodMoon > 0.5f ? 1 : 0;
+    private const float BloodSpeed = 0.25f;
+    private const float BloodHealEvery = 3f;   // +1 life this often, up to its full life (not bosses)
+    private static readonly Color BloodRed = new Color(1f, 0.12f, 0.1f, 0.85f);
+    private static Sprite eyeDot;
+    private SpriteRenderer bloodEye;
+    private int fullHealth;
+    private float nextBloodHeal;
+    private float nextTrail;
+    private Vector3 lastTrailAt;
+
+    protected virtual bool HealsInBloodMoon => true;
+
+    // in LateUpdate: the Bat and the Sorcerer have their own Update
+    protected virtual void LateUpdate() {
+        UpdateBloodMoon();
+    }
+
+    private void UpdateBloodMoon() {
+        float blood = BloodMoon;
+        if (blood <= 0.5f || isDead || sprite == null) {
+            if (bloodEye != null) {
+                bloodEye.enabled = false;
+            }
+            return;
+        }
+        if (HealsInBloodMoon && Time.time >= nextBloodHeal) {
+            nextBloodHeal = Time.time + BloodHealEvery;
+            if (Health < fullHealth) {
+                Health++;
+                DamageNumbers.Show(Center + Vector3.up * (HalfHeight + 0.2f), "+1", DamageNumbers.Healed);
+            }
+        }
+        if (bloodEye == null) {
+            GameObject eye = new GameObject("Blood Eye");
+            eye.transform.SetParent(transform, false);
+            bloodEye = eye.AddComponent<SpriteRenderer>();
+            bloodEye.sprite = EyeDot();
+            bloodEye.color = BloodRed;
+            bloodEye.sortingLayerID = sprite.sortingLayerID;
+            bloodEye.sortingOrder = sprite.sortingOrder + 1;
+            if (ItemPickup.UnlitMaterial != null) {
+                bloodEye.sharedMaterial = ItemPickup.UnlitMaterial;
+            }
+        }
+        bloodEye.enabled = sprite.enabled;
+        Bounds b = sprite.bounds;
+        // the eyes: high on the face, a little forward
+        Vector3 at = b.center + new Vector3((FacingRight ? 1f : -1f) * b.extents.x * 0.35f, b.extents.y * 0.45f, 0f);
+        bloodEye.transform.position = at;
+        bloodEye.transform.localScale = Vector3.one * Mathf.Clamp(b.extents.y * 0.35f, 0.12f, 0.5f);
+        bloodEye.color = new Color(BloodRed.r, BloodRed.g, BloodRed.b, BloodRed.a * (0.75f + 0.25f * Mathf.Sin(Time.time * 8f)));
+        // a faint red trail behind it as it moves
+        if (Time.time >= nextTrail && (at - lastTrailAt).sqrMagnitude > 0.01f) {
+            nextTrail = Time.time + 0.05f;
+            Fx.Burst(at, new Color(1f, 0.15f, 0.1f, 0.5f), 1, 0.2f, 0.07f, 0.45f);
+        }
+        lastTrailAt = at;
+    }
+
+    // a soft round dot (1 unit wide at scale 1)
+    private static Sprite EyeDot() {
+        if (eyeDot == null) {
+            const int size = 16;
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f)) / (size / 2f);
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(1.2f - d * 1.2f)));
+                }
+            }
+            texture.Apply();
+            eyeDot = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+        return eyeDot;
+    }
 
     public void ChangeDirection() {
         if (pointA == null || pointB == null) {
@@ -1009,7 +1089,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
     protected virtual float KnockbackLift => 0.5f;
 
     protected void HitPlayer() {
-        if (!player.TryDamage(HitDamage)) {
+        if (!player.TryDamage(HitDamage + BloodDamage)) {
             return;
         }
         float dir = Mathf.Sign(player_t.position.x - transform.position.x);
@@ -1273,6 +1353,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             attackRoutine = null;
         }
         Fx.Burst(Center, DeathColor, 28, 3.5f, 0.12f, 0.8f);
+        Disintegrate();
         Fx.Dust(Feet, 6);
         PlaySound("death");
         PlaySound("scream"); // bosses have a second layer
@@ -1299,6 +1380,24 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             ItemPickup.RollEnemyDrop(Center); // now and then a potion or ammo too; in the stages only coins
         }
         Destroy(gameObject, 1f);
+    }
+
+    // a big body crumbles all over, not just in a puff at its middle (José, 2026-10-30: the
+    // Ciclope just vanished): specks from all over its sprite, drifting up and fading
+    private void Disintegrate() {
+        if (sprite == null) {
+            return;
+        }
+        Bounds b = sprite.bounds;
+        int specks = Mathf.Clamp(Mathf.RoundToInt(b.size.x * b.size.y * 30f), 0, 260);
+        if (specks < 20) {
+            return;   // small ones: the puff is enough
+        }
+        for (int i = 0; i < specks; i++) {
+            Vector3 at = new Vector3(Random.Range(b.min.x, b.max.x) * 0.8f + b.center.x * 0.2f, Random.Range(b.min.y, b.max.y), 0f);
+            Color c = Color.Lerp(DeathColor, Color.white, Random.Range(0f, 0.35f));
+            Fx.Rise(at, c, Random.Range(0.08f, 0.16f), Random.Range(0.8f, 1.6f));
+        }
     }
 
     private void DropCoin() {
