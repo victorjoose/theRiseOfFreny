@@ -1396,7 +1396,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         for (int i = 0; i < specks; i++) {
             Vector3 at = new Vector3(Random.Range(b.min.x, b.max.x) * 0.8f + b.center.x * 0.2f, Random.Range(b.min.y, b.max.y), 0f);
             Color c = Color.Lerp(DeathColor, Color.white, Random.Range(0f, 0.35f));
-            Fx.Burst(at, c, 1, 1.2f, Random.Range(0.08f, 0.16f), Random.Range(0.8f, 1.6f));
+            Fx.Rise(at, c, Random.Range(0.08f, 0.16f), Random.Range(0.8f, 1.6f));
         }
     }
 
