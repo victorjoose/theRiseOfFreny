@@ -27,6 +27,12 @@ public class AcidPuddle : MonoBehaviour {
         Active.Add(this);
     }
 
+    private void OnDestroy() {
+        if (floodMesh != null) {
+            Destroy(floodMesh);
+        }
+    }
+
     private void OnDisable() {
         Active.Remove(this);
         Flooding = Active.Exists(p => p != null && p.flood);
@@ -43,46 +49,125 @@ public class AcidPuddle : MonoBehaviour {
     private bool flood;
     private float floodLeft, floodRight, floodMin, floodMax, floodY;
     private float nextEnemyBurn;
-    private SpriteRenderer surface;
+    private Mesh floodMesh;
+    private LineRenderer crest;
+    private float level = 1f;
+    private const float WaveStep = 0.2f;        // one wave point every this many units
+    private const float WaveHeight = 0.07f;
+    private const float WaveLength = 1.6f;
+    private const float WaveSpeed = 2.2f;       // how fast the ripples run along
+    private static Material floodMaterial;
 
     public static AcidPuddle Flood(float fromX, float floorY, float xMin, float xMax, float seconds) {
         GameObject go = new GameObject("Vomit Flood");
         AcidPuddle puddle = go.AddComponent<AcidPuddle>();
         puddle.flood = true;
         puddle.colour = Purple;
-        puddle.floodMin = xMin;
-        puddle.floodMax = xMax;
-        puddle.floodLeft = puddle.floodRight = Mathf.Clamp(fromX, xMin, xMax);
+        // the ground floor platform can stop short of the screen edges (a different collider
+        // further on): the flood keeps running while there is floor at the same height
+        puddle.floodMin = Reach(xMin, floorY, -1f);
+        puddle.floodMax = Reach(xMax, floorY, 1f);
+        puddle.floodLeft = puddle.floodRight = Mathf.Clamp(fromX, puddle.floodMin, puddle.floodMax);
         puddle.life = seconds;
         puddle.until = Time.time + seconds;
-        puddle.renderer2d = go.AddComponent<SpriteRenderer>();
-        puddle.renderer2d.sprite = Pixel();
-        puddle.renderer2d.sortingOrder = 44;
-        GameObject top = new GameObject("Surface");
-        top.transform.SetParent(go.transform, false);
-        puddle.surface = top.AddComponent<SpriteRenderer>();
-        puddle.surface.sprite = Pixel();
-        puddle.surface.sortingOrder = 45;
-        if (ItemPickup.UnlitMaterial != null) {
-            puddle.renderer2d.sharedMaterial = ItemPickup.UnlitMaterial;
-            puddle.surface.sharedMaterial = ItemPickup.UnlitMaterial;
-        }
         puddle.floodY = floorY;
-        puddle.FloodShape(1f);
+        go.transform.position = new Vector3(fromX, floorY, 0f);
+
+        // the body: a strip of quads whose top follows the waves (vertex colours: darker at the bottom)
+        GameObject body = new GameObject("Body");
+        body.transform.SetParent(go.transform, false);
+        puddle.floodMesh = new Mesh();
+        puddle.floodMesh.MarkDynamic();
+        body.AddComponent<MeshFilter>().sharedMesh = puddle.floodMesh;
+        MeshRenderer meshRenderer = body.AddComponent<MeshRenderer>();
+        meshRenderer.sharedMaterial = FloodMaterial();
+        meshRenderer.sortingOrder = 44;
+        // the bright line along the top of the waves
+        GameObject top = new GameObject("Crest");
+        top.transform.SetParent(go.transform, false);
+        puddle.crest = top.AddComponent<LineRenderer>();
+        puddle.crest.useWorldSpace = true;
+        puddle.crest.sharedMaterial = FloodMaterial();
+        puddle.crest.sortingOrder = 45;
+        puddle.crest.widthMultiplier = 0.07f;
+        puddle.crest.numCapVertices = 2;
+        puddle.FloodShape();
         Flooding = true;
         Fx.Burst(new Vector3(fromX, floorY + 0.2f, 0f), Purple, 30, 3f, 0.1f, 0.5f);
         return puddle;
     }
 
+    // from x, outwards while there is floor at floorY and no wall in the way
+    private static float Reach(float x, float floorY, float dir) {
+        int ground = LayerMask.GetMask("Ground");
+        float limit = ArenaBounds.Active ? (dir > 0f ? ArenaBounds.Right : ArenaBounds.Left) : x;
+        for (float next = x + dir * 0.25f; dir > 0f ? next <= limit : next >= limit; next += dir * 0.25f) {
+            RaycastHit2D hit = Physics2D.Raycast(new Vector2(next, floorY + 0.4f), Vector2.down, 0.8f, ground);
+            if (hit.collider == null || Mathf.Abs(hit.point.y - floorY) > 0.2f || Physics2D.OverlapPoint(new Vector2(next, floorY + 0.3f), ground) != null) {
+                break;
+            }
+            x = next;
+        }
+        return x;
+    }
+
+    private float WaveY(float x) {
+        float t = Time.time * WaveSpeed;
+        float k = 2f * Mathf.PI / WaveLength;
+        float wave = Mathf.Sin(x * k - t) * WaveHeight + Mathf.Sin(x * k * 0.47f + t * 0.6f) * WaveHeight * 0.6f;
+        // a wave front where it is still running out
+        return floodY + FloodDepth * level + wave * level;
+    }
+
     // the liquid between floodLeft and floodRight, `level` (0..1) of its full depth, its bottom on the floor
-    private void FloodShape(float level) {
+    private void FloodShape() {
         width = Mathf.Max(0.01f, floodRight - floodLeft);
-        float depth = Mathf.Max(0.02f, FloodDepth * level);
-        transform.position = new Vector3((floodLeft + floodRight) / 2f, floodY + depth / 2f, 0f);
-        transform.localScale = new Vector3(width, depth, 1f);
-        // the bright surface line: 0.08 tall whatever the depth
-        surface.transform.localPosition = new Vector3(0f, 0.5f - 0.04f / depth, 0f);
-        surface.transform.localScale = new Vector3(1f, 0.08f / depth, 1f);
+        transform.position = new Vector3((floodLeft + floodRight) / 2f, floodY, 0f);
+        int columns = Mathf.Max(2, Mathf.CeilToInt(width / WaveStep) + 1);
+        Vector3[] vertices = new Vector3[columns * 2];
+        Color[] colors = new Color[columns * 2];
+        int[] triangles = new int[(columns - 1) * 6];
+        Vector3 origin = transform.position;
+        Color dark = new Color(colour.r * 0.6f, colour.g * 0.5f, colour.b * 0.75f, alpha);
+        Color light = new Color(colour.r, colour.g, colour.b, alpha);
+        Vector3[] line = new Vector3[columns];
+        for (int i = 0; i < columns; i++) {
+            float x = Mathf.Lerp(floodLeft, floodRight, i / (float)(columns - 1));
+            float y = WaveY(x);
+            vertices[i * 2] = new Vector3(x, floodY - 0.02f, 0f) - origin;
+            vertices[i * 2 + 1] = new Vector3(x, y, 0f) - origin;
+            colors[i * 2] = dark;
+            colors[i * 2 + 1] = light;
+            line[i] = new Vector3(x, y, 0f);
+            if (i < columns - 1) {
+                int v = i * 2, k = i * 6;
+                triangles[k] = v;
+                triangles[k + 1] = v + 1;
+                triangles[k + 2] = v + 2;
+                triangles[k + 3] = v + 1;
+                triangles[k + 4] = v + 3;
+                triangles[k + 5] = v + 2;
+            }
+        }
+        floodMesh.Clear();
+        floodMesh.vertices = vertices;
+        floodMesh.colors = colors;
+        floodMesh.triangles = triangles;
+        floodMesh.RecalculateBounds();
+        crest.positionCount = columns;
+        crest.SetPositions(line);
+        crest.startColor = crest.endColor = new Color(0.66f, 0.56f, 0.95f, alpha);
+    }
+
+    private float alpha = 0.85f;
+
+    private static Material FloodMaterial() {
+        if (floodMaterial == null) {
+            Material unlit = ItemPickup.UnlitMaterial;
+            floodMaterial = unlit != null ? new Material(unlit) : new Material(Shader.Find("Sprites/Default"));
+            floodMaterial.mainTexture = Texture2D.whiteTexture;
+        }
+        return floodMaterial;
     }
 
     private void UpdateFlood() {
@@ -95,12 +180,9 @@ public class AcidPuddle : MonoBehaviour {
         float step = FloodRunSpeed * Time.deltaTime;
         floodLeft = Mathf.Max(floodMin, floodLeft - step);
         floodRight = Mathf.Min(floodMax, floodRight + step);
-        float level = Mathf.Clamp01(left / 0.6f);   // it drains in the last moments
-        FloodShape(level);
-        Color c = colour;
-        c.a = 0.85f * Mathf.Clamp01(left / 0.6f + 0.3f);
-        renderer2d.color = c;
-        surface.color = new Color(0.62f, 0.52f, 0.92f, c.a);
+        level = Mathf.Clamp01(left / 0.6f);   // it drains in the last moments
+        alpha = 0.85f * Mathf.Clamp01(left / 0.6f + 0.3f);
+        FloodShape();
         if (Time.time >= nextBubble) {
             nextBubble = Time.time + 0.05f;
             Fx.Burst(new Vector3(Random.Range(floodLeft, floodRight), floorY + FloodDepth * level, 0f), colour, 1, 1f, 0.05f, 0.4f);

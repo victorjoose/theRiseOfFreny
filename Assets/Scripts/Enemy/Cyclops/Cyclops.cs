@@ -387,6 +387,11 @@ public class Cyclops : Enemy {
         inBloodMoon = blood;
     }
 
+    // where the beam leaves the eye: a little over the middle of the eye (José: it looked like it
+    // came from behind it)
+    private Vector3 BeamEye => Eye + Vector3.up * (0.18f * Size);
+    private const float GlowSize = 1.3f;
+
     private IEnumerator Beam() {
         special = true;
         beamsThisMoon++;
@@ -394,15 +399,26 @@ public class Cyclops : Enemy {
         frames.Play("idle", BeamCharge + BeamSeconds);
         PlaySound("windup");
         Sfx.Play("supreme_laugh", Center, 0.8f, 0.5f);
-        for (float t = 0f; t < BeamCharge && !isDead; t += 0.05f) {
-            Fx.Burst(Eye, new Color(1f, 0.1f, 0.1f), 2, 1.5f * (1f - t / BeamCharge) + 0.3f, 0.06f, 0.2f);
-            yield return new WaitForSeconds(0.05f);
+        SpriteRenderer glow = BloodBeam.Orb("Eye Glow");
+        for (float t = 0f; t < BeamCharge && !isDead; t += Time.deltaTime) {
+            float u = t / BeamCharge;
+            glow.transform.position = BeamEye;
+            glow.transform.localScale = Vector3.one * (GlowSize * (0.3f + 0.7f * u) * (1f + Mathf.Sin(Time.time * 40f) * 0.08f));
+            if (Random.value < 0.4f) {
+                Fx.Burst(BeamEye, new Color(1f, 0.1f, 0.1f), 1, 1.5f * (1f - u) + 0.3f, 0.06f, 0.2f);
+            }
+            yield return null;
         }
         if (!isDead && player != null) {
-            BloodBeam.Fire(Eye, player.BodyCenter, BeamSeconds, player);
+            BloodBeam.Fire(BeamEye, player.BodyCenter, BeamSeconds, player);
             Sfx.Play("grenade_explode", Eye, 0.9f, 0.4f);
-            yield return new WaitForSeconds(BeamSeconds);
+            for (float t = 0f; t < BeamSeconds && !isDead; t += Time.deltaTime) {
+                glow.transform.position = BeamEye;
+                glow.transform.localScale = Vector3.one * (GlowSize * 1.3f * (1f + Mathf.Sin(Time.time * 50f) * 0.12f));
+                yield return null;
+            }
         }
+        Destroy(glow.gameObject);
         nextBeam = Time.time + BeamGap;
         quietUntil = Time.time + AfterBlowRest;
         special = false;

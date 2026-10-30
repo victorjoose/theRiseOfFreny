@@ -101,6 +101,35 @@ public class BloodBeam : MonoBehaviour {
         }
     }
 
+    // a soft round red-white glow (the charging eye, the mouth of the beam)
+    private static Sprite glowSprite;
+
+    public static SpriteRenderer Orb(string name) {
+        if (glowSprite == null) {
+            const int size = 32;
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) {
+                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f)) / (size / 2f);
+                    float a = Mathf.Clamp01(1f - d);
+                    a *= a;
+                    Color c = Color.Lerp(new Color(1f, 0.1f, 0.1f), new Color(1f, 0.9f, 0.85f), Mathf.Clamp01(1f - d * 2.2f));
+                    texture.SetPixel(x, y, new Color(c.r, c.g, c.b, a));
+                }
+            }
+            texture.Apply();
+            glowSprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+        GameObject go = new GameObject(name);
+        SpriteRenderer orb = go.AddComponent<SpriteRenderer>();
+        orb.sprite = glowSprite;
+        orb.sortingOrder = 48;   // over the beam and over the Ciclope's face
+        if (ItemPickup.UnlitMaterial != null) {
+            orb.sharedMaterial = ItemPickup.UnlitMaterial;
+        }
+        return orb;
+    }
+
     private static Material Material() {
         if (material == null) {
             Material unlit = ItemPickup.UnlitMaterial;
