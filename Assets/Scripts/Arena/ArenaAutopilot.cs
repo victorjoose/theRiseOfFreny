@@ -260,7 +260,12 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
             }
         }
 
-        // 1a. the red Golem's mines, the Ciclope's shockwave and acid: get away or jump over
+        // 1a. the Ciclope's flood on the ground floor: up onto a platform until it drains
+        if (FleeFlood(ref frame, me, myPlatform)) {
+            return frame;
+        }
+
+        // 1b. the red Golem's mines, the Ciclope's shockwave and acid: get away or jump over
         if (AvoidHazards(ref frame, me, myFeet)) {
             return frame;
         }
@@ -605,7 +610,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         float me = transform.position.x;
         float myFeet = FeetY;
         foreach (AcidPuddle puddle in AcidPuddle.Active) {
-            if (puddle == null) {
+            if (puddle == null || puddle.IsFlood) {
                 continue;
             }
             Vector2 at = puddle.transform.position;
@@ -618,6 +623,39 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 return;
             }
         }
+    }
+
+    // the whole ground floor is flooded: climb to the nearest platform; already up on one, wait
+    // there instead of dropping back into it
+    private bool FleeFlood(ref PlayerInputFrame frame, Vector2 me, ArenaMap.Platform myPlatform) {
+        if (!AcidPuddle.Flooding || map.Floor == null || myPlatform == null) {
+            return false;
+        }
+        if (myPlatform != map.Floor) {
+            if (!player.IsGrounded) {
+                return false;
+            }
+            action = "Esperando a enchente baixar";
+            return true;
+        }
+        ArenaMap.Platform best = null;
+        float bestScore = float.PositiveInfinity;
+        foreach (ArenaMap.Platform platform in map.Platforms) {
+            int count = HopsTo(platform);
+            if (platform == map.Floor || platform.tower || count == int.MaxValue) {
+                continue;
+            }
+            float score = count * 10f + Mathf.Abs((platform.xMin + platform.xMax) / 2f - me.x);
+            if (score < bestScore) {
+                bestScore = score;
+                best = platform;
+            }
+        }
+        if (best != null && RequestRoute(myPlatform, best, me.x)) {
+            action = "Fugindo da enchente: " + action;
+            return true;
+        }
+        return false;
     }
 
     private bool AvoidHazards(ref PlayerInputFrame frame, Vector2 me, float myFeet) {
@@ -658,7 +696,7 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
         // standing in (or at the edge of) the acid: step out the shorter way
         foreach (AcidPuddle puddle in AcidPuddle.Active) {
-            if (puddle == null) {
+            if (puddle == null || puddle.IsFlood) {
                 continue;
             }
             Vector2 at = puddle.transform.position;

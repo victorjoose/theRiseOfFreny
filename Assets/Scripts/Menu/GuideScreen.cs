@@ -158,8 +158,9 @@ public static class GuideScreen {
             "os outros inimigos também continuam vindo. Sempre vem um morcego e um inseto atrás do Freny, para manter o combo vivo. O feitiço dos feiticeiros não fere o Ciclope. 100 de " +
             "vida e barra de chefe. Não pula: fica no chão. Soco: 1 coração e arremessa o Freny longe. " +
             "Pancada no chão: uma onda pelo piso, 2 corações e o mesmo arremesso (pule!). Bomba: de longe, uma mina " +
-            "3 vezes maior jogada com força, 2 corações. Vômito: ele pula numa plataforma, para na beirada em cima do Freny e solta " +
-            "uma cachoeira de vômito roxo até o chão (em 2 de 5 ataques de perto ou quando ele está a alguns passos); depois pula de volta. " +
+            "3 vezes maior jogada com força, 2 corações. Vômito: ele vomita no chão e alaga o andar de baixo inteiro por 4 s; " +
+            "quem estiver no chão queima (os outros inimigos também, menos ele), então suba numa plataforma. " +
+            "Na Lua de Sangue ele solta até 3 raios vermelhos do olho em direção ao Freny (3 corações), que desintegram tudo no caminho. " +
             "Ele se espalha numa poça larga que fica 6 s: o jato e a poça queimam, e a poça deixa o Freny lento. Depois de cada golpe ele descansa " +
             "3 s: é a hora de bater. Acertar o olho tira o dobro. Vale 5 000 pontos, 30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",

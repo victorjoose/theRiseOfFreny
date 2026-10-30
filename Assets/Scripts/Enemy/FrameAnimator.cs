@@ -52,16 +52,6 @@ public class FrameAnimator : MonoBehaviour {
         }
     }
 
-    // frames first..last of a sheet as their own clip (the Ciclope's leap is part of its smash)
-    public void AddPart(string name, string path, int first, int last, float fps, bool loop = false) {
-        Sprite[] frames = Load(path);
-        if (frames.Length > last && first <= last) {
-            Sprite[] part = new Sprite[last - first + 1];
-            System.Array.Copy(frames, first, part, 0, part.Length);
-            clips[name] = new Clip { frames = part, fps = fps, loop = loop };
-        }
-    }
-
     // plays `name` for `seconds`, over whatever the enemy is doing
     public void Play(string name, float seconds) {
         forced = name;
