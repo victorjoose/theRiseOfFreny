@@ -27,12 +27,12 @@ public class AcidPuddle : MonoBehaviour {
         Active.Remove(this);
     }
 
-    // thrown up from the mouth: a stream that arcs out, splashes on the Ciclope's own floor and
-    // keeps pouring straight down through it to the floor below, where it spreads (VomitStream)
-    public static void Pour(Vector3 mouth, float facing, float reach, float standingY, Player player, float width, float seconds) {
+    // thrown up high from the mouth: a jet that comes down on targetX from above, through every
+    // platform on the way, to the arena floor, where it spreads (VomitStream)
+    public static void Pour(Vector3 mouth, float targetX, float standingY, Player player, float width, float seconds) {
         GameObject go = new GameObject("Vomit Stream");
         go.transform.position = mouth;
-        go.AddComponent<VomitStream>().Setup(mouth, facing, reach, standingY, player, width, seconds);
+        go.AddComponent<VomitStream>().Setup(mouth, targetX, standingY, player, width, seconds);
     }
 
     public static AcidPuddle Create(Vector3 floorPoint, float width, float seconds, float spread = 0f) {
@@ -149,32 +149,32 @@ public class VomitStream : MonoBehaviour {
     private const float PourSeconds = 0.7f;
     private const float Thickness = 0.26f;
     private const float SpreadSeconds = 0.5f;
+    private const float Step = 0.02f;          // seconds between two points of the path
+    private const float TopMargin = 0.8f;      // the jet peaks this far under the top of the screen
+    private const float LowestPeak = 4f;       // and at least this high over the mouth
     private static readonly Color Green = new Color(0.45f, 0.85f, 0.2f, 1f);
     private static readonly Color DarkGreen = new Color(0.25f, 0.55f, 0.1f, 1f);
     private static Material material;
     private static Player freny;
 
+    // the jet's flight, one point every Step seconds: up out of the mouth, over and down
     private readonly System.Collections.Generic.List<Vector3> path = new System.Collections.Generic.List<Vector3>();
-    private readonly System.Collections.Generic.List<float> along = new System.Collections.Generic.List<float>();
-    private float length;
-    private float splashAt = -1f;   // where along the path it crosses the Ciclope's own floor (-1: it lands there)
-    private Vector3 splashPoint;
+    private int peak;   // from this point on it is falling (only the falling part burns)
+    private readonly System.Collections.Generic.List<int> crossings = new System.Collections.Generic.List<int>();   // where it goes through a platform
     private Vector3 bottom;
     private float width;
     private float seconds;
-    private float head, headSpeed = 3f;
-    private float tail, tailSpeed;
     private float started;
     private float nextSplash;
     private AcidPuddle puddle;
     private LineRenderer line;
 
-    public void Setup(Vector3 mouth, float facing, float reach, float standingY, Player player, float puddleWidth, float puddleSeconds) {
+    public void Setup(Vector3 mouth, float targetX, float standingY, Player player, float puddleWidth, float puddleSeconds) {
         width = puddleWidth;
         seconds = puddleSeconds;
         started = Time.time;
         freny = player != null ? player : freny;
-        Trace(mouth, facing, reach, standingY, player);
+        Trace(mouth, targetX, standingY, player);
         line = gameObject.AddComponent<LineRenderer>();
         line.useWorldSpace = true;
         line.numCapVertices = 3;
@@ -188,118 +188,99 @@ public class VomitStream : MonoBehaviour {
         line.positionCount = 0;
     }
 
-    // the stream's way down: out of the mouth in an arc onto the floor it stands on, then on down
-    // through it (José: it does not wait for an edge) to the next floor below; on the ground floor it
-    // stops there
-    private void Trace(Vector3 mouth, float facing, float reach, float standingY, Player player) {
+    // José, 2026-10-30: straight up near the top of the screen, then down onto targetX and on to
+    // the floor (over the void at the sides it drops off the screen)
+    private void Trace(Vector3 mouth, float targetX, float standingY, Player player) {
         ArenaMap map = player != null ? ArenaMap.Shared(player) : null;
-        float drop = Mathf.Max(0.3f, mouth.y - standingY);
-        reach = Mathf.Clamp(reach, 0.8f, 8f);
-        float vy = reach > 2.5f ? 4f : 0f;   // far off it is a jet, shot a little upward
-        float flight = (vy + Mathf.Sqrt(vy * vy + 2f * Gravity * drop)) / Gravity;
-        float vx = facing * reach / flight;   // lands on Freny (or above him when he is below)
+        float top = ArenaBounds.Active ? ArenaBounds.Top - TopMargin : mouth.y + 8f;
+        float apex = Mathf.Max(top, mouth.y + LowestPeak);
+        float floor = float.NaN;
+        if (map != null && map.Floor != null) {
+            if (map.Floor.Contains(targetX)) {
+                floor = map.Floor.y;
+            }
+        } else {
+            RaycastHit2D hit = Physics2D.Raycast(new Vector2(targetX, standingY + 0.1f), Vector2.down, 30f, LayerMask.GetMask("Ground"));
+            floor = hit.collider != null ? hit.point.y : standingY;
+        }
+        float end = float.IsNaN(floor) ? standingY - 20f : floor;
+        float vy = Mathf.Sqrt(2f * Gravity * (apex - mouth.y));
+        float flight = vy / Gravity + Mathf.Sqrt(2f * (apex - end) / Gravity);
+        float vx = (targetX - mouth.x) / flight;
+        bottom = new Vector3(targetX, floor, 0f);
         Vector3 p = mouth;
-        Add(p);
-        while (p.y > standingY) {
-            float dt = 0.02f;
-            vy -= Gravity * dt;
-            p += new Vector3(vx * dt, vy * dt, 0f);
-            Add(new Vector3(p.x, Mathf.Max(p.y, standingY), 0f));
-        }
-        float x = p.x;
-        float floor = standingY;
-        bool onOwn = true;
-        if (map != null) {
-            ArenaMap.Platform own = map.PlatformUnder(new Vector2(x, standingY + 0.1f), 0.5f);
-            ArenaMap.Platform below = map.PlatformUnder(new Vector2(x, standingY - 0.3f), 30f);
-            onOwn = own != null;
-            if (below != null && (own == null || own != map.Floor)) {
-                floor = below.y;
-            } else if (own == null && below == null) {
-                floor = float.NaN;   // over the void at the side: it drops off the screen
+        path.Add(p);
+        peak = -1;
+        for (float t = Step; ; t += Step) {
+            float y = mouth.y + vy * t - 0.5f * Gravity * t * t;
+            Vector3 next = new Vector3(mouth.x + vx * t, Mathf.Max(y, end), 0f);
+            if (peak < 0 && vy - Gravity * t < 0f) {
+                peak = path.Count;
             }
-        } else {
-            RaycastHit2D hit = Physics2D.Raycast(new Vector2(x, standingY - 0.3f), Vector2.down, 30f, LayerMask.GetMask("Ground"));
-            if (hit.collider != null) {
-                floor = hit.point.y;
+            if (map != null && peak >= 0) {
+                foreach (ArenaMap.Platform platform in map.Platforms) {
+                    if (platform != map.Floor && p.y > platform.y && next.y <= platform.y && platform.Contains(next.x)) {
+                        crossings.Add(path.Count);
+                    }
+                }
             }
-        }
-        if (float.IsNaN(floor)) {
-            floor = standingY - 20f;
-            bottom = new Vector3(x, float.NaN, 0f);
-        } else {
-            bottom = new Vector3(x, floor, 0f);
-        }
-        if (floor < standingY - 0.05f) {
-            if (onOwn) {
-                splashAt = length;
-                splashPoint = path[path.Count - 1];
+            path.Add(next);
+            p = next;
+            if (y <= end) {
+                break;
             }
-            Add(new Vector3(x, floor, 0f));
         }
     }
 
-    private void Add(Vector3 point) {
-        if (path.Count > 0) {
-            length += Vector3.Distance(path[path.Count - 1], point);
-        }
-        path.Add(point);
-        along.Add(length);
-    }
+    private float Elapsed => Time.time - started;
+    private float Head => Mathf.Min(path.Count - 1, Elapsed / Step);
+    private float Tail => Mathf.Min(Head, Mathf.Max(0f, (Elapsed - PourSeconds) / Step));
 
-    private Vector3 At(float s) {
-        for (int i = 1; i < path.Count; i++) {
-            if (along[i] >= s) {
-                float span = along[i] - along[i - 1];
-                return Vector3.Lerp(path[i - 1], path[i], span > 0f ? (s - along[i - 1]) / span : 1f);
-            }
-        }
-        return path[path.Count - 1];
+    private Vector3 At(float index) {
+        int i = Mathf.Clamp(Mathf.FloorToInt(index), 0, path.Count - 1);
+        int j = Mathf.Min(i + 1, path.Count - 1);
+        return Vector3.Lerp(path[i], path[j], index - i);
     }
 
     private void Update() {
-        float dt = Time.deltaTime;
-        headSpeed += Gravity * dt;
-        head = Mathf.Min(length, head + headSpeed * dt);
-        if (Time.time - started > PourSeconds) {
-            tailSpeed += Gravity * dt;
-            tail = Mathf.Min(head, tail + tailSpeed * dt);
-        }
         Draw();
         Splash();
         Burn();
-        if (tail >= length - 0.01f) {
+        if (Tail >= path.Count - 1.01f) {
             Destroy(gameObject);
         }
     }
 
-    // the stretch between tail and head, wobbling a little as it pours
+    // the stretch between tail and head, wobbling a little as it flies
     private void Draw() {
-        int count = Mathf.Clamp(Mathf.CeilToInt((head - tail) / 0.12f) + 1, 2, 120);
+        float head = Head, tail = Tail;
+        int count = Mathf.Clamp(Mathf.CeilToInt((head - tail) / 2f) + 1, 2, 120);
         line.positionCount = count;
         for (int i = 0; i < count; i++) {
             float s = Mathf.Lerp(tail, head, i / (float)(count - 1));
             Vector3 p = At(s);
-            p.x += Mathf.Sin(Time.time * 22f + s * 5f) * 0.035f;
+            p.x += Mathf.Sin(Time.time * 22f + s * 0.4f) * 0.035f;
             line.SetPosition(i, p);
         }
         // it thins out as it drains
-        float left = 1f - Mathf.Clamp01((Time.time - started - PourSeconds) / 0.6f);
+        float left = 1f - Mathf.Clamp01((Elapsed - PourSeconds) / 0.6f);
         line.widthMultiplier = Thickness * Mathf.Lerp(0.5f, 1f, left);
     }
 
     private void Splash() {
-        bool flowing = tail < head;
-        if (!flowing || Time.time < nextSplash) {
+        float head = Head, tail = Tail;
+        if (tail >= head || Time.time < nextSplash) {
             return;
         }
         nextSplash = Time.time + 0.06f;
-        // passing the Ciclope's own floor: drops fly off where it goes through
-        if (splashAt >= 0f && head >= splashAt && tail <= splashAt) {
-            Fx.Burst(splashPoint, Green, 3, 1.6f, 0.1f, 0.3f);
+        // going through a platform: drops fly off where it passes
+        foreach (int crossing in crossings) {
+            if (head >= crossing && tail <= crossing) {
+                Fx.Burst(path[crossing], Green, 3, 1.6f, 0.1f, 0.3f);
+            }
         }
         // the bottom: it lands, the puddle spreads and keeps being fed while it still pours
-        if (head >= length - 0.01f && !float.IsNaN(bottom.y)) {
+        if (head >= path.Count - 1.01f && !float.IsNaN(bottom.y)) {
             Fx.Burst(bottom, Green, 4, 2.2f, 0.1f, 0.35f);
             if (puddle == null) {
                 puddle = AcidPuddle.Create(bottom, width, seconds, SpreadSeconds);
@@ -309,13 +290,14 @@ public class VomitStream : MonoBehaviour {
         }
     }
 
-    // standing under the falling stream burns too
+    // the falling part of the jet burns whoever it comes down on
     private void Burn() {
-        if (freny == null || freny.IsDead || tail >= head) {
+        float head = Head, from = Mathf.Max(Tail, peak);
+        if (freny == null || freny.IsDead || peak < 0 || from >= head) {
             return;
         }
         Vector3 body = freny.BodyCenter;
-        for (float s = tail; s <= head; s += 0.25f) {
+        for (float s = from; s <= head; s += 1f) {
             Vector3 p = At(s);
             if (Mathf.Abs(p.x - body.x) < 0.4f && Mathf.Abs(p.y - body.y) < 0.6f) {
                 freny.TryDamage(1);

@@ -136,7 +136,7 @@ public class ArenaDirector : MonoBehaviour {
             list.Add(new Entry { prefab = shielded, unlockAt = 0.4f, weight = 1f });
             enemies = list.ToArray();
         }
-        cyclopsTemplate = EnemyTemplates.Make<Cyclops>(golem, "Cyclops_Boss", new Vector2(1.9f, 2.45f), new Vector2(0f, -0.36f));
+        cyclopsTemplate = EnemyTemplates.Make<Cyclops>(golem, "Cyclops_Boss", new Vector2(1.9f * Cyclops.Size, 2.45f * Cyclops.Size), new Vector2(0f, Cyclops.Size * 1.225f - 1.585f));
     }
 
     private bool BossAround => bossPending || Cyclops.Current != null;
