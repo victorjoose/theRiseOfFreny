@@ -392,7 +392,7 @@ public class Cyclops : Enemy {
     }
 
     // the platform edge whose waterfall falls closest to Freny (a little in favour of the higher
-    // ones): room for its body above it, the stream over the arena floor, no other Ciclope there
+    // ones, only to break near ties): room for its body above it, the stream over the arena floor, no other Ciclope there
     private bool PickLedge(ArenaMap map, out float standX, out float standY, out float side) {
         standX = standY = side = 0f;
         float best = float.PositiveInfinity;
@@ -413,7 +413,7 @@ public class Cyclops : Enemy {
                 if (Physics2D.OverlapBox(new Vector2(x, platform.y + HalfHeight + 0.15f), body, 0f, GroundMask) != null || Taken(x, platform.y)) {
                     continue;
                 }
-                float score = Mathf.Abs(fallX - frenyX) - 0.3f * (platform.y - floorY);
+                float score = Mathf.Abs(fallX - frenyX) - 0.05f * (platform.y - floorY);
                 if (score < best) {
                     best = score;
                     standX = x;
