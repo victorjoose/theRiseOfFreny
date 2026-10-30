@@ -34,27 +34,18 @@ public static class WallRescue {
         return walls;
     }
 
-    // inside a wall: on a tile, and boxed in by the wall's edges close by, left and right (inside a
-    // column) or above and below (inside the floor). A ledge against a column is open on one side,
-    // so standing on it is not inside. The decoration layer (EXTRA Ground_Tilemap: tufts on the
-    // floor, ledge ends) is not a wall at all: Freny walks through its tiles
-    private const float Enclosed = 2.5f;
-
+    // inside a wall: on a colliding tile, with another one above or below it (walls and the floor
+    // are at least two cells thick; a one-cell platform is left to the physics). Tiles drawn without
+    // a collider (the bricks behind a ledge) are not wall, and neither is the decoration layer
+    // (EXTRA Ground_Tilemap: tufts on the floor, ledge ends), which Freny walks through
     public static bool Solid(Vector2 point) {
-        if (!Tiled(point)) {
-            return false;
-        }
-        int ground = LayerMask.GetMask("Ground");
-        bool sides = Physics2D.Raycast(point, Vector2.left, Enclosed, ground).collider != null
-            && Physics2D.Raycast(point, Vector2.right, Enclosed, ground).collider != null;
-        bool upDown = Physics2D.Raycast(point, Vector2.up, Enclosed, ground).collider != null
-            && Physics2D.Raycast(point, Vector2.down, Enclosed, ground).collider != null;
-        return sides || upDown;
+        return Tiled(point) && (Tiled(point + Vector2.up) || Tiled(point + Vector2.down));
     }
 
     private static bool Tiled(Vector2 point) {
         foreach (Tilemap map in Walls()) {
-            if (map.HasTile(map.WorldToCell(point))) {
+            Vector3Int cell = map.WorldToCell(point);
+            if (map.HasTile(cell) && map.GetColliderType(cell) != Tile.ColliderType.None) {
                 return true;
             }
         }

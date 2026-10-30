@@ -76,7 +76,11 @@ public class CombatHud : MonoBehaviour {
             // hearts they pushed the score onto the coins once he had bought hearts)
             float size = 84f * scale;   // the sword and gun sprites are small inside their frames
             float barsBottom = head.yMax + 6f * scale + BarsHeight * scale;
-            DrawWeapons(head.xMin, barsBottom - size * 0.15f, size, scale);
+            float rowEnd = DrawWeapons(head.xMin, barsBottom - size * 0.15f, size, scale);
+            // the gun just switched: its name at the end of the row (above are the bars, under the counts)
+            if (Time.time - switchedAt < 1.2f) {
+                ShadowLabel(new Rect(rowEnd + 12f * scale, gunLabelY, 160f * scale, 28f * scale), lastShotgun ? "Escopeta" : "Pistola");
+            }
             weaponsRight = rowRight;   // the score keeps clear of the hearts (bought ones and armor too)
         }
         DrawScore(scale);
@@ -200,16 +204,15 @@ public class CombatHud : MonoBehaviour {
     private bool lastShotgun;
     private float switchedAt = -10f;
 
+    private float gunLabelY;
+
     private void DrawFrame(Rect r, float scale) {
         bool shotgun = player.UsingShotgun;
         if (shotgun != lastShotgun) {
             lastShotgun = shotgun;
             switchedAt = Time.time;
         }
-        if (Time.time - switchedAt < 1.2f) {
-            // under the icon: above it are the Corrida and Fúria bars now
-            ShadowLabel(new Rect(r.x, r.yMax + 2f * scale, 160f * scale, 28f * scale), shotgun ? "Escopeta" : "Pistola");
-        }
+        gunLabelY = r.center.y - 14f * scale;   // drawn after the row, at its end (OnGUI)
     }
 
     // Corrida is an energy bar (yellow), always shown; Rage (red) under it,
@@ -266,7 +269,18 @@ public class CombatHud : MonoBehaviour {
         float left = float.MaxValue;
         foreach (RectTransform rect in new[] { coinIcon, coinText }) {
             if (rect != null && rect.gameObject.activeInHierarchy) {
-                left = Mathf.Min(left, ScreenRect(rect).xMin);
+                Rect onScreen = ScreenRect(rect);
+                left = Mathf.Min(left, onScreen.xMin);
+                // the number spills out of its narrow box: where its letters really start
+                if (rect.GetComponent<Text>() is Text text && rect.rect.width > 0f) {
+                    float spill = text.preferredWidth * onScreen.width / rect.rect.width;
+                    float start = text.alignment == TextAnchor.UpperRight || text.alignment == TextAnchor.MiddleRight || text.alignment == TextAnchor.LowerRight
+                        ? onScreen.xMax - spill
+                        : text.alignment == TextAnchor.UpperLeft || text.alignment == TextAnchor.MiddleLeft || text.alignment == TextAnchor.LowerLeft
+                            ? onScreen.xMin
+                            : onScreen.center.x - spill / 2f;
+                    left = Mathf.Min(left, start);
+                }
             }
         }
         return left < float.MaxValue && left > Screen.width * 0.5f ? left : -1f;
