@@ -219,6 +219,46 @@ public class Cyclops : Enemy {
     // José, 2026-10-29: he stays on the floor; Freny up on a platform gets the bomb and the vomit
     protected override bool Climbs => false;
 
+    // José, 2026-10-30: he likes to stand under the first platform in the middle, where Freny can
+    // jump at his eye; off in a corner he was hard to reach. He still follows Freny, but only
+    // part of the way and never further than HomeLeash from that spot
+    private const float HomePull = 0.4f;
+    private const float HomeLeash = 6f;
+    private float homeX = float.NaN;
+
+    protected override float ChaseX(float targetX) {
+        if (!ArenaBounds.Active) {
+            return targetX;
+        }
+        if (float.IsNaN(homeX)) {
+            homeX = FindHome();
+        }
+        float x = Mathf.Lerp(targetX, homeX, HomePull);
+        return ArenaBounds.ClampX(Mathf.Clamp(x, homeX - HomeLeash, homeX + HomeLeash), 0.5f);
+    }
+
+    // the middle of the lowest platform above the floor in the central half of the arena
+    private float FindHome() {
+        float middle = (ArenaBounds.Left + ArenaBounds.Right) / 2f;
+        float quarter = (ArenaBounds.Right - ArenaBounds.Left) / 4f;
+        ArenaMap map = player != null ? ArenaMap.Shared(player) : null;
+        if (map == null || map.Floor == null) {
+            return middle;
+        }
+        ArenaMap.Platform best = null;
+        foreach (ArenaMap.Platform platform in map.Platforms) {
+            float centre = (platform.xMin + platform.xMax) / 2f;
+            if (platform.tower || platform.y < map.Floor.y + 1f || Mathf.Abs(centre - middle) > quarter) {
+                continue;
+            }
+            if (best == null || platform.y < best.y - 0.1f
+                || (Mathf.Abs(platform.y - best.y) <= 0.1f && Mathf.Abs(centre - middle) < Mathf.Abs((best.xMin + best.xMax) / 2f - middle))) {
+                best = platform;
+            }
+        }
+        return best != null ? (best.xMin + best.xMax) / 2f : middle;
+    }
+
     private void ThrowBomb() {
         FacePlayer();
         nextBomb = Time.time + BombCooldown * ScoreCooldown;

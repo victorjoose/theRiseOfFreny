@@ -717,6 +717,7 @@ public abstract class Enemy : MonoBehaviour, IDamageable
             PatrolRange(out float min, out float max);
             targetX = Mathf.Clamp(targetX, min, max);
         }
+        targetX = ChaseX(targetX);
         float step = targetX - transform.position.x;
         float dir = step >= 0f ? 1f : -1f;
         float herFeet = rival != null ? rival.Feet.y : playerCol ? playerCol.bounds.min.y : player_t.position.y - 1f;
@@ -773,6 +774,9 @@ public abstract class Enemy : MonoBehaviour, IDamageable
         bool sameHeight = theirs.max.y > mine.min.y && theirs.min.y < mine.max.y;
         return sameHeight && gapX <= attackDistance + extra;
     }
+
+    // where it walks to while chasing (the Ciclope leans towards the middle of the arena)
+    protected virtual float ChaseX(float targetX) => targetX;
 
     // false while it must not start a punch (the Ciclope resting after a blow)
     protected virtual bool CanStartAttack => true;
