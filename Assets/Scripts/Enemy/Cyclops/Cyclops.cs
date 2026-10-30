@@ -324,7 +324,8 @@ public class Cyclops : Enemy {
     private IEnumerator Vomit() {
         special = true;
         ArenaMap map = player != null && ArenaBounds.Active ? ArenaMap.Shared(player) : null;
-        bool up = map != null && map.Floor != null && PickLedge(map, out float standX, out float standY, out float side);
+        float standX = 0f, standY = 0f, side = 0f;
+        bool up = map != null && map.Floor != null && PickLedge(map, out standX, out standY, out side);
         if (up) {
             yield return Leap(new Vector3(standX, standY, 0f));
             Face(side);
