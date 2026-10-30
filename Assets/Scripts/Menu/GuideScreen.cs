@@ -184,6 +184,10 @@ public static class GuideScreen {
             "Um recorde novo aparece no fim da corrida, com o botão Salvar recorde ou o motivo de não poder ir para o Ranking. " +
             "No automático, a próxima corrida começa 10 s depois (ou na hora, em Jogar agora); com 10 mil " +
             "pontos ou mais, o jogo pergunta antes.");
+        Entry(parent, null, "Lua de Sangue",
+            "A cada 3 noites a lua fica vermelha (a primeira na 3ª noite, uns 10 minutos de corrida). Até amanhecer, " +
+            "os inimigos ficam 25% mais rápidos, tiram 1 coração a mais, recuperam vida (1 a cada 3 s; o Ciclope não) " +
+            "e ficam de olhos vermelhos, deixando um rastro vermelho.");
         Entry(parent, art ? art.rageHelmet : null, "Dificuldade",
             "Fácil, Médio, Difícil ou Freny: quanto maior, mais inimigos, mais rápidos e mais cedo. " +
             "Com o tempo e os pontos a Arena aperta, mas para de apertar no primeiro Ciclope (50 mil) e só volta em 1 milhão.");

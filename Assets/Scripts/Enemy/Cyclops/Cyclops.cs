@@ -89,6 +89,7 @@ public class Cyclops : Enemy {
     protected override float HitPush => 0f;   // nothing moves it
     // it jumps up and down the platforms after Freny like the walkers (José, 2026-10-29)
     protected override Color DeathColor => new Color(0.5f, 0.35f, 0.85f);
+    protected override bool HealsInBloodMoon => false;   // a boss healing would drag the fight on
     protected override string SoundName => "golem";
     protected override float SoundPitch => 0.6f;
     protected override float KnockbackLift => 0.6f;
@@ -349,7 +350,8 @@ public class Cyclops : Enemy {
         }
     }
 
-    private void LateUpdate() {
+    protected override void LateUpdate() {
+        base.LateUpdate();
         if (isDead && bar != null) {
             Destroy(bar);
         }

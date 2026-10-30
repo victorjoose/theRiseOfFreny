@@ -62,6 +62,32 @@ public class ArenaDayNight : MonoBehaviour {
 
     // tests and screenshots: when 0..1, the cycle stays at this point of the day
     public static float PhaseOverride = -1f;
+
+    // the Lua de Sangue (José, 2026-10-30): every BloodEvery-th night the moon turns red, the arena
+    // goes red and the enemies get faster, heal and hit harder (Enemy.BloodMoon reads Blood).
+    // A run starts in night 1, so the first one is night 3, about 10 minutes in. Blood is 0..1:
+    // it rises as the night falls and drops at dawn. BloodOverride forces it for tests
+    public const int BloodEvery = 3;
+    public static float Blood { get; private set; }
+    public static float BloodOverride = -1f;
+    private static readonly Color BloodLight = new Color(1f, 0.32f, 0.28f);
+    private static readonly Color BloodTint = new Color(1f, 0.55f, 0.55f);
+    private static readonly Color BloodMoonColor = new Color(1f, 0.3f, 0.25f);
+    private float bloodAnnounced = -1f;
+    private int announcedNight;
+    private GUIStyle bloodStyle;
+
+    // which night it is (1 = the one the run starts in), or 0 by day
+    private int NightNumber {
+        get {
+            float t = StartSeconds + Time.time - startTime;
+            float cycle = DaySeconds + NightSeconds;
+            if (Mathf.Repeat(t, cycle) < DaySeconds) {
+                return 0;
+            }
+            return Mathf.FloorToInt(t / cycle) + 1;
+        }
+    }
     // how much daylight there is right now, 0 (night, or no cycle) to 1 (full day): the hexballs
     // read it to draw their dark rim, which keeps them visible against the bright day
     public static float Daylight { get; private set; }
@@ -228,6 +254,7 @@ public class ArenaDayNight : MonoBehaviour {
     // leaving the arena (campaign, menu) is always night for the hexballs
     private void OnDisable() {
         Daylight = 0f;
+        Blood = 0f;
     }
 
     private void LateUpdate() {
@@ -235,6 +262,14 @@ public class ArenaDayNight : MonoBehaviour {
         float sunHeight = Mathf.Sin(phase * 2f * Mathf.PI);
         float day = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.12f, 0.2f, sunHeight));
         Daylight = day;
+        int night = PhaseOverride >= 0f ? 0 : NightNumber;
+        bool bloodNight = night > 0 && night % BloodEvery == 0;
+        Blood = BloodOverride >= 0f ? BloodOverride : bloodNight ? 1f - day : 0f;
+        if (bloodNight && night != announcedNight && Blood > 0.5f) {
+            announcedNight = night;
+            bloodAnnounced = Time.time;
+            Sfx.Play("supreme_laugh", cam.transform.position, 0.9f, 0.6f);
+        }
         float dusk = Mathf.Clamp01(1f - Mathf.Abs(sunHeight - 0.02f) / 0.22f);
 
         float halfHeight = cam.orthographicSize;
@@ -250,18 +285,22 @@ public class ArenaDayNight : MonoBehaviour {
 
         PlaceBody(sun, phase, center, halfWidth, halfHeight);
         PlaceBody(moon, phase - 0.5f, center, halfWidth, halfHeight);
+        if (moon != null) {
+            Color c = moon.color;
+            moon.color = Color.Lerp(c, new Color(BloodMoonColor.r, BloodMoonColor.g, BloodMoonColor.b, c.a), Blood);
+        }
 
         if (cloudMap != null) {
-            cloudMap.color = Color.Lerp(CloudNight, Color.white, day);
+            cloudMap.color = Color.Lerp(CloudNight, Color.white, day) * Color.Lerp(Color.white, BloodTint, Blood);
             float drift = PhaseOverride >= 0f ? 0f : Mathf.Repeat((Time.time - startTime) * CloudSpeed, cloudPeriod);
             Vector3 position = clouds.localPosition;
             clouds.localPosition = new Vector3(cloudsX - drift, position.y, position.z);
         }
         if (mountainMap != null) {
-            mountainMap.color = Color.Lerp(MountainNight, Color.white, day);
+            mountainMap.color = Color.Lerp(MountainNight, Color.white, day) * Color.Lerp(Color.white, BloodTint, Blood);
         }
         if (castle != null) {
-            castle.color = Color.Lerp(CastleNight, Color.white, day);
+            castle.color = Color.Lerp(CastleNight, Color.white, day) * Color.Lerp(Color.white, BloodTint, Blood);
         }
 
         foreach (Torch torch in torches) {
@@ -290,9 +329,28 @@ public class ArenaDayNight : MonoBehaviour {
             float boost = Mathf.Lerp(1f, DayLightBoost, day);
             globalLight.intensity = BrightnessLights.BaseIntensity(globalLight) * GameSettings.BrightnessFactor * boost;
             Color light = Color.Lerp(nightLight, DayLight, day);
-            globalLight.color = Color.Lerp(light, DuskLight, dusk * 0.5f);
+            globalLight.color = Color.Lerp(Color.Lerp(light, DuskLight, dusk * 0.5f), BloodLight, Blood * 0.7f);
         }
 #endif
+    }
+
+    // "LUA DE SANGUE" across the screen for a few seconds when it begins
+    private void OnGUI() {
+        if (bloodAnnounced < 0f || Time.time - bloodAnnounced > 4f || GameMenus.Paused) {
+            return;
+        }
+        float t = Time.time - bloodAnnounced;
+        float alpha = Mathf.Clamp01(t / 0.4f) * Mathf.Clamp01((4f - t) / 0.8f);
+        if (bloodStyle == null) {
+            bloodStyle = new GUIStyle(GUI.skin.label) { font = MenuKit.Font, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+        }
+        float scale = Screen.width / 1920f;
+        bloodStyle.fontSize = Mathf.Max(16, Mathf.RoundToInt(64f * scale));
+        Rect r = new Rect(0f, Screen.height * 0.28f, Screen.width, 90f * scale);
+        bloodStyle.normal.textColor = new Color(0f, 0f, 0f, alpha * 0.8f);
+        GUI.Label(new Rect(r.x + 3f, r.y + 3f, r.width, r.height), "LUA DE SANGUE", bloodStyle);
+        bloodStyle.normal.textColor = new Color(1f, 0.2f, 0.15f, alpha);
+        GUI.Label(r, "LUA DE SANGUE", bloodStyle);
     }
 
     // half a turn above the horizon from left to right, the other half below it, out of sight
