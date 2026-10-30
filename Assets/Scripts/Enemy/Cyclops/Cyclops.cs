@@ -222,8 +222,8 @@ public class Cyclops : Enemy {
     // José, 2026-10-30: he likes to stand under the first platform in the middle, where Freny can
     // jump at his eye; off in a corner he was hard to reach. He still follows Freny, but only
     // part of the way and never further than HomeLeash from that spot
-    private const float HomePull = 0.4f;
-    private const float HomeLeash = 6f;
+    private const float HomePull = 0.5f;
+    private const float HomeLeash = 4f;
     private float homeX = float.NaN;
 
     protected override float ChaseX(float targetX) {
