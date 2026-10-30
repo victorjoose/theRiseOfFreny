@@ -149,8 +149,10 @@ public class Cyclops : Enemy {
             return;
         }
         if (special) {
-            StickToGround();
-            ClampToArena();
+            if (!hopping) {
+                StickToGround();
+                ClampToArena();
+            }
             return;
         }
         UpdateLaugh();
@@ -280,6 +282,9 @@ public class Cyclops : Enemy {
     private const int SmashImpactFrame = 7;
     private const float SmashHold = 0.6f;
     private const float SmashShake = 0.35f;
+    private const int SmashHopFrame = 4;      // it leaves the ground here and lands on the impact frame
+    private const float SmashHopHeight = 0.9f;
+    private bool hopping;
     private const float SmashShakeSeconds = 0.5f;
 
     private IEnumerator Smash() {
@@ -289,7 +294,18 @@ public class Cyclops : Enemy {
         float frame = length / SmashFrames;
         frames.Play("smash", length);
         PlaySound("windup");
-        yield return new WaitForSeconds(frame * SmashImpactFrame);
+        yield return new WaitForSeconds(frame * SmashHopFrame);
+        // a little hop with the arms up, coming down on the impact frame
+        hopping = true;
+        Vector3 ground = transform.position;
+        float air = frame * (SmashImpactFrame - SmashHopFrame);
+        for (float t = 0f; t < air && !isDead; t += Time.deltaTime) {
+            float u = t / air;
+            transform.position = ground + Vector3.up * (SmashHopHeight * 4f * u * (1f - u));
+            yield return null;
+        }
+        transform.position = ground;
+        hopping = false;
         if (!isDead) {
             Vector3 feet = Feet;
             Fx.Dust(feet, 24);
@@ -316,8 +332,13 @@ public class Cyclops : Enemy {
     private const float FloodSeconds = 4f;
     private const float MouthForward = 2.07f;   // the stream in frame 4, from the sprite's middle
 
+    // a flood is on its way (from the start of the vomit): the autopilot climbs right away
+    public static bool FloodComing => Alive.Exists(c => c != null && !c.isDead && c.vomiting);
+    private bool vomiting;
+
     private IEnumerator Vomit() {
         special = true;
+        vomiting = true;
         FacePlayer();
         float length = frames.Length("vomit");
         float frame = length / VomitFrames;
@@ -339,6 +360,7 @@ public class Cyclops : Enemy {
         yield return new WaitForSeconds(Mathf.Max(0f, length - frame * (VomitStartFrame + 1.1f)));
         nextVomit = Time.time + VomitCooldown * ScoreCooldown;
         quietUntil = Time.time + AfterBlowRest;
+        vomiting = false;
         special = false;
     }
 

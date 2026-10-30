@@ -625,10 +625,10 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
     }
 
-    // the whole ground floor is flooded: climb to the nearest platform; already up on one, wait
-    // there instead of dropping back into it
+    // the whole ground floor is flooded, or the Ciclope has started the vomit that floods it:
+    // climb to the nearest platform; already up on one, wait there instead of dropping back into it
     private bool FleeFlood(ref PlayerInputFrame frame, Vector2 me, ArenaMap.Platform myPlatform) {
-        if (!AcidPuddle.Flooding || map.Floor == null || myPlatform == null) {
+        if (!(AcidPuddle.Flooding || Cyclops.FloodComing) || map.Floor == null || myPlatform == null) {
             return false;
         }
         if (myPlatform != map.Floor) {
