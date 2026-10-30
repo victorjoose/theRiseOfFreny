@@ -17,10 +17,10 @@ using UnityEngine.Rendering.Universal;
 // arena itself, and on top of the Brilho setting (BrightnessLights), never instead of it.
 public class ArenaDayNight : MonoBehaviour {
 
-    // José, 2026-10-29: 1 minute of day, 5 of night; a run starts at night with the moon a third
+    // José, 2026-10-30: 1 minute of day, 4 of night; a run starts at night with the moon a third
     // of the way across. Phase stays 0..0.5 for the day and 0.5..1 for the night
     private const float DaySeconds = 60f;
-    private const float NightSeconds = 300f;
+    private const float NightSeconds = 240f;
     private const float StartSeconds = DaySeconds + NightSeconds / 3f;
     private const float CloudSpeed = 0.25f;   // units per second, to the left
 
@@ -65,9 +65,12 @@ public class ArenaDayNight : MonoBehaviour {
 
     // the Lua de Sangue (José, 2026-10-30): every BloodEvery-th night the moon turns red, the arena
     // goes red and the enemies get faster, heal and hit harder (Enemy.BloodMoon reads Blood).
-    // A run starts in night 1, so the first one is night 3, about 10 minutes in. Blood is 0..1:
-    // it rises as the night falls and drops at dawn. BloodOverride forces it for tests
+    // A run starts in night 1, so the first one is night 3. It lasts only BloodSeconds around
+    // midnight (José, 2026-10-30), about 10 min 25 s into a run, then the night goes back to
+    // normal. Blood is 0..1 and fades in and out over BloodFade. BloodOverride forces it for tests
     public const int BloodEvery = 3;
+    private const float BloodSeconds = 30f;
+    private const float BloodFade = 3f;
     public static float Blood { get; private set; }
     public static float BloodOverride = -1f;
     private static readonly Color BloodLight = new Color(1f, 0.32f, 0.28f);
@@ -88,6 +91,15 @@ public class ArenaDayNight : MonoBehaviour {
             return Mathf.FloorToInt(t / cycle) + 1;
         }
     }
+    // seconds since the night fell (only meaningful at night)
+    private float NightSecond => Mathf.Repeat(StartSeconds + Time.time - startTime, DaySeconds + NightSeconds) - DaySeconds;
+
+    // the blood window sits in the middle of the night, with a short fade at each end
+    private static float BloodAt(float nightSecond) {
+        float fromMiddle = Mathf.Abs(nightSecond - NightSeconds / 2f);
+        return Mathf.Clamp01((BloodSeconds / 2f - fromMiddle) / BloodFade);
+    }
+
     // how much daylight there is right now, 0 (night, or no cycle) to 1 (full day): the hexballs
     // read it to draw their dark rim, which keeps them visible against the bright day
     public static float Daylight { get; private set; }
@@ -264,7 +276,7 @@ public class ArenaDayNight : MonoBehaviour {
         Daylight = day;
         int night = PhaseOverride >= 0f ? 0 : NightNumber;
         bool bloodNight = night > 0 && night % BloodEvery == 0;
-        Blood = BloodOverride >= 0f ? BloodOverride : bloodNight ? 1f - day : 0f;
+        Blood = BloodOverride >= 0f ? BloodOverride : bloodNight ? BloodAt(NightSecond) : 0f;
         if (bloodNight && night != announcedNight && Blood > 0.5f) {
             announcedNight = night;
             bloodAnnounced = Time.time;
