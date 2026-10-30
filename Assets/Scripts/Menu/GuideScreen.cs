@@ -186,7 +186,7 @@ public static class GuideScreen {
             "pontos ou mais, o jogo pergunta antes.");
         Entry(parent, null, "Lua de Sangue",
             "A cada 3 noites a lua fica vermelha (a primeira na 3ª noite, uns 10 minutos de corrida). Até amanhecer, " +
-            "os inimigos ficam 25% mais rápidos, tiram 1 coração a mais, recuperam vida (1 a cada 3 s; o Ciclope não) " +
+            "os inimigos ficam 25% mais rápidos, tiram 1 coração a mais, recuperam vida (1 a cada 3 s, o Ciclope também) " +
             "e ficam de olhos vermelhos, deixando um rastro vermelho.");
         Entry(parent, art ? art.rageHelmet : null, "Dificuldade",
             "Fácil, Médio, Difícil ou Freny: quanto maior, mais inimigos, mais rápidos e mais cedo. " +
