@@ -23,7 +23,7 @@ public class BloodBeam : MonoBehaviour {
     private LineRenderer glow, core;
     private readonly HashSet<Enemy> burned = new HashSet<Enemy>();
 
-    public static BloodBeam Fire(Vector3 eye, Vector3 at, float seconds, Player player) {
+    public static BloodBeam Fire(Vector3 eye, Vector3 at, float seconds, Player player, SpriteRenderer over) {
         GameObject go = new GameObject("Blood Beam");
         BloodBeam beam = go.AddComponent<BloodBeam>();
         beam.from = eye;
@@ -32,19 +32,24 @@ public class BloodBeam : MonoBehaviour {
         beam.seconds = seconds;
         beam.started = Time.time;
         beam.freny = player;
-        beam.glow = beam.Line("Glow", GlowWidth, Glow, 46);
-        beam.core = beam.Line("Core", CoreWidth, Core, 47);
+        // drawn on the Ciclope's own sorting layer, over its sprite, so it comes out of the eye
+        // instead of from behind the head
+        int layer = over != null ? over.sortingLayerID : 0;
+        int order = over != null ? over.sortingOrder : 45;
+        beam.glow = beam.Line("Glow", GlowWidth, Glow, layer, order + 2);
+        beam.core = beam.Line("Core", CoreWidth, Core, layer, order + 3);
         ScreenKick.Kick(0.25f, seconds);
         Fx.Burst(eye, Glow, 24, 4f, 0.1f, 0.4f);
         return beam;
     }
 
-    private LineRenderer Line(string name, float width, Color color, int order) {
+    private LineRenderer Line(string name, float width, Color color, int layer, int order) {
         GameObject go = new GameObject(name);
         go.transform.SetParent(transform, false);
         LineRenderer line = go.AddComponent<LineRenderer>();
         line.useWorldSpace = true;
         line.numCapVertices = 4;
+        line.sortingLayerID = layer;
         line.sortingOrder = order;
         line.sharedMaterial = Material();
         line.startColor = line.endColor = color;
@@ -104,7 +109,7 @@ public class BloodBeam : MonoBehaviour {
     // a soft round red-white glow (the charging eye, the mouth of the beam)
     private static Sprite glowSprite;
 
-    public static SpriteRenderer Orb(string name) {
+    public static SpriteRenderer Orb(string name, SpriteRenderer over) {
         if (glowSprite == null) {
             const int size = 32;
             Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
@@ -123,7 +128,8 @@ public class BloodBeam : MonoBehaviour {
         GameObject go = new GameObject(name);
         SpriteRenderer orb = go.AddComponent<SpriteRenderer>();
         orb.sprite = glowSprite;
-        orb.sortingOrder = 48;   // over the beam and over the Ciclope's face
+        orb.sortingLayerID = over != null ? over.sortingLayerID : 0;
+        orb.sortingOrder = (over != null ? over.sortingOrder : 45) + 4;   // over the beam and the Ciclope's face
         if (ItemPickup.UnlitMaterial != null) {
             orb.sharedMaterial = ItemPickup.UnlitMaterial;
         }

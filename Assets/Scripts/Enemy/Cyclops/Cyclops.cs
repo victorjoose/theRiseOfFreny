@@ -399,7 +399,7 @@ public class Cyclops : Enemy {
         frames.Play("idle", BeamCharge + BeamSeconds);
         PlaySound("windup");
         Sfx.Play("supreme_laugh", Center, 0.8f, 0.5f);
-        SpriteRenderer glow = BloodBeam.Orb("Eye Glow");
+        SpriteRenderer glow = BloodBeam.Orb("Eye Glow", sprite);
         for (float t = 0f; t < BeamCharge && !isDead; t += Time.deltaTime) {
             float u = t / BeamCharge;
             glow.transform.position = BeamEye;
@@ -410,7 +410,7 @@ public class Cyclops : Enemy {
             yield return null;
         }
         if (!isDead && player != null) {
-            BloodBeam.Fire(BeamEye, player.BodyCenter, BeamSeconds, player);
+            BloodBeam.Fire(BeamEye, player.BodyCenter, BeamSeconds, player, sprite);
             Sfx.Play("grenade_explode", Eye, 0.9f, 0.4f);
             for (float t = 0f; t < BeamSeconds && !isDead; t += Time.deltaTime) {
                 glow.transform.position = BeamEye;
