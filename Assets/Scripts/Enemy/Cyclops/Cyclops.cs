@@ -42,6 +42,7 @@ public class Cyclops : Enemy {
     private static readonly Vector2 EyeOffset = new Vector2(0.88f, 0.73f);
     private const float EyeRadius = 0.45f;
 
+    public Vector3 EyePoint => Eye;   // the autopilot aims its sword there
     private Vector3 Eye => sprite.bounds.center + new Vector3((FacingRight ? 1f : -1f) * EyeOffset.x, EyeOffset.y, 0f);
 
     protected override float HitScale(Vector3 from, bool shot) {
@@ -280,6 +281,7 @@ public class Cyclops : Enemy {
     private GameObject bar;
     private const float BarSpacing = 95f;   // canvas units between two bars (each is 132 x 0.75 tall)
     private const float BarBottom = 12f;
+    private const float SingleBarBottom = 40f;   // canvas units: clear of the version label
     private const float TouchBarScale = 0.6f;
     private const float TouchBarBottom = 40f;   // canvas units: clear of the version label
     private const float TouchBarStep = 62f;     // a bar is 132 x 0.75 x 0.6 tall
@@ -315,8 +317,12 @@ public class Cyclops : Enemy {
                 rect.anchorMin = rect.anchorMax = new Vector2(side, 0f);
                 rect.anchoredPosition = new Vector2(0f, BarBottom);
             }
-        } else if (rect != null && slot > 0) {
-            rect.anchoredPosition += Vector2.down * (BarSpacing * slot);   // one more while another is out
+        } else if (rect != null) {
+            // one: at the bottom, over the arena floor and just above the version label (José,
+            // 2026-10-29: the top is full of HUD); one more while another is out goes over it
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = new Vector2(0f, SingleBarBottom + BarSpacing * slot);
         }
         foreach (Slider slider in bar.GetComponentsInChildren<Slider>(true)) {
             if (slider.name == "HealthBar") {

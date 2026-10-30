@@ -143,6 +143,11 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         if (WaveReflex(out PlayerInputFrame jump)) {
             return jump;
         }
+        // and the swing at the Ciclope's eye at the top of a jump (in the air his feet are off its
+        // floor, so the decision's "same floor" test never let it through)
+        if (EyeReflex(out PlayerInputFrame swing)) {
+            return swing;
+        }
 
         if (phase != Phase.None) {
             return ManeuverFrame();
@@ -289,11 +294,52 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 action = "Saindo do alcance do Ciclope";
                 return frame;
             }
+            // waits just out of reach, so its rest leaves time to get to the eye (from far away he
+            // never got there in time)
+            if (Mathf.Abs(dx) > CyclopsSafeDistance + CyclopsWaitBand) {
+                frame.move = towardTarget;
+                frame.runHeld = Mathf.Abs(dx) > 6f && player.RunReady;
+                action = "Chegando perto do Ciclope";
+                return frame;
+            }
             if (player.IsGrounded && Mathf.Abs(dx) <= Tuning.AutoShootRange.Value && Shoot(ref frame, dx, facingTarget, towardTarget)) {
                 return frame;
             }
             action = "Esperando o Ciclope abrir a guarda";
             return frame;
+        }
+
+        // 1c'. it rests: jump at its eye and swing up there (double damage, José: "porrada no olho")
+        if (target is Cyclops resting && sameFloor && Mathf.Abs(resting.EyePoint.x - me.x) <= meleeRange + EyeJumpReach) {
+            float eyeY = resting.EyePoint.y;
+            float bladeY = player.BodyCenter.y;
+            // the eye is on its front face: its centre is about a metre farther in, behind the body
+            float toEye = resting.EyePoint.x - me.x;
+            Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+            bool falling = rb != null && rb.Vel().y <= 0.5f;
+            if (player.IsGrounded && eyeY - bladeY > EyeTolerance && player.AttackReady && Time.time >= nextJumpTime) {
+                frame.jumpPressed = true;
+                frame.jumpHeld = true;
+                frame.move = towardTarget;
+                nextJumpTime = Time.time + jumpCooldown;
+                action = "Pulando no olho do Ciclope";
+                return frame;
+            }
+            if (!player.IsGrounded) {
+                frame.jumpHeld = bladeY < eyeY;
+                if (!facingTarget) {
+                    Turn(ref frame, towardTarget);
+                } else if ((bladeY >= eyeY - EyeTolerance || falling) && Mathf.Abs(toEye) <= meleeRange + 0.5f
+                           && (player.AttackReady || player.ComboContinues)) {
+                    // at the eye's height, or at the top of the jump if it falls short
+                    frame.meleePressed = true;
+                    action = "Espada no olho do Ciclope";
+                } else {
+                    frame.move = Mathf.Abs(toEye) > meleeRange * 0.7f ? Mathf.Sign(toEye) : 0f;
+                    action = "No ar, mirando o olho";
+                }
+                return frame;
+            }
         }
 
         // 1d. the Escudeiro's shield faces him: jump over it to hit its back (from above counts too)
@@ -399,7 +445,9 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
         }
 
         // 6. loot: a coin within arm's reach is grabbed even mid-fight; farther loot only when nobody is close
-        if (GoToPickup(ref frame, me, myFeet, myPlatform, nearestEnemy > dangerRange ? pickupRange : grabRange)) {
+        // (with a Ciclope out only what is within arm's reach: he lost its rests to crates far away)
+        float lootRange = Cyclops.Current != null ? grabRange : nearestEnemy > dangerRange ? pickupRange : grabRange;
+        if (GoToPickup(ref frame, me, myFeet, myPlatform, lootRange)) {
             return frame;
         }
 
@@ -448,6 +496,14 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
 
     private const float CyclopsSafeDistance = 3.2f;   // its punch and the start of the smash
     private const float CyclopsEngageTime = 0.9f;     // its rest must last this long to go in
+    private const float EyeJumpReach = 1.2f;          // how far out he jumps for the eye
+    private const float EyeTolerance = 0.45f;         // the eye's radius: the blade must be about there
+    // while a Ciclope is out it comes first (José, 2026-10-29: he went after everything else); the
+    // others only when they are right on him (the bat and bug that keep his combo alive)
+    private const float BossFirst = 25f;
+    private const float OthersDuringBoss = 15f;
+    private const float CloseEnough = 3f;
+    private const float CyclopsWaitBand = 1f;         // waits between SafeDistance and this much farther
     private const float ShieldJumpDistance = 2.4f;    // close enough to jump over the Escudeiro
     private const float MineKeepOut = 0.8f;           // beyond the blast radius
     private const float WaveJumpAt = 3.2f;            // a shockwave this close: jump now
@@ -455,6 +511,38 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
     private const float WaveReactTime = 0.3f;   // jump when the wave will reach him this soon
 
     private const float HexReactTime = 0.25f;   // a hexball this close in time: jump it now
+
+    private bool EyeReflex(out PlayerInputFrame frame) {
+        frame = default;
+        if (player.IsGrounded || !(currentTarget is Cyclops boss) || boss.IsDead || boss.RestLeft <= 0f) {
+            return false;
+        }
+        Vector2 me = transform.position;
+        Vector3 eye = boss.EyePoint;
+        float toEye = eye.x - me.x;
+        float meleeRange = Mathf.Min(Tuning.AutoMeleeRange.Value, MaxMeleeReach) * (player.GreatSwordActive ? 1.4f : 1f);
+        if (Mathf.Abs(toEye) > meleeRange + EyeJumpReach) {
+            return false;
+        }
+        float bladeY = player.BodyCenter.y;
+        Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+        bool falling = rb != null && rb.Vel().y <= 0.5f;
+        frame.jumpHeld = bladeY < eye.y;
+        frame.move = Mathf.Abs(toEye) > meleeRange * 0.7f ? Mathf.Sign(toEye) : 0f;
+        bool facing = (toEye > 0f) == player.FacingRight;
+        if (!facing) {
+            frame.move = Mathf.Sign(toEye);
+            action = "No ar, virando para o olho";
+            return true;
+        }
+        if ((bladeY >= eye.y - EyeTolerance || falling) && Mathf.Abs(toEye) <= meleeRange + 0.5f && player.AttackReady) {
+            frame.meleePressed = true;
+            action = "Espada no olho do Ciclope";
+        } else {
+            action = "No ar, mirando o olho";
+        }
+        return true;
+    }
 
     private bool WaveReflex(out PlayerInputFrame frame) {
         frame = default;
@@ -1053,8 +1141,15 @@ public class ArenaAutopilot : MonoBehaviour, IPlayerInputSource {
                 score += hopCount == int.MaxValue ? 50f : routeHopCost * hopCount;
             }
 
-            if (FrenyProgress.HasSmartTarget) {
+            if (FrenyProgress.HasSmartTarget && !(enemy is Cyclops)) {
                 score += 1.5f * enemy.Health; // prefers the ones that die fastest
+            }
+            if (Cyclops.Current != null) {
+                if (enemy is Cyclops) {
+                    score -= BossFirst;
+                } else if (offset.magnitude > CloseEnough) {
+                    score += OthersDuringBoss;
+                }
             }
 
             if (enemy == currentTarget) {

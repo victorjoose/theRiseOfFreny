@@ -61,8 +61,14 @@ public class ArenaDirector : MonoBehaviour {
     public static float CurrentOvertime { get; private set; }
 
     private float RampTime => Tuning.RampSeconds.Value * ArenaDifficulty.RampFactor;
-    public float Difficulty => Mathf.Clamp01(ArenaDifficulty.StartAt + Elapsed / RampTime);
-    public float Overtime => Mathf.Max(0f, Elapsed - RampTime * (1f - ArenaDifficulty.StartAt)) / 60f;
+    public float Difficulty => Mathf.Clamp01(ArenaDifficulty.StartAt + rampElapsed / RampTime);
+    public float Overtime => Mathf.Max(0f, rampElapsed - RampTime * (1f - ArenaDifficulty.StartAt)) / 60f;
+    // the time the difficulty ramp counts: it stops at the first Ciclope and starts again at a
+    // million (José, 2026-10-29: after the first Ciclope it got too hard too fast; a million should
+    // be reachable, but hard)
+    private float rampElapsed;
+    public const int RampPausedFrom = FirstBossAt;
+    public const int RampResumesAt = 1000000;
     // a busy arena from the start (3), the peak at the end of the curve, then one more per
     // minute of overtime, up to MaxEnemies
     private const int MaxEnemies = 24;
@@ -134,6 +140,10 @@ public class ArenaDirector : MonoBehaviour {
     }
 
     private bool BossAround => bossPending || Cyclops.Current != null;
+    // after a Ciclope falls the arena fills up again at the usual pace, not all at once
+    private const float AfterBossCalm = 20f;
+    private float calmUntil;
+    private bool bossWasAround;
 
     private void UpdateBoss() {
         if (cyclopsTemplate == null || BossAround || Score < nextBossScore) {
@@ -235,10 +245,17 @@ public class ArenaDirector : MonoBehaviour {
             return;
         }
 
+        if (Score < RampPausedFrom || Score >= RampResumesAt) {
+            rampElapsed += Time.deltaTime;
+        }
         UpdateBoss();
         UpdateBossHelpers();
         UpdateBossFodder();
         int present = AliveEnemies() + pendingSpawns;
+        if (bossWasAround && !BossAround) {
+            calmUntil = Time.time + AfterBossCalm;
+        }
+        bossWasAround = BossAround;
         bool spawnNow = BossAround ? Company() < BossCompany && !bossPending : present < MaxAlive;
         if (Time.time >= nextSpawnTime && spawnNow) {
             Entry pick = Pick();
@@ -246,7 +263,7 @@ public class ArenaDirector : MonoBehaviour {
                 StartCoroutine(SpawnWithPortal(pick));
             }
             // a half-empty arena fills up fast: no more long stretches with two enemies around
-            bool sparse = present + 1 < MaxAlive / 2;
+            bool sparse = present + 1 < MaxAlive / 2 && Time.time >= calmUntil;
             nextSpawnTime = Time.time + SpawnInterval * (sparse ? 0.35f : 1f);
         }
 
@@ -333,7 +350,7 @@ public class ArenaDirector : MonoBehaviour {
 
     // sorcerers (plain and Supreme) at once, by score (José, 2026-10-29)
     public static int SorcererLimit(int score) {
-        return score >= 100000 ? 3 : score >= 50000 ? 2 : 1;
+        return score >= RampResumesAt ? 3 : score >= 50000 ? 2 : 1;   // the third only from a million
     }
 
     // alive ones, the portals they are coming out of, and the places of the ones that died in the
