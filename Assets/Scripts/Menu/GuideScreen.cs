@@ -152,14 +152,14 @@ public static class GuideScreen {
             "Ele vira rápido (0,4 s, até 0,15 s no difícil) e se afasta se o Freny chega por trás: pule por cima e bata logo. " +
             "6 de vida, 300 pontos.");
         Entry(parent, null, "Ciclope",
-            "O chefe gigante: chega no centro do chão aos 50 mil pontos e cada próximo 150 mil pontos depois de o anterior morrer; " +
+            "O chefe gigante: prefere ficar no meio, embaixo da primeira plataforma (bom para pular no olho). Chega no centro do chão aos 50 mil pontos e cada próximo 150 mil pontos depois de o anterior morrer; " +
             "dois de uma vez só a partir de 1 milhão, com as barras embaixo, uma de cada lado. Cada luta traz mais " +
             "ajuda: 2 feiticeiros comuns na primeira, um a mais em cada uma seguinte (até 5), e a partir da segunda " +
             "os outros inimigos também continuam vindo. Sempre vem um morcego e um inseto atrás do Freny, para manter o combo vivo. O feitiço dos feiticeiros não fere o Ciclope. 100 de " +
             "vida e barra de chefe. Não pula: fica no chão. Soco: 1 coração e arremessa o Freny longe. " +
             "Pancada no chão: uma onda pelo piso, 2 corações e o mesmo arremesso (pule!). Bomba: de longe, uma mina " +
-            "3 vezes maior jogada com força, 2 corações. Vômito: um jato de até 7 de distância, em 2 de 5 ataques de perto, " +
-            "quando o Freny está a alguns passos ou embaixo (numa plataforma, o jato a atravessa e cai no andar de baixo). " +
+            "3 vezes maior jogada com força, 2 corações. Vômito: um jato para o alto que cai de cima em cima do Freny (até 10 de distância), " +
+            "em 2 de 5 ataques de perto ou quando ele está a alguns passos; na descida queima e atravessa as plataformas até o chão. " +
             "Ele se espalha numa poça larga que fica 6 s: o jato e a poça queimam, e a poça deixa o Freny lento. Depois de cada golpe ele descansa " +
             "3 s: é a hora de bater. Acertar o olho tira o dobro. Vale 5 000 pontos, 30 moedas e deixa um baú.");
         Entry(parent, null, "Feiticeiro",
@@ -185,7 +185,7 @@ public static class GuideScreen {
             "No automático, a próxima corrida começa 10 s depois (ou na hora, em Jogar agora); com 10 mil " +
             "pontos ou mais, o jogo pergunta antes.");
         Entry(parent, null, "Lua de Sangue",
-            "A cada 3 noites a lua fica vermelha (a primeira na 3ª noite, uns 10 minutos de corrida). Até amanhecer, " +
+            "Dia de 1 minuto, noite de 4. A cada 3 noites a lua fica vermelha por 30 s no meio da noite (a primeira uns 10 minutos de corrida). Nesse tempo, " +
             "os inimigos ficam 25% mais rápidos, tiram 1 coração a mais, recuperam vida (1 a cada 3 s, o Ciclope também) " +
             "e ficam de olhos vermelhos, deixando um rastro vermelho.");
         Entry(parent, art ? art.rageHelmet : null, "Dificuldade",
