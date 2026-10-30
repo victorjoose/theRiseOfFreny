@@ -11,11 +11,9 @@ using UnityEngine.UI;
 public class Cyclops : Enemy {
     public const int Life = 100;   // José, 2026-10-29
     private const float SmashCooldown = 7f;
-    private const float VomitCooldown = 9f;
+    private const float VomitCooldown = 12f;
     private const float SmashReach = 9f;
     private const float JetMinDistance = 2.5f;
-    private const float PuddleWidth = 4f;   // wide and lasting: a stretch of floor Freny can't walk on
-    private const float PuddleSeconds = 6f;
     private const string Sheets = "Cyclops/Cyclops ";
     // the red Golem's mine, thrown much harder: fast and flat, hard to dodge
     private const float BombCooldown = 8f;
@@ -29,7 +27,6 @@ public class Cyclops : Enemy {
 
     private FrameAnimator frames;
     private bool special;          // smashing or vomiting: stands still
-    private bool leaping;          // jumping up to a platform or back down: moved by its coroutine
     private float nextSmash;
     private float nextVomit;
     private int maxHealth;
@@ -128,7 +125,6 @@ public class Cyclops : Enemy {
         frames.Add("hit", Sheets + "Hit", 10f, false);
         frames.Add("smash", Sheets + "Smash", 12f, false);
         frames.Add("vomit", Sheets + "Vomit", 10f, false);
-        frames.AddPart("leap", Sheets + "Smash", 5, 6, 6f);   // up in the air, arms raised
         nextSmash = Time.time + 4f;
         nextVomit = Time.time + 7f;
         nextBomb = Time.time + 5f;
@@ -153,7 +149,7 @@ public class Cyclops : Enemy {
             return;
         }
         if (special) {
-            if (!leaping) {
+            if (!hopping) {
                 StickToGround();
                 ClampToArena();
             }
@@ -167,18 +163,21 @@ public class Cyclops : Enemy {
             quietUntil = Time.time + AfterBlowRest;   // after a punch, nothing right away
         }
         punching = IsAttacking;
+        TrackBloodMoon();
         if (isDead || IsAttacking || player == null || player.Health <= 0 || Time.time < quietUntil) {
             return;
         }
         Vector3 feet = Feet;
         float dx = Mathf.Abs(player.Feet.x - feet.x);
         float dy = player.Feet.y - feet.y;
-        if (Time.time >= nextBomb && dx >= BombMinDistance && dx <= BombMaxDistance && Mathf.Abs(dy) < 6f) {
+        if (CanBeam) {
+            StartCoroutine(Beam());   // the Lua de Sangue: a red beam out of its eye
+        } else if (Time.time >= nextBomb && dx >= BombMinDistance && dx <= BombMaxDistance && Mathf.Abs(dy) < 6f) {
             ThrowBomb();
         } else if (Time.time >= nextSmash && dx < SmashReach && Mathf.Abs(dy) < 2.5f) {
             StartCoroutine(Smash());
         } else if (Time.time >= nextVomit && dx >= JetMinDistance) {
-            StartCoroutine(Vomit());   // a few steps away: up onto a platform, and it pours down on him
+            StartCoroutine(Vomit());   // a few steps away: it floods the floor under him
         }
     }
 
@@ -282,6 +281,11 @@ public class Cyclops : Enemy {
     private const int SmashFrames = 12;
     private const int SmashImpactFrame = 7;
     private const float SmashHold = 0.6f;
+    private const float SmashShake = 0.35f;
+    private const int SmashHopFrame = 4;      // it leaves the ground here and lands on the impact frame
+    private const float SmashHopHeight = 0.9f;
+    private bool hopping;
+    private const float SmashShakeSeconds = 0.5f;
 
     private IEnumerator Smash() {
         special = true;
@@ -290,13 +294,25 @@ public class Cyclops : Enemy {
         float frame = length / SmashFrames;
         frames.Play("smash", length);
         PlaySound("windup");
-        yield return new WaitForSeconds(frame * SmashImpactFrame);
+        yield return new WaitForSeconds(frame * SmashHopFrame);
+        // a little hop with the arms up, coming down on the impact frame
+        hopping = true;
+        Vector3 ground = transform.position;
+        float air = frame * (SmashImpactFrame - SmashHopFrame);
+        for (float t = 0f; t < air && !isDead; t += Time.deltaTime) {
+            float u = t / air;
+            transform.position = ground + Vector3.up * (SmashHopHeight * 4f * u * (1f - u));
+            yield return null;
+        }
+        transform.position = ground;
+        hopping = false;
         if (!isDead) {
             Vector3 feet = Feet;
             Fx.Dust(feet, 24);
             Sfx.Play("grenade_explode", feet, 0.8f, 0.6f);
             Shockwave.Launch(feet, 1f);
             Shockwave.Launch(feet, -1f);
+            ScreenKick.Kick(SmashShake, SmashShakeSeconds);   // the whole screen shakes (José, 2026-10-30)
             yield return new WaitForSeconds(frame * 1.1f);
             frames.Hold(SmashHold);   // on the ground, fist down
             yield return new WaitForSeconds(SmashHold);
@@ -307,131 +323,105 @@ public class Cyclops : Enemy {
         special = false;
     }
 
-    // José, 2026-10-30: the vomit is the purple one of its Vomit sheet, thrown down. It leaps up
-    // onto a platform, stands at the edge over Freny and pours a waterfall of vomit down to the
-    // floor (frame 4 starts it, frame 5 is held while it pours), then leaps back down. With no
-    // platform to use it pours from where it stands
+    // José, 2026-10-30: it throws up where it stands (its Vomit sheet: frame 4 starts it, frame 5 is
+    // held while it pours), enough to flood the whole ground floor for a while. Everything down
+    // there gets burned but the Ciclopes, so Freny has to keep off the floor (AcidPuddle.Flood)
     private const int VomitFrames = 9;
     private const int VomitStartFrame = 4;
-    private const float PourSeconds = 1.4f;
+    private const float FloodHold = 1.2f;
+    private const float FloodSeconds = 4f;
     private const float MouthForward = 2.07f;   // the stream in frame 4, from the sprite's middle
-    private const float MouthDown = 0.24f;
-    private const float EdgeInset = 0.5f;       // its middle stands this far in from the edge
-    private const float MaxLeapHeight = 9f;
 
-    private Vector3 Mouth => transform.position + new Vector3(Facing * MouthForward * Size, 1.6f * (Size - 1f) - MouthDown * Size, 0f);
+    // a flood is on its way (from the start of the vomit): the autopilot climbs right away
+    public static bool FloodComing => Alive.Exists(c => c != null && !c.isDead && c.vomiting);
+    private bool vomiting;
 
     private IEnumerator Vomit() {
         special = true;
-        ArenaMap map = player != null && ArenaBounds.Active ? ArenaMap.Shared(player) : null;
-        float standX = 0f, standY = 0f, side = 0f;
-        bool up = map != null && map.Floor != null && PickLedge(map, out standX, out standY, out side);
-        if (up) {
-            yield return Leap(new Vector3(standX, standY, 0f));
-            Face(side);
-        } else {
-            FacePlayer();
-        }
-        if (isDead) {
-            yield break;
-        }
+        vomiting = true;
+        FacePlayer();
         float length = frames.Length("vomit");
         float frame = length / VomitFrames;
         frames.Play("vomit", length);
         Sfx.Play("potion", Center, 1f, 0.5f);   // a deep, slow gurgle
         yield return new WaitForSeconds(frame * VomitStartFrame);
         if (!isDead) {
-            Vector3 mouth = Mouth;
-            float floorY = map != null && map.Floor != null && map.Floor.Contains(mouth.x) ? map.Floor.y : Feet.y;
-            AcidPuddle.Fall(mouth, floorY, PourSeconds, player, PuddleWidth, PuddleSeconds);
+            float mouthX = transform.position.x + Facing * MouthForward * Size;
+            ArenaMap map = player != null && ArenaBounds.Active ? ArenaMap.Shared(player) : null;
+            if (map != null && map.Floor != null) {
+                AcidPuddle.Flood(mouthX, map.Floor.y, map.Floor.xMin, map.Floor.xMax, FloodSeconds);
+            } else {
+                AcidPuddle.Flood(mouthX, Feet.y, ArenaBounds.Left, ArenaBounds.Right, FloodSeconds);
+            }
             yield return new WaitForSeconds(frame * 1.1f);
-            frames.Hold(PourSeconds - frame * 1.1f);   // head down, pouring
-            yield return new WaitForSeconds(PourSeconds - frame * 1.1f);
+            frames.Hold(FloodHold);   // head down, pouring
+            yield return new WaitForSeconds(FloodHold);
         }
         yield return new WaitForSeconds(Mathf.Max(0f, length - frame * (VomitStartFrame + 1.1f)));
-        if (up && !isDead) {
-            if (float.IsNaN(homeX)) {
-                homeX = FindHome();
-            }
-            float landX = map.Floor.Contains(homeX, HalfWidth) ? homeX : Mathf.Clamp(transform.position.x, map.Floor.xMin + HalfWidth, map.Floor.xMax - HalfWidth);
-            yield return Leap(new Vector3(landX, map.Floor.y, 0f));
-        }
         nextVomit = Time.time + VomitCooldown * ScoreCooldown;
         quietUntil = Time.time + AfterBlowRest;
+        vomiting = false;
         special = false;
     }
 
-    private void Face(float side) {
-        transform.localScale = new Vector3(side > 0f ? -1 : 1, 1, 1);
+    // José, 2026-10-30: in the Lua de Sangue its eye turns red and it fires a red beam at Freny
+    // (BloodBeam), 2 or 3 times a Blood Moon at most: the first BeamFirst seconds into it, then one
+    // every BeamGap seconds. It charges the eye, locks on where Freny is and fires
+    private const int BeamsPerMoon = 3;
+    private const float BeamFirst = 2f;
+    private const float BeamGap = 8f;
+    private const float BeamCharge = 0.9f;
+    private const float BeamSeconds = 0.8f;
+    private int beamsThisMoon;
+    private float nextBeam;
+    private bool inBloodMoon;
+
+    private bool CanBeam => inBloodMoon && beamsThisMoon < BeamsPerMoon && Time.time >= nextBeam;
+
+    private void TrackBloodMoon() {
+        bool blood = BloodMoon > 0.5f;
+        if (blood && !inBloodMoon) {
+            beamsThisMoon = 0;
+            nextBeam = Time.time + BeamFirst;
+        }
+        inBloodMoon = blood;
     }
 
-    // an arc from where it stands to `feet` (the spot under its middle), over anything on the way
-    private IEnumerator Leap(Vector3 feet) {
-        leaping = true;
-        Vector3 offset = transform.position - Feet;
-        Vector3 from = transform.position;
-        Vector3 to = feet + offset;
-        float rise = to.y - from.y;
-        float arc = 1.5f + Mathf.Max(0f, rise) * 0.3f;
-        float seconds = 0.6f + 0.04f * Vector2.Distance(from, to);
-        Face(to.x - from.x);
-        frames.Play("leap", seconds);
+    // where the beam leaves the eye: a little over the middle of the eye (José: it looked like it
+    // came from behind it)
+    private Vector3 BeamEye => Eye + Vector3.up * (0.18f * Size);
+    private const float GlowSize = 1.3f;
+
+    private IEnumerator Beam() {
+        special = true;
+        beamsThisMoon++;
+        FacePlayer();
+        frames.Play("idle", BeamCharge + BeamSeconds);
         PlaySound("windup");
-        Fx.Dust(Feet, 10);
-        for (float t = 0f; t < seconds && !isDead; t += Time.deltaTime) {
-            float u = t / seconds;
-            transform.position = new Vector3(Mathf.Lerp(from.x, to.x, u), Mathf.Lerp(from.y, to.y, u) + arc * 4f * u * (1f - u), from.z);
+        Sfx.Play("supreme_laugh", Center, 0.8f, 0.5f);
+        SpriteRenderer glow = BloodBeam.Orb("Eye Glow", sprite);
+        for (float t = 0f; t < BeamCharge && !isDead; t += Time.deltaTime) {
+            float u = t / BeamCharge;
+            glow.transform.position = BeamEye;
+            glow.transform.localScale = Vector3.one * (GlowSize * (0.3f + 0.7f * u) * (1f + Mathf.Sin(Time.time * 40f) * 0.08f));
+            if (Random.value < 0.4f) {
+                Fx.Burst(BeamEye, new Color(1f, 0.1f, 0.1f), 1, 1.5f * (1f - u) + 0.3f, 0.06f, 0.2f);
+            }
             yield return null;
         }
-        if (!isDead) {
-            transform.position = to;
-            Fx.Dust(Feet, 16);
-            Sfx.Play("grenade_explode", Feet, 0.35f, 0.7f);
-        }
-        leaping = false;
-    }
-
-    // the platform edge whose waterfall falls closest to Freny (a little in favour of the higher
-    // ones, only to break near ties): room for its body above it, the stream over the arena floor, no other Ciclope there
-    private bool PickLedge(ArenaMap map, out float standX, out float standY, out float side) {
-        standX = standY = side = 0f;
-        float best = float.PositiveInfinity;
-        float frenyX = player.Feet.x;
-        float floorY = map.Floor.y;
-        Vector2 body = new Vector2(HalfWidth * 1.6f, HalfHeight * 2f - 0.2f);
-        foreach (ArenaMap.Platform platform in map.Platforms) {
-            if (platform == map.Floor || platform.tower || platform.y < floorY + 1.5f || platform.y > floorY + MaxLeapHeight
-                || platform.Width < HalfWidth * 2f + 0.5f) {
-                continue;
-            }
-            for (int s = -1; s <= 1; s += 2) {
-                float x = s > 0 ? platform.xMax - EdgeInset : platform.xMin + EdgeInset;
-                float fallX = x + s * MouthForward * Size;
-                if (!ArenaBounds.Inside(x, HalfWidth) || !map.Floor.Contains(fallX, 0.3f) || !ArenaBounds.Inside(fallX, 0.5f)) {
-                    continue;
-                }
-                if (Physics2D.OverlapBox(new Vector2(x, platform.y + HalfHeight + 0.15f), body, 0f, GroundMask) != null || Taken(x, platform.y)) {
-                    continue;
-                }
-                float score = Mathf.Abs(fallX - frenyX) - 0.05f * (platform.y - floorY);
-                if (score < best) {
-                    best = score;
-                    standX = x;
-                    standY = platform.y;
-                    side = s;
-                }
+        if (!isDead && player != null) {
+            BloodBeam.Fire(BeamEye, player.BodyCenter, BeamSeconds, player, sprite);
+            Sfx.Play("grenade_explode", Eye, 0.9f, 0.4f);
+            for (float t = 0f; t < BeamSeconds && !isDead; t += Time.deltaTime) {
+                glow.transform.position = BeamEye;
+                glow.transform.localScale = Vector3.one * (GlowSize * 1.3f * (1f + Mathf.Sin(Time.time * 50f) * 0.12f));
+                yield return null;
             }
         }
-        return best < float.PositiveInfinity;
-    }
-
-    private bool Taken(float x, float y) {
-        foreach (Cyclops other in Alive) {
-            if (other != this && !other.isDead && Mathf.Abs(other.Feet.y - y) < 0.5f && Mathf.Abs(other.Feet.x - x) < HalfWidth * 3f) {
-                return true;
-            }
-        }
-        return false;
+        Destroy(glow.gameObject);
+        nextBeam = Time.time + BeamGap;
+        quietUntil = Time.time + AfterBlowRest;
+        special = false;
     }
 
     // the game's boss bar (Prefabs/HUD/Resources/BossHealth, taken from stage 1-9): the Boss
